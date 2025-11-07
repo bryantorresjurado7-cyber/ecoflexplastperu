@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply box-border;
+  }
+  
+  html {
+    @apply scroll-smooth overflow-x-hidden;
+  }
+  
+  body {
+    @apply font-sans text-negro-principal bg-white overflow-x-hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  /* Typography scale */
+  .typo-h1 {
+    @apply text-[38px] leading-[48px] md:text-[48px] md:leading-[56px] font-semibold tracking-tight;
+  }
+  .typo-h2 {
+    @apply text-[32px] leading-[40px] font-semibold tracking-tight;
+  }
+  .typo-h3 {
+    @apply text-[22px] leading-[32px] md:text-[24px] md:leading-[32px] font-semibold;
+  }
+  .typo-h4 {
+    @apply text-[18px] leading-[26px] font-semibold;
+  }
+  .typo-body {
+    @apply text-[16px] leading-[26px];
+  }
+  .typo-small {
+    @apply text-[14px] leading-[22px];
+  }
+  .btn-primary {
+    @apply bg-gradiente-boton text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-verde-principal focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed;
+  }
+  
+  .btn-secondary {
+    @apply border-2 border-verde-principal text-verde-principal px-6 py-3 rounded-xl font-semibold transition-all duration-300 hover:bg-verde-principal hover:text-white focus:outline-none focus:ring-2 focus:ring-verde-principal focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed;
+  }
+  
+  .card {
+    @apply bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-shadow duration-300 border border-neutral-200/60;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 border border-gris-muy-claro rounded-lg focus:outline-none focus:ring-2 focus:ring-verde-principal focus:border-transparent transition-all duration-200;
+  }
+  
+  .section-padding {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+  
+  .container-max {
+    @apply max-w-7xl mx-auto;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-grad-primary bg-clip-text text-transparent;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  
+  .backdrop-blur-header {
+    backdrop-filter: blur(10px);
+    background-color: rgba(255, 255, 255, 0.9);
+  }
+}
