@@ -15,7 +15,8 @@ import {
   Factory,
   FlaskConical,
   Truck,
-  Cog
+  Cog,
+  ArrowLeftRight
 } from 'lucide-react'
 
 const AdminLayout = ({ children }) => {
@@ -41,6 +42,11 @@ const AdminLayout = ({ children }) => {
       title: 'Productos',
       icon: Package,
       path: '/admin/productos'
+    },
+    {
+      title: 'Movimientos',
+      icon: ArrowLeftRight,
+      path: '/admin/movimientos'
     },
     {
       title: 'Insumos',
@@ -93,9 +99,8 @@ const AdminLayout = ({ children }) => {
     <div className="min-h-screen bg-fondo-claro flex">
       {/* Sidebar */}
       <aside
-        className={`${
-          sidebarOpen ? 'w-64' : 'w-20'
-        } bg-negro-principal text-white transition-all duration-300 flex flex-col fixed h-full z-50`}
+        className={`${sidebarOpen ? 'w-64' : 'w-20'
+          } bg-negro-principal text-white transition-all duration-300 flex flex-col fixed h-full z-50`}
       >
         {/* Header */}
         <div className="p-4 flex items-center justify-between border-b border-gris-oscuro">
@@ -118,18 +123,17 @@ const AdminLayout = ({ children }) => {
         <nav className="flex-1 p-4 space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon
-            const isActive = location.pathname === item.path || 
-                           (item.path !== '/admin/dashboard' && location.pathname.startsWith(item.path))
-            
+            const isActive = location.pathname === item.path ||
+              (item.path !== '/admin/dashboard' && location.pathname.startsWith(item.path))
+
             return (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                  isActive
-                    ? 'bg-verde-principal text-white'
-                    : 'text-gris-claro hover:bg-gris-oscuro hover:text-white'
-                }`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive
+                  ? 'bg-verde-principal text-white'
+                  : 'text-gris-claro hover:bg-gris-oscuro hover:text-white'
+                  }`}
               >
                 <Icon size={20} />
                 {sidebarOpen && <span className="font-medium">{item.title}</span>}
@@ -160,9 +164,8 @@ const AdminLayout = ({ children }) => {
 
       {/* Main Content */}
       <main
-        className={`flex-1 transition-all duration-300 ${
-          sidebarOpen ? 'ml-64' : 'ml-20'
-        }`}
+        className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-20'
+          }`}
       >
         {children}
       </main>

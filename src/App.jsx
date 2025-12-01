@@ -31,6 +31,8 @@ import AdminProductoForm from './pages/AdminProductoForm';
 import AdminVenta from './pages/AdminVenta';
 import AdminVentasLista from './pages/AdminVentasLista';
 import AdminDashboardVentas from './pages/AdminDashboardVentas';
+import AdminDashboardProductos from './pages/AdminDashboardProductos';
+import AdminMovimientos from './pages/AdminMovimientos';
 import AdminCotizaciones from './pages/AdminCotizaciones';
 import AdminCotizacionForm from './pages/AdminCotizacionForm';
 import AdminLayout from './components/AdminLayout';
@@ -46,6 +48,7 @@ import AdminMaquinarias from './pages/AdminMaquinarias';
 import AdminMaquinariaForm from './pages/AdminMaquinariaForm';
 import AdminUsuarios from './pages/AdminUsuarios';
 import AdminUsuarioForm from './pages/AdminUsuarioForm';
+import AdminConfiguracion from './pages/AdminConfiguracion';
 
 function App() {
   return (
@@ -65,7 +68,7 @@ function App() {
                 <FloatingCart />
               </div>
             } />
-            
+
             <Route path="/productos" element={
               <div className="min-h-screen flex flex-col">
                 <Header />
@@ -76,7 +79,7 @@ function App() {
                 <FloatingCart />
               </div>
             } />
-            
+
             <Route path="/catalogo" element={
               <div className="min-h-screen flex flex-col">
                 <Header />
@@ -87,7 +90,7 @@ function App() {
                 <FloatingCart />
               </div>
             } />
-            
+
             <Route path="/producto-v2/:id" element={
               <div className="min-h-screen flex flex-col">
                 <Header />
@@ -98,7 +101,7 @@ function App() {
                 <FloatingCart />
               </div>
             } />
-            
+
             <Route path="/producto/:id" element={
               <div className="min-h-screen flex flex-col">
                 <Header />
@@ -109,7 +112,7 @@ function App() {
                 <FloatingCart />
               </div>
             } />
-            
+
             <Route path="/colores" element={
               <div className="min-h-screen flex flex-col">
                 <Header />
@@ -120,7 +123,7 @@ function App() {
                 <FloatingCart />
               </div>
             } />
-            
+
             <Route path="/accesorios" element={
               <div className="min-h-screen flex flex-col">
                 <Header />
@@ -131,7 +134,7 @@ function App() {
                 <FloatingCart />
               </div>
             } />
-            
+
             <Route path="/contacto" element={
               <div className="min-h-screen flex flex-col">
                 <Header />
@@ -141,7 +144,7 @@ function App() {
                 <Footer />
               </div>
             } />
-            
+
             <Route path="/cotizacion" element={
               <div className="min-h-screen flex flex-col">
                 <Header />
@@ -152,7 +155,7 @@ function App() {
                 <FloatingCart />
               </div>
             } />
-            
+
             <Route path="/sobre-nosotros" element={
               <div className="min-h-screen flex flex-col">
                 <Header />
@@ -162,7 +165,7 @@ function App() {
                 <Footer />
               </div>
             } />
-            
+
             <Route path="/faq" element={
               <div className="min-h-screen flex flex-col">
                 <Header />
@@ -172,7 +175,7 @@ function App() {
                 <Footer />
               </div>
             } />
-            
+
             <Route path="/terminos" element={
               <div className="min-h-screen flex flex-col">
                 <Header />
@@ -182,7 +185,7 @@ function App() {
                 <Footer />
               </div>
             } />
-            
+
             <Route path="/privacidad" element={
               <div className="min-h-screen flex flex-col">
                 <Header />
@@ -192,7 +195,7 @@ function App() {
                 <Footer />
               </div>
             } />
-            
+
             <Route path="/libro-reclamaciones" element={
               <div className="min-h-screen flex flex-col">
                 <Header />
@@ -202,22 +205,34 @@ function App() {
                 <Footer />
               </div>
             } />
-            
+
             {/* Rutas de administración (sin Header/Footer) */}
             <Route path="/admin/login" element={<AdminLogin />} />
-            
+
             <Route path="/admin/dashboard" element={
               <ProtectedRoute>
                 <AdminDashboard />
               </ProtectedRoute>
             } />
-            
+
+            <Route path="/admin/dashboard/productos" element={
+              <ProtectedRoute>
+                <AdminDashboardProductos />
+              </ProtectedRoute>
+            } />
+
             <Route path="/admin/productos" element={
               <ProtectedRoute>
                 <AdminProductos />
               </ProtectedRoute>
             } />
-            
+
+            <Route path="/admin/movimientos" element={
+              <ProtectedRoute>
+                <AdminMovimientos />
+              </ProtectedRoute>
+            } />
+
             <Route path="/admin/venta" element={
               <ProtectedRoute>
                 <AdminLayout>
@@ -225,13 +240,13 @@ function App() {
                 </AdminLayout>
               </ProtectedRoute>
             } />
-            
+
             <Route path="/admin/dashboard/ventas" element={
               <ProtectedRoute>
                 <AdminDashboardVentas />
               </ProtectedRoute>
             } />
-            
+
             <Route path="/admin/ventas" element={
               <ProtectedRoute>
                 <AdminLayout>
@@ -239,67 +254,67 @@ function App() {
                 </AdminLayout>
               </ProtectedRoute>
             } />
-            
+
             <Route path="/admin/productos/nuevo" element={
               <ProtectedRoute>
                 <AdminProductoForm />
               </ProtectedRoute>
             } />
-            
+
             <Route path="/admin/productos/editar/:id" element={
               <ProtectedRoute>
                 <AdminProductoForm />
               </ProtectedRoute>
             } />
-            
+
             <Route path="/admin/insumos" element={
               <ProtectedRoute>
                 <AdminInsumos />
               </ProtectedRoute>
             } />
-            
+
             <Route path="/admin/insumos/nuevo" element={
               <ProtectedRoute>
                 <AdminInsumoForm />
               </ProtectedRoute>
             } />
-            
+
             <Route path="/admin/insumos/editar/:id" element={
               <ProtectedRoute>
                 <AdminInsumoForm />
               </ProtectedRoute>
             } />
-            
+
             <Route path="/admin/proveedores" element={
               <ProtectedRoute>
                 <AdminProveedores />
               </ProtectedRoute>
             } />
-            
+
             <Route path="/admin/proveedores/nuevo" element={
               <ProtectedRoute>
                 <AdminProveedorForm />
               </ProtectedRoute>
             } />
-            
+
             <Route path="/admin/proveedores/editar/:id" element={
               <ProtectedRoute>
                 <AdminProveedorForm />
               </ProtectedRoute>
             } />
-            
+
             <Route path="/admin/maquinarias" element={
               <ProtectedRoute>
                 <AdminMaquinarias />
               </ProtectedRoute>
             } />
-            
+
             <Route path="/admin/maquinarias/nuevo" element={
               <ProtectedRoute>
                 <AdminMaquinariaForm />
               </ProtectedRoute>
             } />
-            
+
             <Route path="/admin/maquinarias/editar/:id" element={
               <ProtectedRoute>
                 <AdminMaquinariaForm />
@@ -321,19 +336,19 @@ function App() {
                 <AdminUsuarioForm />
               </ProtectedRoute>
             } />
-            
+
             <Route path="/admin/cotizaciones" element={
               <ProtectedRoute>
                 <AdminCotizaciones />
               </ProtectedRoute>
             } />
-            
+
             <Route path="/admin/cotizaciones/nueva" element={
               <ProtectedRoute>
                 <AdminCotizacionForm />
               </ProtectedRoute>
             } />
-            
+
             <Route path="/admin/cotizaciones/editar/:id" element={
               <ProtectedRoute>
                 <AdminCotizacionForm />
@@ -365,12 +380,19 @@ function App() {
                 <AdminProduccionForm />
               </ProtectedRoute>
             } />
+
             <Route path="/admin/produccion/validar/:id" element={
               <ProtectedRoute>
                 <AdminProduccionValidacion />
               </ProtectedRoute>
             } />
-            
+
+            <Route path="/admin/configuracion" element={
+              <ProtectedRoute>
+                <AdminConfiguracion />
+              </ProtectedRoute>
+            } />
+
             {/* 404 Route */}
             <Route path="*" element={
               <div className="min-h-screen flex flex-col">
