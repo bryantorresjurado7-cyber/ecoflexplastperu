@@ -18,6 +18,7 @@ const AdminCotizaciones = () => {
   const [loadingDetalle, setLoadingDetalle] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
+  const [deleteConfirm, setDeleteConfirm] = useState(null)
 
   useEffect(() => {
     loadCotizaciones()
@@ -26,11 +27,11 @@ const AdminCotizaciones = () => {
   const loadCotizaciones = async () => {
     try {
       setLoading(true)
-      
+
       // Obtener sesión del usuario autenticado
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
-      
+
       const response = await fetch(
         `${SUPABASE_URL}/functions/v1/crud-cotizaciones/cotizaciones?limit=1000`,
         {
@@ -42,20 +43,20 @@ const AdminCotizaciones = () => {
           }
         }
       )
-      
+
       const result = await response.json()
-      
+
       if (!result.success) throw new Error(result.error || 'Error cargando cotizaciones')
-      
+
       console.log('📦 Datos recibidos de la Edge Function:', result.data)
-      
+
       // Mapear datos - el cliente viene desde el JOIN
       const mappedData = (result.data || []).map(cotizacion => {
         // El cliente puede venir como objeto o como array (depende de cómo Supabase devuelva el JOIN)
-        const clienteData = Array.isArray(cotizacion.cliente) 
-          ? cotizacion.cliente[0] 
+        const clienteData = Array.isArray(cotizacion.cliente)
+          ? cotizacion.cliente[0]
           : cotizacion.cliente
-        
+
         return {
           id: cotizacion.id_cotizacion,
           ...cotizacion,
@@ -72,7 +73,7 @@ const AdminCotizaciones = () => {
           }
         }
       })
-      
+
       console.log('📊 Datos mapeados:', mappedData)
       setCotizaciones(mappedData)
     } catch (error) {
@@ -109,11 +110,11 @@ const AdminCotizaciones = () => {
   }
 
   const filteredCotizaciones = cotizaciones.filter(cotizacion => {
-    const matchSearch = 
+    const matchSearch =
       cotizacion.cliente?.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cotizacion.cliente?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cotizacion.id?.toLowerCase().includes(searchTerm.toLowerCase())
-    
+
     const matchEstado = filterEstado === 'all' || cotizacion.estado === filterEstado
     return matchSearch && matchEstado
   })
@@ -126,16 +127,16 @@ const AdminCotizaciones = () => {
   const handleChangeEstado = async (id, nuevoEstado) => {
     try {
       console.log('🔄 Cambiando estado de cotización:', { id, nuevoEstado })
-      
+
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
-      
+
       console.log('🔑 Token obtenido:', token ? 'Sí' : 'No')
-      
+
       const url = `${SUPABASE_URL}/functions/v1/crud-cotizaciones/cotizaciones/${id}`
       console.log('🌐 URL:', url)
       console.log('📤 Payload:', JSON.stringify({ estado: nuevoEstado }))
-      
+
       const response = await fetch(url, {
         method: 'PUT',
         headers: {
@@ -145,12 +146,12 @@ const AdminCotizaciones = () => {
         },
         body: JSON.stringify({ estado: nuevoEstado })
       })
-      
+
       console.log('📥 Respuesta status:', response.status, response.statusText)
-      
+
       const responseText = await response.text()
       console.log('📄 Respuesta completa:', responseText)
-      
+
       let result
       try {
         result = JSON.parse(responseText)
@@ -159,12 +160,12 @@ const AdminCotizaciones = () => {
         console.error('❌ Error parseando respuesta:', parseError)
         throw new Error(`Error en respuesta: ${responseText}`)
       }
-      
+
       if (!response.ok || !result.success) {
         console.error('❌ Error en respuesta:', result)
         throw new Error(result.error || `Error HTTP ${response.status}`)
       }
-      
+
       console.log('✅ Estado actualizado exitosamente')
       loadCotizaciones()
     } catch (error) {
@@ -179,14 +180,20 @@ const AdminCotizaciones = () => {
     navigate(`/admin/cotizaciones/editar/${idCotizacion}`)
   }
 
-  const handleDelete = async (id) => {
-    if (!confirm('¿Está seguro de eliminar esta cotización?')) return
+  const handleDeleteClick = (cotizacion) => {
+    const cotizacionId = cotizacion.id_cotizacion || cotizacion.id
+    const clienteNombre = cotizacion.cliente?.nombre || 'este cliente'
+    setDeleteConfirm({ id: cotizacionId, nombre: clienteNombre })
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
-      
+
       const response = await fetch(
-        `${SUPABASE_URL}/functions/v1/crud-cotizaciones/cotizaciones/${id}`,
+        `${SUPABASE_URL}/functions/v1/crud-cotizaciones/cotizaciones/${deleteConfirm.id}`,
         {
           method: 'DELETE',
           headers: {
@@ -196,13 +203,15 @@ const AdminCotizaciones = () => {
           }
         }
       )
-      
+
       const result = await response.json()
       if (!result.success) throw new Error(result.error)
+      setDeleteConfirm(null)
       loadCotizaciones()
     } catch (error) {
       console.error('Error eliminando cotización:', error)
       alert('Error al eliminar cotización')
+      setDeleteConfirm(null)
     }
   }
 
@@ -214,21 +223,21 @@ const AdminCotizaciones = () => {
         id_cotizacion: cotizacion.id_cotizacion,
         numero_cotizacion: cotizacion.numero_cotizacion
       })
-      
+
       setLoadingDetalle(true)
       setShowDetailModal(true)
-      
+
       // Obtener detalles completos de la cotización
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
-      
+
       const idCotizacion = cotizacion.id_cotizacion || cotizacion.id
       console.log('🔍 ID de cotización a buscar:', idCotizacion)
       console.log('🔑 Token disponible:', token ? 'Sí' : 'No')
-      
+
       const url = `${SUPABASE_URL}/functions/v1/crud-cotizaciones/cotizaciones/${idCotizacion}`
       console.log('🌐 URL de petición:', url)
-      
+
       // Obtener cotización completa con cliente, vendedor y detalles
       const response = await fetch(url, {
         method: 'GET',
@@ -238,19 +247,19 @@ const AdminCotizaciones = () => {
           'Content-Type': 'application/json'
         }
       })
-      
+
       console.log('📥 Respuesta status:', response.status)
       console.log('📥 Respuesta ok:', response.ok)
-      
+
       if (!response.ok) {
         const errorText = await response.text()
         console.error('❌ Error HTTP:', response.status, errorText)
         throw new Error(`Error HTTP ${response.status}: ${errorText}`)
       }
-      
+
       const responseText = await response.text()
       console.log('📄 Respuesta completa (texto):', responseText)
-      
+
       let result
       try {
         result = JSON.parse(responseText)
@@ -259,12 +268,12 @@ const AdminCotizaciones = () => {
         console.error('❌ Error parseando respuesta:', parseError)
         throw new Error(`Error en respuesta: ${responseText}`)
       }
-      
+
       if (!result.success) {
         console.error('❌ Error en respuesta del servidor:', result.error)
         throw new Error(result.error || 'Error desconocido al obtener detalle')
       }
-      
+
       console.log('✅ Cotización obtenida exitosamente')
       console.log('📊 Datos de cotización:', {
         id: result.data?.id_cotizacion,
@@ -273,16 +282,16 @@ const AdminCotizaciones = () => {
         vendedor: result.data?.vendedor?.nombre || 'N/A',
         total_productos: result.data?.detalles?.length || 0
       })
-      
+
       // El endpoint ya incluye cliente, vendedor y detalles
       setSelectedCotizacion(result.data)
-      
+
     } catch (error) {
       console.error('❌ Error completo obteniendo detalle:')
       console.error('📋 Mensaje:', error.message)
       console.error('📋 Stack:', error.stack)
       console.error('📋 Error completo:', error)
-      
+
       const errorMessage = error.message || 'Error desconocido al obtener el detalle de la cotización'
       alert('Error al obtener detalle: ' + errorMessage)
       setShowDetailModal(false)
@@ -303,7 +312,7 @@ const AdminCotizaciones = () => {
             </h2>
             <p className="text-gris-medio mt-1">{cotizaciones.length} cotizaciones en total</p>
           </div>
-          <button 
+          <button
             onClick={() => navigate('/admin/cotizaciones/nueva')}
             className="btn-primary flex items-center gap-2"
           >
@@ -432,7 +441,7 @@ const AdminCotizaciones = () => {
                               <Edit className="text-green-600" size={18} />
                             </button>
                             <button
-                              onClick={() => handleDelete(cotizacion.id_cotizacion || cotizacion.id)}
+                              onClick={() => handleDeleteClick(cotizacion)}
                               className="p-2 hover:bg-red-50 rounded-lg transition-colors"
                               title="Eliminar"
                             >
@@ -508,168 +517,168 @@ const AdminCotizaciones = () => {
                 </div>
               ) : (
                 <>
-              {/* Información del Cliente */}
-              <div className="bg-fondo-claro rounded-lg p-4">
-                <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                  <User className="text-verde-principal" size={20} />
-                  Información del Cliente
-                </h4>
-                {(() => {
-                  const cliente = Array.isArray(selectedCotizacion.cliente) 
-                    ? selectedCotizacion.cliente[0] 
-                    : selectedCotizacion.cliente
-                  
-                  return (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-gris-medio">Nombre</p>
-                        <p className="font-medium">{cliente?.nombre || 'Sin nombre'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gris-medio">Email</p>
-                        <p className="font-medium flex items-center gap-1">
-                          <Mail size={14} />
-                          {cliente?.email || 'N/A'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gris-medio">Teléfono</p>
-                        <p className="font-medium flex items-center gap-1">
-                          <Phone size={14} />
-                          {cliente?.telefono || 'N/A'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gris-medio">Empresa</p>
-                        <p className="font-medium">{cliente?.descripcion || 'N/A'}</p>
-                      </div>
-                    </div>
-                  )
-                })()}
-              </div>
+                  {/* Información del Cliente */}
+                  <div className="bg-fondo-claro rounded-lg p-4">
+                    <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                      <User className="text-verde-principal" size={20} />
+                      Información del Cliente
+                    </h4>
+                    {(() => {
+                      const cliente = Array.isArray(selectedCotizacion.cliente)
+                        ? selectedCotizacion.cliente[0]
+                        : selectedCotizacion.cliente
 
-              {/* Vendedor */}
-              {selectedCotizacion.vendedor && (
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <h4 className="font-semibold text-lg mb-2 flex items-center gap-2">
-                    <User className="text-blue-600" size={20} />
-                    Vendedor
-                  </h4>
-                  {(() => {
-                    const vendedor = Array.isArray(selectedCotizacion.vendedor) 
-                      ? selectedCotizacion.vendedor[0] 
-                      : selectedCotizacion.vendedor
-                    return (
-                      <>
-                        <p className="font-medium">{vendedor?.nombre || 'N/A'}</p>
-                        {vendedor?.email && (
-                          <p className="text-sm text-gris-medio mt-1">{vendedor.email}</p>
-                        )}
-                      </>
-                    )
-                  })()}
-                </div>
-              )}
-
-              {/* Productos */}
-              <div>
-                <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                  <Package className="text-verde-principal" size={20} />
-                  Productos ({selectedCotizacion.detalles?.length || 0})
-                </h4>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-fondo-claro">
-                      <tr>
-                        <th className="text-left py-2 px-4 text-sm font-semibold">Producto</th>
-                        <th className="text-center py-2 px-4 text-sm font-semibold">Cantidad</th>
-                        <th className="text-right py-2 px-4 text-sm font-semibold">Precio Unit.</th>
-                        <th className="text-right py-2 px-4 text-sm font-semibold">Subtotal</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedCotizacion.detalles && selectedCotizacion.detalles.length > 0 ? (
-                        selectedCotizacion.detalles.map((detalle, index) => {
-                          const producto = Array.isArray(detalle.producto) ? detalle.producto[0] : detalle.producto
-                          return (
-                            <tr key={detalle.id_detalle_cotizacion || index} className="border-b border-gris-claro">
-                              <td className="py-3 px-4">
-                                <p className="font-medium">{producto?.nombre || 'Producto sin nombre'}</p>
-                                {producto?.codigo && (
-                                  <p className="text-xs text-gris-medio">Código: {producto.codigo}</p>
-                                )}
-                              </td>
-                              <td className="py-3 px-4 text-center">{detalle.cantidad || 0}</td>
-                              <td className="py-3 px-4 text-right">{formatCurrency(detalle.precio_unitario || 0)}</td>
-                              <td className="py-3 px-4 text-right font-semibold">{formatCurrency(detalle.subtotal || 0)}</td>
-                            </tr>
-                          )
-                        })
-                      ) : (
-                        <tr>
-                          <td colSpan="4" className="py-4 text-center text-gris-medio">
-                            No hay productos en esta cotización
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Totales */}
-              <div className="bg-fondo-claro rounded-lg p-4">
-                <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                  <DollarSign className="text-verde-principal" size={20} />
-                  Resumen
-                </h4>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-gris-medio">Subtotal:</span>
-                    <span className="font-medium">{formatCurrency(selectedCotizacion.subtotal || 0)}</span>
+                      return (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm text-gris-medio">Nombre</p>
+                            <p className="font-medium">{cliente?.nombre || 'Sin nombre'}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gris-medio">Email</p>
+                            <p className="font-medium flex items-center gap-1">
+                              <Mail size={14} />
+                              {cliente?.email || 'N/A'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gris-medio">Teléfono</p>
+                            <p className="font-medium flex items-center gap-1">
+                              <Phone size={14} />
+                              {cliente?.telefono || 'N/A'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gris-medio">Empresa</p>
+                            <p className="font-medium">{cliente?.descripcion || 'N/A'}</p>
+                          </div>
+                        </div>
+                      )
+                    })()}
                   </div>
-                  {selectedCotizacion.descuento > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gris-medio">Descuento:</span>
-                      <span className="font-medium text-red-600">-{formatCurrency(selectedCotizacion.descuento || 0)}</span>
+
+                  {/* Vendedor */}
+                  {selectedCotizacion.vendedor && (
+                    <div className="bg-blue-50 rounded-lg p-4">
+                      <h4 className="font-semibold text-lg mb-2 flex items-center gap-2">
+                        <User className="text-blue-600" size={20} />
+                        Vendedor
+                      </h4>
+                      {(() => {
+                        const vendedor = Array.isArray(selectedCotizacion.vendedor)
+                          ? selectedCotizacion.vendedor[0]
+                          : selectedCotizacion.vendedor
+                        return (
+                          <>
+                            <p className="font-medium">{vendedor?.nombre || 'N/A'}</p>
+                            {vendedor?.email && (
+                              <p className="text-sm text-gris-medio mt-1">{vendedor.email}</p>
+                            )}
+                          </>
+                        )
+                      })()}
                     </div>
                   )}
-                  <div className="flex justify-between">
-                    <span className="text-gris-medio">IGV (18%):</span>
-                    <span className="font-medium">{formatCurrency(selectedCotizacion.igv || 0)}</span>
-                  </div>
-                  <div className="flex justify-between pt-2 border-t border-gris-claro">
-                    <span className="font-bold text-lg">Total:</span>
-                    <span className="font-bold text-lg text-verde-principal">{formatCurrency(selectedCotizacion.total || 0)}</span>
-                  </div>
-                </div>
-              </div>
 
-              {/* Fechas y Estado */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gris-medio mb-1 flex items-center gap-1">
-                    <Calendar size={14} />
-                    Fecha de Emisión
-                  </p>
-                  <p className="font-medium">{formatDate(selectedCotizacion.fecha_emision || selectedCotizacion.created_at)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gris-medio mb-1">Estado</p>
-                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getEstadoColor(selectedCotizacion.estado)}`}>
-                    {selectedCotizacion.estado || 'N/A'}
-                  </span>
-                </div>
-              </div>
+                  {/* Productos */}
+                  <div>
+                    <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                      <Package className="text-verde-principal" size={20} />
+                      Productos ({selectedCotizacion.detalles?.length || 0})
+                    </h4>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-fondo-claro">
+                          <tr>
+                            <th className="text-left py-2 px-4 text-sm font-semibold">Producto</th>
+                            <th className="text-center py-2 px-4 text-sm font-semibold">Cantidad</th>
+                            <th className="text-right py-2 px-4 text-sm font-semibold">Precio Unit.</th>
+                            <th className="text-right py-2 px-4 text-sm font-semibold">Subtotal</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedCotizacion.detalles && selectedCotizacion.detalles.length > 0 ? (
+                            selectedCotizacion.detalles.map((detalle, index) => {
+                              const producto = Array.isArray(detalle.producto) ? detalle.producto[0] : detalle.producto
+                              return (
+                                <tr key={detalle.id_detalle_cotizacion || index} className="border-b border-gris-claro">
+                                  <td className="py-3 px-4">
+                                    <p className="font-medium">{producto?.nombre || 'Producto sin nombre'}</p>
+                                    {producto?.codigo && (
+                                      <p className="text-xs text-gris-medio">Código: {producto.codigo}</p>
+                                    )}
+                                  </td>
+                                  <td className="py-3 px-4 text-center">{detalle.cantidad || 0}</td>
+                                  <td className="py-3 px-4 text-right">{formatCurrency(detalle.precio_unitario || 0)}</td>
+                                  <td className="py-3 px-4 text-right font-semibold">{formatCurrency(detalle.subtotal || 0)}</td>
+                                </tr>
+                              )
+                            })
+                          ) : (
+                            <tr>
+                              <td colSpan="4" className="py-4 text-center text-gris-medio">
+                                No hay productos en esta cotización
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
 
-              {/* Observaciones */}
-              {selectedCotizacion.observaciones && (
-                <div>
-                  <p className="text-sm text-gris-medio mb-1">Observaciones</p>
-                  <p className="bg-fondo-claro p-3 rounded-lg">{selectedCotizacion.observaciones}</p>
-                </div>
-              )}
-              </>
+                  {/* Totales */}
+                  <div className="bg-fondo-claro rounded-lg p-4">
+                    <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                      <DollarSign className="text-verde-principal" size={20} />
+                      Resumen
+                    </h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-gris-medio">Subtotal:</span>
+                        <span className="font-medium">{formatCurrency(selectedCotizacion.subtotal || 0)}</span>
+                      </div>
+                      {selectedCotizacion.descuento > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-gris-medio">Descuento:</span>
+                          <span className="font-medium text-red-600">-{formatCurrency(selectedCotizacion.descuento || 0)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-gris-medio">IGV (18%):</span>
+                        <span className="font-medium">{formatCurrency(selectedCotizacion.igv || 0)}</span>
+                      </div>
+                      <div className="flex justify-between pt-2 border-t border-gris-claro">
+                        <span className="font-bold text-lg">Total:</span>
+                        <span className="font-bold text-lg text-verde-principal">{formatCurrency(selectedCotizacion.total || 0)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Fechas y Estado */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gris-medio mb-1 flex items-center gap-1">
+                        <Calendar size={14} />
+                        Fecha de Emisión
+                      </p>
+                      <p className="font-medium">{formatDate(selectedCotizacion.fecha_emision || selectedCotizacion.created_at)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gris-medio mb-1">Estado</p>
+                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getEstadoColor(selectedCotizacion.estado)}`}>
+                        {selectedCotizacion.estado || 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Observaciones */}
+                  {selectedCotizacion.observaciones && (
+                    <div>
+                      <p className="text-sm text-gris-medio mb-1">Observaciones</p>
+                      <p className="bg-fondo-claro p-3 rounded-lg">{selectedCotizacion.observaciones}</p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -683,6 +692,34 @@ const AdminCotizaciones = () => {
                 className="px-6 py-2 bg-verde-principal hover:bg-green-700 text-white rounded-lg transition-colors"
               >
                 Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación de Eliminación */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-negro-principal mb-4">
+              Confirmar Eliminación
+            </h3>
+            <p className="text-gris-medio mb-6">
+              ¿Estás seguro de eliminar la cotización del cliente <strong>{deleteConfirm.nombre}</strong>? Esta acción no se puede deshacer.
+            </p>
+            <div className="flex items-center justify-end gap-4">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="btn-secondary"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
+              >
+                Eliminar
               </button>
             </div>
           </div>
