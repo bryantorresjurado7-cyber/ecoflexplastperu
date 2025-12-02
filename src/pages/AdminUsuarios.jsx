@@ -24,7 +24,7 @@ const AdminUsuarios = () => {
   const [filterRol, setFilterRol] = useState('all')
   const [filterActivo, setFilterActivo] = useState('all')
   const [deleteConfirm, setDeleteConfirm] = useState(null)
-  
+
   // Estado para notificaciones
   const [notification, setNotification] = useState({
     open: false,
@@ -32,7 +32,7 @@ const AdminUsuarios = () => {
     title: '',
     message: ''
   })
-  
+
   // Paginación
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(20)
@@ -54,9 +54,9 @@ const AdminUsuarios = () => {
         rol: filterRol,
         activo: filterActivo === 'all' ? undefined : filterActivo === 'activo'
       })
-      
+
       if (result.error) throw new Error(result.error)
-      
+
       setUsuarios(result.data || [])
     } catch (error) {
       console.error('Error cargando usuarios:', error)
@@ -74,13 +74,13 @@ const AdminUsuarios = () => {
   const handleToggleActivo = async (id, activo) => {
     try {
       const result = await usuariosService.toggleActivo(id, activo)
-      
+
       if (result.error) throw new Error(result.error)
-      
-      setUsuarios(usuarios.map(u => 
+
+      setUsuarios(usuarios.map(u =>
         u.id === id ? { ...u, activo: !activo } : u
       ))
-      
+
       setNotification({
         open: true,
         type: 'success',
@@ -102,13 +102,13 @@ const AdminUsuarios = () => {
     if (!deleteConfirm) return
 
     try {
-      const result = await usuariosService.deleteUsuario(deleteConfirm)
-      
+      const result = await usuariosService.deleteUsuario(deleteConfirm.id)
+
       if (result.error) throw new Error(result.error)
-      
-      setUsuarios(usuarios.filter(u => u.id !== deleteConfirm))
+
+      setUsuarios(usuarios.filter(u => u.id !== deleteConfirm.id))
       setDeleteConfirm(null)
-      
+
       setNotification({
         open: true,
         type: 'success',
@@ -151,13 +151,13 @@ const AdminUsuarios = () => {
   // Filtrar usuarios
   const filteredUsuarios = usuarios.filter(u => {
     const matchSearch = u.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       u.apellido?.toLowerCase().includes(searchTerm.toLowerCase())
+      u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.apellido?.toLowerCase().includes(searchTerm.toLowerCase())
     const matchRol = filterRol === 'all' || u.rol === filterRol
-    const matchActivo = filterActivo === 'all' || 
-                       (filterActivo === 'activo' && u.activo) ||
-                       (filterActivo === 'inactivo' && !u.activo)
-    
+    const matchActivo = filterActivo === 'all' ||
+      (filterActivo === 'activo' && u.activo) ||
+      (filterActivo === 'inactivo' && !u.activo)
+
     return matchSearch && matchRol && matchActivo
   })
 
@@ -338,11 +338,10 @@ const AdminUsuarios = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
                           onClick={() => handleToggleActivo(usuario.id, usuario.activo)}
-                          className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                            usuario.activo
+                          className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium transition-colors ${usuario.activo
                               ? 'bg-green-100 text-green-800'
                               : 'bg-red-100 text-red-800'
-                          }`}
+                            }`}
                         >
                           {usuario.activo ? (
                             <>
@@ -358,14 +357,14 @@ const AdminUsuarios = () => {
                         </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gris-medio">
-                        {usuario.ultimo_acceso 
+                        {usuario.ultimo_acceso
                           ? new Date(usuario.ultimo_acceso).toLocaleDateString('es-PE', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })
                           : 'Nunca'
                         }
                       </td>
@@ -379,7 +378,7 @@ const AdminUsuarios = () => {
                             <Edit size={18} />
                           </Link>
                           <button
-                            onClick={() => setDeleteConfirm(usuario.id)}
+                            onClick={() => setDeleteConfirm({ id: usuario.id, nombre: `${usuario.nombre} ${usuario.apellido || ''}`.trim() })}
                             className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
                             title="Eliminar"
                           >
@@ -434,7 +433,7 @@ const AdminUsuarios = () => {
               Confirmar Eliminación
             </h3>
             <p className="text-gris-medio mb-6">
-              ¿Estás seguro de que deseas eliminar este usuario? Esta acción no se puede deshacer.
+              ¿Estás seguro de eliminar el usuario <strong>{deleteConfirm.nombre}</strong>? Esta acción no se puede deshacer.
             </p>
             <div className="flex justify-end gap-4">
               <button

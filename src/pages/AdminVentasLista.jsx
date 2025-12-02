@@ -35,6 +35,7 @@ const AdminVentasLista = () => {
   const [showDetalleModal, setShowDetalleModal] = useState(false)
   const [ventaSeleccionada, setVentaSeleccionada] = useState(null)
   const [loadingDetalle, setLoadingDetalle] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState(null)
 
   useEffect(() => {
     loadVentas()
@@ -44,7 +45,7 @@ const AdminVentasLista = () => {
     setLoading(true)
     try {
       let url = `${SUPABASE_URL}/functions/v1/crud-pedidos/pedidos?page=${page}&limit=${limit}`
-      
+
       if (selectedEstado) {
         url += `&estado=${selectedEstado}`
       }
@@ -80,7 +81,7 @@ const AdminVentasLista = () => {
       })
 
       const result = await response.json()
-      
+
       if (result.success) {
         setVentaSeleccionada(result.data)
         setShowDetalleModal(true)
@@ -98,13 +99,17 @@ const AdminVentasLista = () => {
     window.location.href = `/admin/venta?id=${idPedido}`
   }
 
-  const handleEliminar = async (idPedido) => {
-    if (!confirm('¿Estás seguro de que deseas eliminar esta venta?')) {
-      return
-    }
+  const handleEliminarClick = (venta) => {
+    const ventaId = venta.id_pedido
+    const clienteNombre = venta.cliente?.nombre || 'este cliente'
+    setDeleteConfirm({ id: ventaId, nombre: clienteNombre })
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return
 
     try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/crud-pedidos/pedidos/${idPedido}`, {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/crud-pedidos/pedidos/${deleteConfirm.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
@@ -112,16 +117,18 @@ const AdminVentasLista = () => {
       })
 
       const result = await response.json()
-      
+
       if (result.success) {
-        alert('Venta eliminada correctamente')
+        setDeleteConfirm(null)
         loadVentas()
       } else {
         alert('Error al eliminar venta: ' + (result.error || 'Error desconocido'))
+        setDeleteConfirm(null)
       }
     } catch (error) {
       console.error('Error eliminando venta:', error)
       alert('Error al eliminar venta')
+      setDeleteConfirm(null)
     }
   }
 
@@ -133,10 +140,10 @@ const AdminVentasLista = () => {
       entregado: { icon: CheckCircle, color: 'text-verde-principal', bg: 'bg-verde-light' },
       cancelado: { icon: XCircle, color: 'text-red-600', bg: 'bg-red-50' }
     }
-    
+
     const config = estados[estado] || estados.pendiente
     const Icon = config.icon
-    
+
     return (
       <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold ${config.bg} ${config.color}`}>
         <Icon size={14} />
@@ -164,7 +171,7 @@ const AdminVentasLista = () => {
               </h1>
               <p className="text-gris-medio mt-1">Historial completo de ventas</p>
             </div>
-            <button 
+            <button
               onClick={() => window.location.href = '/admin/venta'}
               className="bg-verde-principal hover:bg-verde-oscuro text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
             >
@@ -304,7 +311,7 @@ const AdminVentasLista = () => {
                               <Edit size={18} />
                             </button>
                             <button
-                              onClick={() => handleEliminar(venta.id_pedido)}
+                              onClick={() => handleEliminarClick(venta)}
                               className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                               title="Eliminar"
                             >
@@ -456,6 +463,34 @@ const AdminVentasLista = () => {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación de Eliminación */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-negro-principal mb-4">
+              Confirmar Eliminación
+            </h3>
+            <p className="text-gris-medio mb-6">
+              ¿Estás seguro de eliminar la venta del cliente <strong>{deleteConfirm.nombre}</strong>? Esta acción no se puede deshacer.
+            </p>
+            <div className="flex items-center justify-end gap-4">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="btn-secondary"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
+              >
+                Eliminar
+              </button>
+            </div>
           </div>
         </div>
       )}
