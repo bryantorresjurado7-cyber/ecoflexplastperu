@@ -175,7 +175,7 @@ const AdminMovimientos = () => {
 
     return (
         <AdminLayout>
-            <div className="min-h-screen bg-fondo-claro p-8 relative">
+            <div className="min-h-screen bg-fondo-claro p-4 md:p-8 relative">
                 {/* Top Action Button */}
                 <div className="flex justify-end mb-6">
                     <button

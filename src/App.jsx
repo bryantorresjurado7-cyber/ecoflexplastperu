@@ -49,6 +49,13 @@ import AdminMaquinariaForm from './pages/AdminMaquinariaForm';
 import AdminUsuarios from './pages/AdminUsuarios';
 import AdminUsuarioForm from './pages/AdminUsuarioForm';
 import AdminConfiguracion from './pages/AdminConfiguracion';
+import AdminCajaChica from './pages/AdminCajaChica';
+import AdminCajaChicaMovimientos from './pages/AdminCajaChicaMovimientos';
+import AdminCajaChicaAprobaciones from './pages/AdminCajaChicaAprobaciones';
+import AdminCajaChicaArqueo from './pages/AdminCajaChicaArqueo';
+import AdminCajaChicaConfig from './pages/AdminCajaChicaConfig';
+import AdminCajaChicaReportes from './pages/AdminCajaChicaReportes'
+import AdminClientesNuevosDashboard from './pages/AdminClientesNuevosDashboard';
 
 function App() {
   return (
@@ -221,6 +228,12 @@ function App() {
               </ProtectedRoute>
             } />
 
+            <Route path="/admin/dashboard/clientes-nuevos" element={
+              <ProtectedRoute>
+                <AdminClientesNuevosDashboard />
+              </ProtectedRoute>
+            } />
+
             <Route path="/admin/productos" element={
               <ProtectedRoute>
                 <AdminProductos />
@@ -384,6 +397,38 @@ function App() {
             <Route path="/admin/produccion/validar/:id" element={
               <ProtectedRoute>
                 <AdminProduccionValidacion />
+              </ProtectedRoute>
+            } />
+
+            {/* Caja Chica Routes */}
+            <Route path="/admin/caja-chica" element={
+              <ProtectedRoute>
+                <AdminCajaChica />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/caja-chica/movimientos" element={
+              <ProtectedRoute>
+                <AdminCajaChicaMovimientos />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/caja-chica/aprobaciones" element={
+              <ProtectedRoute>
+                <AdminCajaChicaAprobaciones />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/caja-chica/arqueo" element={
+              <ProtectedRoute>
+                <AdminCajaChicaArqueo />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/caja-chica/config" element={
+              <ProtectedRoute>
+                <AdminCajaChicaConfig />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/caja-chica/reportes" element={
+              <ProtectedRoute>
+                <AdminCajaChicaReportes />
               </ProtectedRoute>
             } />
 

@@ -75,7 +75,7 @@ const AdminConfiguracion = () => {
 
     return (
         <AdminLayout>
-            <div className="min-h-screen bg-fondo-claro p-8">
+            <div className="min-h-screen bg-fondo-claro p-4 md:p-8">
                 {/* Header */}
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-negro-principal flex items-center gap-3">

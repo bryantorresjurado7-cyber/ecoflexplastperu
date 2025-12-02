@@ -93,7 +93,8 @@ const AdminDashboard = () => {
       title: 'Contactos Nuevos',
       value: stats.contactosNuevos,
       icon: Users,
-      color: 'bg-purple-500'
+      color: 'bg-purple-500',
+      link: '/admin/dashboard/clientes-nuevos'
     }
   ]
 

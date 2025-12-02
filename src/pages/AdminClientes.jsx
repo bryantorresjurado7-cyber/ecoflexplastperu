@@ -137,8 +137,8 @@ const AdminClientes = () => {
 
   return (
     <>
-      <header className="bg-white border-b border-gray-200 px-8 py-6">
-        <div className="flex justify-between items-center">
+      <header className="bg-white border-b border-gray-200 px-4 md:px-8 py-6">
+        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
           <div>
             <h2 className="text-2xl font-bold text-negro-principal flex items-center gap-3">
               <User className="text-verde-principal" size={28} />
@@ -146,13 +146,13 @@ const AdminClientes = () => {
             </h2>
             <p className="text-gris-medio mt-1">{totalItems} clientes en total</p>
           </div>
-          <button className="btn-primary flex items-center gap-2" onClick={openCreate}>
+          <button className="btn-primary flex items-center justify-center gap-2 w-full md:w-auto" onClick={openCreate}>
             <Plus size={20} />
             Nuevo Cliente
           </button>
         </div>
       </header>
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         <div className="bg-white rounded-xl shadow-card p-6 mb-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
