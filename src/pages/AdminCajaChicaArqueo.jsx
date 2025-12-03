@@ -4,19 +4,10 @@ import AdminLayout from '../components/AdminLayout'
 import { ArrowLeft, Save, Calculator, AlertTriangle } from 'lucide-react'
 
 const AdminCajaChicaArqueo = () => {
-    const [step, setStep] = useState(1) // 1: Conteo, 2: Resumen
-    const [conteo, setConteo] = useState({
-        billetes200: 0,
-        billetes100: 0,
-        billetes50: 0,
-        billetes20: 0,
-        billetes10: 0,
-        monedas5: 0,
-        monedas2: 0,
-        monedas1: 0,
-        monedas050: 0,
-        monedas020: 0,
-        monedas010: 0
+    const [arqueo, setArqueo] = useState({
+        efectivo: 0,
+        tarjetaDebito: 0,
+        tarjetaCredito: 0
     })
 
     const [observaciones, setObservaciones] = useState('')
@@ -25,17 +16,9 @@ const AdminCajaChicaArqueo = () => {
 
     const calcularTotalFisico = () => {
         return (
-            (conteo.billetes200 * 200) +
-            (conteo.billetes100 * 100) +
-            (conteo.billetes50 * 50) +
-            (conteo.billetes20 * 20) +
-            (conteo.billetes10 * 10) +
-            (conteo.monedas5 * 5) +
-            (conteo.monedas2 * 2) +
-            (conteo.monedas1 * 1) +
-            (conteo.monedas050 * 0.5) +
-            (conteo.monedas020 * 0.2) +
-            (conteo.monedas010 * 0.1)
+            (parseFloat(arqueo.efectivo) || 0) +
+            (parseFloat(arqueo.tarjetaDebito) || 0) +
+            (parseFloat(arqueo.tarjetaCredito) || 0)
         )
     }
 
@@ -44,9 +27,9 @@ const AdminCajaChicaArqueo = () => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target
-        setConteo(prev => ({
+        setArqueo(prev => ({
             ...prev,
-            [name]: parseInt(value) || 0
+            [name]: parseFloat(value) || 0
         }))
     }
 
@@ -78,59 +61,72 @@ const AdminCajaChicaArqueo = () => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Panel de Conteo */}
+                    {/* Panel de Arqueo */}
                     <div className="lg:col-span-2 bg-white rounded-xl shadow-card p-6">
                         <h2 className="text-xl font-semibold text-negro-principal mb-6 flex items-center gap-2">
                             <Calculator size={24} className="text-verde-principal" />
-                            Conteo de Efectivo
+                            Arqueo de Caja
                         </h2>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                            <div className="space-y-4">
-                                <h3 className="font-medium text-gris-oscuro border-b pb-2">Billetes</h3>
-                                {[200, 100, 50, 20, 10].map(denom => (
-                                    <div key={`billete-${denom}`} className="flex items-center justify-between">
-                                        <label className="text-sm text-gris-medio">S/ {denom}.00</label>
-                                        <input
-                                            type="number"
-                                            name={`billetes${denom}`}
-                                            value={conteo[`billetes${denom}`]}
-                                            onChange={handleInputChange}
-                                            className="input-field w-24 text-right"
-                                            min="0"
-                                        />
-                                    </div>
-                                ))}
+                        <div className="space-y-6">
+                            {/* Efectivo */}
+                            <div>
+                                <label className="block text-sm font-medium text-negro-principal mb-2">
+                                    Efectivo
+                                </label>
+                                <div className="relative">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gris-medio">S/</span>
+                                    <input
+                                        type="number"
+                                        name="efectivo"
+                                        value={arqueo.efectivo || ''}
+                                        onChange={handleInputChange}
+                                        className="input-field w-full pl-12 text-right"
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="0.00"
+                                    />
+                                </div>
                             </div>
 
-                            <div className="space-y-4">
-                                <h3 className="font-medium text-gris-oscuro border-b pb-2">Monedas</h3>
-                                {[5, 2, 1].map(denom => (
-                                    <div key={`moneda-${denom}`} className="flex items-center justify-between">
-                                        <label className="text-sm text-gris-medio">S/ {denom}.00</label>
-                                        <input
-                                            type="number"
-                                            name={`monedas${denom}`}
-                                            value={conteo[`monedas${denom}`]}
-                                            onChange={handleInputChange}
-                                            className="input-field w-24 text-right"
-                                            min="0"
-                                        />
-                                    </div>
-                                ))}
-                                {['050', '020', '010'].map(denom => (
-                                    <div key={`moneda-${denom}`} className="flex items-center justify-between">
-                                        <label className="text-sm text-gris-medio">S/ 0.{denom.substring(1)}</label>
-                                        <input
-                                            type="number"
-                                            name={`monedas${denom}`}
-                                            value={conteo[`monedas${denom}`]}
-                                            onChange={handleInputChange}
-                                            className="input-field w-24 text-right"
-                                            min="0"
-                                        />
-                                    </div>
-                                ))}
+                            {/* Tarjeta Débito */}
+                            <div>
+                                <label className="block text-sm font-medium text-negro-principal mb-2">
+                                    Tarjeta Débito
+                                </label>
+                                <div className="relative">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gris-medio">S/</span>
+                                    <input
+                                        type="number"
+                                        name="tarjetaDebito"
+                                        value={arqueo.tarjetaDebito || ''}
+                                        onChange={handleInputChange}
+                                        className="input-field w-full pl-12 text-right"
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="0.00"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Tarjeta Crédito */}
+                            <div>
+                                <label className="block text-sm font-medium text-negro-principal mb-2">
+                                    Tarjeta Crédito
+                                </label>
+                                <div className="relative">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gris-medio">S/</span>
+                                    <input
+                                        type="number"
+                                        name="tarjetaCredito"
+                                        value={arqueo.tarjetaCredito || ''}
+                                        onChange={handleInputChange}
+                                        className="input-field w-full pl-12 text-right"
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="0.00"
+                                    />
+                                </div>
                             </div>
                         </div>
 

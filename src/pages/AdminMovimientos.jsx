@@ -14,13 +14,19 @@ import {
     ChevronDown
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 
 const AdminMovimientos = () => {
+    const { user } = useAuth()
     const [movements, setMovements] = useState([])
     const [products, setProducts] = useState([])
+    const [clientes, setClientes] = useState([])
+    const [tiposMovimiento, setTiposMovimiento] = useState([])
+    const [categorias, setCategorias] = useState([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
-    const [filterType, setFilterType] = useState('all') // 'all', 'ingreso', 'salida'
+    const [filterType, setFilterType] = useState('all') // 'all', 'INGRESO', 'SALIDA'
+    const [filterCategoria, setFilterCategoria] = useState('all')
     const [dateRange, setDateRange] = useState({
         start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
         end: new Date().toISOString().split('T')[0]
@@ -28,15 +34,20 @@ const AdminMovimientos = () => {
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false)
+    const [isSaving, setIsSaving] = useState(false)
     const [formData, setFormData] = useState({
-        producto_id: '',
-        tipo_producto: '',
-        perecible: 'NO PERECIBLE',
-        medida: 'UND',
+        id_producto: null,
+        id_cliente: null,
+        id_tipo_movimiento: null,
+        fecha_movimiento: new Date().toISOString().split('T')[0],
+        fecha_vencimiento: '',
         cantidad: 1,
-        tipo_movimiento: 'ingreso',
+        producto: '',
+        categoria: '',
+        medida: '',
+        observacion: '',
         solicitante: '',
-        observaciones: ''
+        estado: 1
     })
 
     // Product Autocomplete State
@@ -51,6 +62,9 @@ const AdminMovimientos = () => {
     useEffect(() => {
         loadMovements()
         loadProducts()
+        loadClientes()
+        loadTiposMovimiento()
+        loadCategorias()
 
         // Click outside to close suggestions
         const handleClickOutside = (event) => {
@@ -64,10 +78,12 @@ const AdminMovimientos = () => {
 
     const loadProducts = async () => {
         try {
+            // Cargar TODOS los productos sin filtros (igual que en AdminProductos)
             const { data, error } = await supabase
                 .from('productos_db')
-                .select('id, nombre, tipo_producto, medida')
-                .order('nombre')
+                .select('*')
+                .order('categoria', { ascending: true })
+                .order('nombre', { ascending: true })
 
             if (error) throw error
             setProducts(data || [])
@@ -76,60 +92,89 @@ const AdminMovimientos = () => {
         }
     }
 
+    const loadClientes = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('cliente')
+                .select('id_cliente, nombre')
+                .eq('estado', true)
+                .order('nombre')
+
+            if (error) throw error
+            setClientes(data || [])
+        } catch (error) {
+            console.error('Error cargando clientes:', error)
+        }
+    }
+
+    const loadTiposMovimiento = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('tipo_movimiento')
+                .select('id_tipo_movimiento, codigo, nombre')
+                .eq('activo', true)
+                .order('codigo')
+
+            if (error) throw error
+            setTiposMovimiento(data || [])
+        } catch (error) {
+            console.error('Error cargando tipos de movimiento:', error)
+        }
+    }
+
+    const loadCategorias = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('categorias_productos')
+                .select('*')
+                .order('orden', { ascending: true })
+
+            if (error) throw error
+            setCategorias(data || [])
+        } catch (error) {
+            console.error('Error cargando categorías:', error)
+        }
+    }
+
     const loadMovements = async () => {
         setLoading(true)
         try {
-            // 1. Fetch Salidas (Pedidos Confirmados)
-            const { data: salidasData } = await supabase
-                .from('pedido')
-                .select('created_at, total, id_pedido, cliente(nombre)')
-                .eq('estado_pedido', 'confirmado')
-                .gte('created_at', dateRange.start)
-                .lte('created_at', dateRange.end + 'T23:59:59')
+            const { data, error } = await supabase
+                .from('movimiento')
+                .select(`
+                    *,
+                    tipo_movimiento(id_tipo_movimiento, codigo, nombre),
+                    productos_db(id, nombre, tipo_producto),
+                    cliente(id_cliente, nombre)
+                `)
+                .eq('estado', 1)
+                .gte('fecha_movimiento', dateRange.start)
+                .lte('fecha_movimiento', dateRange.end)
+                .order('fecha_movimiento', { ascending: false })
                 .order('created_at', { ascending: false })
 
-            // 2. Fetch Ingresos (Producción Completada o Validada)
-            const { data: ingresosData } = await supabase
-                .from('produccion')
-                .select('fecha_produccion, cantidad_producida, id_produccion, codigo_produccion, nombre')
-                .in('estado', ['completada', 'validada'])
-                .gte('fecha_produccion', dateRange.start)
-                .lte('fecha_produccion', dateRange.end + 'T23:59:59')
-                .order('fecha_produccion', { ascending: false })
+            if (error) throw error
 
-            // 3. Combine and Normalize Data
-            const movimientosSalida = (salidasData || []).map(s => ({
-                id: `S-${s.id_pedido}`,
-                originalId: s.id_pedido,
-                tipo: 'SALIDA',
-                producto: 'Varios (Pedido)', // Idealmente detallaríamos los items del pedido si tuviéramos la tabla de items a mano
-                cantidad: 1, // Simplificación
-                fecha: s.created_at,
-                referencia: `Pedido #${s.id_pedido.substring(0, 8)}`,
-                responsable: s.cliente?.nombre || 'Cliente',
-                detalle: 'Venta confirmada',
-                medida: 'UND'
+            // Normalizar datos para la vista
+            const movimientosNormalizados = (data || []).map(m => ({
+                id: m.id_movimiento,
+                id_movimiento: m.id_movimiento,
+                tipo: m.tipo_movimiento?.codigo || 'SIN_TIPO',
+                tipoNombre: m.tipo_movimiento?.nombre || '',
+                producto: m.producto || m.productos_db?.nombre || 'Sin producto',
+                productoId: m.id_producto,
+                cantidad: m.cantidad || 0,
+                fecha: m.fecha_movimiento,
+                fechaVencimiento: m.fecha_vencimiento,
+                medida: m.medida || 'UND',
+                solicitante: m.solicitante || m.cliente?.nombre || 'N/A',
+                clienteId: m.id_cliente,
+                observacion: m.observacion || '',
+                estado: m.estado,
+                referencia: `MOV-${m.id_movimiento}`
             }))
 
-            const movimientosIngreso = (ingresosData || []).map(p => ({
-                id: `I-${p.id_produccion}`,
-                originalId: p.id_produccion,
-                tipo: 'INGRESO',
-                producto: p.nombre || 'Producción',
-                cantidad: p.cantidad_producida || 0,
-                fecha: p.fecha_produccion,
-                referencia: p.codigo_produccion || `Prod #${p.id_produccion}`,
-                responsable: 'Planta',
-                detalle: 'Producción finalizada',
-                medida: 'UND'
-            }))
-
-            const todosMovimientos = [...movimientosSalida, ...movimientosIngreso]
-
-            // Sort by date descending
-            todosMovimientos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
-
-            setMovements(todosMovimientos)
+            setMovements(movimientosNormalizados)
         } catch (error) {
             console.error('Error cargando movimientos:', error)
         } finally {
@@ -139,14 +184,94 @@ const AdminMovimientos = () => {
 
     // Filter Logic
     const filteredMovements = movements.filter(m => {
-        const matchSearch = m.referencia.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            m.producto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            m.responsable.toLowerCase().includes(searchTerm.toLowerCase())
+        const matchSearch = m.referencia?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            m.producto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            m.solicitante?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            m.observacion?.toLowerCase().includes(searchTerm.toLowerCase())
 
-        const matchType = filterType === 'all' || m.tipo.toLowerCase() === filterType.toLowerCase()
+        const matchType = filterType === 'all' || 
+            (filterType === 'ingreso' && m.tipo === 'INGRESO') ||
+            (filterType === 'salida' && m.tipo === 'SALIDA')
 
-        return matchSearch && matchType
+        // Filtrar por categoría del producto
+        const matchCategoria = filterCategoria === 'all' || (() => {
+            const producto = products.find(p => p.id === m.productoId)
+            return producto?.categoria === filterCategoria
+        })()
+
+        return matchSearch && matchType && matchCategoria
     })
+
+    // Handle Save Movement
+    const handleSaveMovement = async () => {
+        if (!formData.id_producto || !formData.id_tipo_movimiento || !formData.cantidad) {
+            alert('Por favor complete todos los campos requeridos')
+            return
+        }
+
+        setIsSaving(true)
+        try {
+            // Obtener usuario actual
+            const { data: { user: currentUser } } = await supabase.auth.getUser()
+            
+            // Obtener datos del producto seleccionado
+            const selectedProduct = products.find(p => p.id === formData.id_producto)
+            const medidaProducto = selectedProduct?.unidad_medida || selectedProduct?.medida || formData.medida || ''
+            
+            const movimientoData = {
+                id_usuario: currentUser?.id || null,
+                id_producto: formData.id_producto,
+                id_cliente: formData.id_cliente || null,
+                id_tipo_movimiento: formData.id_tipo_movimiento,
+                fecha_movimiento: formData.fecha_movimiento,
+                fecha_vencimiento: formData.fecha_vencimiento || null,
+                cantidad: parseInt(formData.cantidad) || 0,
+                producto: selectedProduct?.nombre || formData.producto,
+                medida: medidaProducto,
+                observacion: formData.observacion || null,
+                solicitante: formData.solicitante || null,
+                estado: 1,
+                usuario_creacion: user?.nombre || currentUser?.email || 'Sistema',
+                fecha_creacion: new Date().toISOString().split('T')[0],
+                usuario_modificacion: user?.nombre || currentUser?.email || 'Sistema',
+                fecha_modificacion: new Date().toISOString().split('T')[0]
+            }
+
+            const { error } = await supabase
+                .from('movimiento')
+                .insert([movimientoData])
+
+            if (error) throw error
+
+            // Recargar movimientos
+            await loadMovements()
+            setIsModalOpen(false)
+            
+            // Reset form
+            setFormData({
+                id_producto: null,
+                id_cliente: null,
+                id_tipo_movimiento: null,
+                fecha_movimiento: new Date().toISOString().split('T')[0],
+                fecha_vencimiento: '',
+                cantidad: 1,
+                producto: '',
+                categoria: '',
+                medida: '',
+                observacion: '',
+                solicitante: '',
+                estado: 1
+            })
+            setProductSearchTerm('')
+            
+            alert('Movimiento guardado exitosamente')
+        } catch (error) {
+            console.error('Error guardando movimiento:', error)
+            alert('Error al guardar el movimiento: ' + error.message)
+        } finally {
+            setIsSaving(false)
+        }
+    }
 
     // Pagination Logic
     const totalPages = Math.ceil(filteredMovements.length / itemsPerPage)
@@ -156,48 +281,72 @@ const AdminMovimientos = () => {
 
     useEffect(() => {
         setCurrentPage(1)
-    }, [searchTerm, filterType, dateRange])
+    }, [searchTerm, filterType, filterCategoria, dateRange])
 
     const handleProductSelect = (product) => {
+        const medidaProducto = product.unidad_medida || product.medida || ''
+        const categoriaProducto = product.categoria || ''
         setFormData({
             ...formData,
-            producto_id: product.id,
-            tipo_producto: product.tipo_producto,
-            medida: product.medida
+            id_producto: product.id,
+            producto: product.nombre,
+            medida: medidaProducto,
+            categoria: categoriaProducto
         })
         setProductSearchTerm(product.nombre)
         setShowProductSuggestions(false)
     }
 
-    const filteredProducts = products.filter(p =>
-        p.nombre.toLowerCase().includes(productSearchTerm.toLowerCase())
-    )
+    const filteredProducts = products.filter(p => {
+        const searchLower = productSearchTerm.toLowerCase()
+        return (
+            p.nombre?.toLowerCase().includes(searchLower) ||
+            p.codigo?.toLowerCase().includes(searchLower) ||
+            p.categoria?.toLowerCase().includes(searchLower) ||
+            p.tipo_producto?.toLowerCase().includes(searchLower)
+        )
+    })
 
     return (
         <AdminLayout>
             <div className="min-h-screen bg-fondo-claro p-4 md:p-8 relative">
-                {/* Top Action Button */}
-                <div className="flex justify-end mb-6">
+                {/* Header */}
+                <div className="mb-8">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                        <div>
+                            <h1 className="text-3xl font-bold text-negro-principal">
+                                Movimientos
+                            </h1>
+                            <p className="text-gris-medio mt-1">Registro de ingresos y salidas de inventario</p>
+                        </div>
+                        <div className="flex gap-3">
                     <button
                         onClick={() => {
-                            setIsModalOpen(true)
                             setProductSearchTerm('')
+                            setShowProductSuggestions(false)
                             setFormData({
-                                producto_id: '',
-                                tipo_producto: '',
-                                perecible: 'NO PERECIBLE',
-                                medida: 'UND',
+                                id_producto: null,
+                                id_cliente: null,
+                                id_tipo_movimiento: null,
+                                fecha_movimiento: new Date().toISOString().split('T')[0],
+                                fecha_vencimiento: '',
                                 cantidad: 1,
-                                tipo_movimiento: 'ingreso',
+                                producto: '',
+                                categoria: '',
+                                medida: '',
+                                observacion: '',
                                 solicitante: '',
-                                observaciones: ''
+                                estado: 1
                             })
+                            setIsModalOpen(true)
                         }}
                         className="bg-negro-principal text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-gray-800 transition-colors shadow-lg"
                     >
                         <Plus size={20} />
                         Nuevo Movimiento
                     </button>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Filters Card */}
@@ -262,16 +411,22 @@ const AdminMovimientos = () => {
                             </select>
                         </div>
 
-                        {/* Tipo Producto */}
+                        {/* Categoría */}
                         <div className="md:col-span-2">
                             <label className="block text-xs font-bold text-gris-medio uppercase mb-2">
-                                Tipo Producto
+                                Categoría
                             </label>
                             <select
+                                value={filterCategoria}
+                                onChange={(e) => setFilterCategoria(e.target.value)}
                                 className="w-full px-4 py-2.5 bg-fondo-claro border-none rounded-lg text-negro-principal focus:ring-2 focus:ring-verde-principal focus:outline-none appearance-none"
                             >
                                 <option value="all">Todas</option>
-                                {/* Placeholder for future product types */}
+                                {categorias.map(cat => (
+                                    <option key={cat.slug || cat.id} value={cat.slug || cat.nombre}>
+                                        {cat.nombre}
+                                    </option>
+                                ))}
                             </select>
                         </div>
                     </div>
@@ -284,7 +439,7 @@ const AdminMovimientos = () => {
                             <thead>
                                 <tr className="border-b border-gray-100">
                                     <th className="px-6 py-4 text-left text-xs font-bold text-gris-medio uppercase tracking-wider">Producto</th>
-                                    <th className="px-6 py-4 text-center text-xs font-bold text-gris-medio uppercase tracking-wider">Tipo</th>
+                                    <th className="px-6 py-4 text-center text-xs font-bold text-gris-medio uppercase tracking-wider">Categoria</th>
                                     <th className="px-6 py-4 text-center text-xs font-bold text-gris-medio uppercase tracking-wider">Medida</th>
                                     <th className="px-6 py-4 text-center text-xs font-bold text-gris-medio uppercase tracking-wider">Cantidad</th>
                                     <th className="px-6 py-4 text-center text-xs font-bold text-gris-medio uppercase tracking-wider">Fecha</th>
@@ -328,19 +483,19 @@ const AdminMovimientos = () => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-center text-sm text-gris-oscuro">
-                                                {new Date(mov.fecha).toLocaleDateString('es-PE')}
+                                                {mov.fecha ? new Date(mov.fecha).toLocaleDateString('es-PE') : '-'}
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${mov.tipo === 'INGRESO' ? 'bg-verde-principal' : 'bg-red-500'
                                                     }`}>
-                                                    {mov.tipo}
+                                                    {mov.tipoNombre || mov.tipo}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gris-oscuro">
-                                                {mov.responsable}
+                                                {mov.solicitante}
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gris-medio">
-                                                {mov.detalle}
+                                                {mov.observacion || '-'}
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -404,10 +559,18 @@ const AdminMovimientos = () => {
 
                 {/* Modal Nuevo Movimiento */}
                 {isModalOpen && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                    <div 
+                        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                        onClick={(e) => {
+                            // Cerrar modal al hacer clic fuera de él
+                            if (e.target === e.currentTarget) {
+                                setIsModalOpen(false)
+                            }
+                        }}
+                    >
+                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
                             {/* Modal Header */}
-                            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
                                 <div>
                                     <h2 className="text-xl font-bold text-negro-principal">Nuevo Movimiento</h2>
                                     <p className="text-sm text-gris-medio">Completa la información del movimiento a continuación</p>
@@ -415,13 +578,14 @@ const AdminMovimientos = () => {
                                 <button
                                     onClick={() => setIsModalOpen(false)}
                                     className="p-2 hover:bg-fondo-claro rounded-full transition-colors text-gris-medio hover:text-negro-principal"
+                                    aria-label="Cerrar modal"
                                 >
                                     <X size={24} />
                                 </button>
                             </div>
 
                             {/* Modal Body */}
-                            <div className="p-6 space-y-6">
+                            <div className="p-6 space-y-6 overflow-y-auto flex-1">
                                 {/* Productos Autocomplete */}
                                 <div className="relative" ref={suggestionsRef}>
                                     <label className="block text-xs font-bold text-gris-medio uppercase mb-2">
@@ -444,69 +608,84 @@ const AdminMovimientos = () => {
 
                                     {/* Suggestions Dropdown */}
                                     {showProductSuggestions && (
-                                        <div className="absolute z-50 w-full mt-1 bg-white rounded-lg shadow-xl border border-gray-100 max-h-60 overflow-y-auto">
+                                        <div className="absolute z-50 w-full mt-1 bg-white rounded-lg shadow-xl border border-gray-100 max-h-80 overflow-y-auto">
                                             {filteredProducts.length > 0 ? (
                                                 filteredProducts.map(product => (
                                                     <button
                                                         key={product.id}
                                                         onClick={() => handleProductSelect(product)}
-                                                        className="w-full text-left px-4 py-3 hover:bg-fondo-claro transition-colors border-b border-gray-50 last:border-none flex items-center justify-between group"
+                                                        className="w-full text-left px-4 py-3 hover:bg-fondo-claro transition-colors border-b border-gray-50 last:border-none group"
                                                     >
-                                                        <span className="font-medium text-negro-principal group-hover:text-verde-principal transition-colors">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex-1">
+                                                                <div className="font-medium text-negro-principal group-hover:text-verde-principal transition-colors">
                                                             {product.nombre}
+                                                                </div>
+                                                                {product.codigo && (
+                                                                    <div className="text-xs text-gris-medio mt-0.5">
+                                                                        Código: {product.codigo}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex flex-col items-end gap-1 ml-3">
+                                                                {product.categoria && (
+                                                                    <span className="text-xs text-gris-medio bg-blue-100 text-blue-700 px-2 py-1 rounded-full whitespace-nowrap">
+                                                                        {product.categoria}
                                                         </span>
-                                                        <span className="text-xs text-gris-medio bg-gray-100 px-2 py-1 rounded-full">
-                                                            {product.tipo_producto || 'Sin tipo'}
+                                                                )}
+                                                                {(product.tipo_producto || product.medida || product.unidad_medida) && (
+                                                                    <span className="text-xs text-gris-medio bg-gray-100 px-2 py-1 rounded-full whitespace-nowrap">
+                                                                        {product.tipo_producto || product.medida || product.unidad_medida}
                                                         </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
                                                     </button>
                                                 ))
                                             ) : (
                                                 <div className="px-4 py-3 text-sm text-gris-medio text-center">
-                                                    No se encontraron productos
+                                                    No se encontraron productos. Escribe para buscar...
                                                 </div>
                                             )}
                                         </div>
                                     )}
                                 </div>
 
-                                {/* Row 2 */}
-                                <div className="grid grid-cols-3 gap-4">
+                                {/* Row 2 - Categoría y Medida (2 columnas) */}
+                                <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-xs font-bold text-gris-medio uppercase mb-2">
-                                            Tipo Producto
+                                            Categoría
                                         </label>
-                                        <select
-                                            value={formData.tipo_producto}
+                                        <input
+                                            type="text"
+                                            value={
+                                                (() => {
+                                                    const selectedProduct = products.find(p => p.id === formData.id_producto)
+                                                    return selectedProduct?.categoria || formData.categoria || ''
+                                                })()
+                                            }
                                             disabled
                                             className="w-full px-4 py-2.5 bg-fondo-claro border-none rounded-lg text-gris-oscuro focus:outline-none"
-                                        >
-                                            <option value="">{formData.tipo_producto || 'Seleccionar tipo'}</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gris-medio uppercase mb-2">
-                                            Perecible
-                                        </label>
-                                        <select
-                                            value={formData.perecible}
-                                            onChange={(e) => setFormData({ ...formData, perecible: e.target.value })}
-                                            className="w-full px-4 py-2.5 bg-fondo-claro border-none rounded-lg text-negro-principal focus:ring-2 focus:ring-verde-principal focus:outline-none"
-                                        >
-                                            <option value="NO PERECIBLE">NO PERECIBLE</option>
-                                            <option value="PERECIBLE">PERECIBLE</option>
-                                        </select>
+                                            placeholder="Seleccione un producto"
+                                        />
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-gris-medio uppercase mb-2">
                                             Medida
                                         </label>
-                                        <select
-                                            value={formData.medida}
+                                        <input
+                                            type="text"
+                                            value={
+                                                (() => {
+                                                    const selectedProduct = products.find(p => p.id === formData.id_producto)
+                                                    return selectedProduct?.unidad_medida || selectedProduct?.medida || formData.medida || ''
+                                                })()
+                                            }
                                             disabled
                                             className="w-full px-4 py-2.5 bg-fondo-claro border-none rounded-lg text-gris-oscuro focus:outline-none"
-                                        >
-                                            <option value="UND">{formData.medida}</option>
-                                        </select>
+                                            placeholder="Seleccione un producto"
+                                        />
                                     </div>
                                 </div>
 
@@ -526,15 +705,19 @@ const AdminMovimientos = () => {
                                 {/* Ingreso/Salida */}
                                 <div>
                                     <label className="block text-xs font-bold text-gris-medio uppercase mb-2">
-                                        Ingreso/Salida
+                                        Movimiento
                                     </label>
                                     <select
-                                        value={formData.tipo_movimiento}
-                                        onChange={(e) => setFormData({ ...formData, tipo_movimiento: e.target.value })}
-                                        className="w-full px-4 py-2.5 bg-fondo-claro border-none rounded-lg text-negro-principal focus:ring-2 focus:ring-verde-principal focus:outline-none"
+                                        value={formData.id_tipo_movimiento || ''}
+                                        onChange={(e) => setFormData({ ...formData, id_tipo_movimiento: e.target.value ? parseInt(e.target.value) : null })}
+                                        className="w-full px-4 py-2.5 bg-fondo-claro border-none rounded-lg text-negro-principal focus:ring-2 focus:ring-verde-principal focus:outline-none appearance-none"
                                     >
-                                        <option value="ingreso">Ingreso</option>
-                                        <option value="salida">Salida</option>
+                                        <option value="">Seleccionar tipo</option>
+                                        {tiposMovimiento.map(tipo => (
+                                            <option key={tipo.id_tipo_movimiento} value={tipo.id_tipo_movimiento}>
+                                                {tipo.nombre === 'Ingreso' ? 'Ingreso' : tipo.nombre === 'Salida' ? 'Salida' : tipo.nombre}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
 
@@ -560,8 +743,8 @@ const AdminMovimientos = () => {
                                     <textarea
                                         rows="3"
                                         placeholder="Escriba observaciones adicionales sobre el movimiento..."
-                                        value={formData.observaciones}
-                                        onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
+                                        value={formData.observacion}
+                                        onChange={(e) => setFormData({ ...formData, observacion: e.target.value })}
                                         className="w-full px-4 py-2.5 bg-fondo-claro border-none rounded-lg text-negro-principal focus:ring-2 focus:ring-verde-principal focus:outline-none resize-none"
                                     ></textarea>
                                 </div>
@@ -572,8 +755,12 @@ const AdminMovimientos = () => {
                                 <span className="text-xs text-gris-medio">
                                     Última Actualización: {new Date().toLocaleDateString()} Por Admin
                                 </span>
-                                <button className="bg-verde-principal text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-green-700 transition-colors shadow-lg">
-                                    Guardar Movimiento
+                                <button 
+                                    onClick={handleSaveMovement}
+                                    disabled={isSaving}
+                                    className="bg-verde-principal text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-green-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isSaving ? 'Guardando...' : 'Guardar Movimiento'}
                                 </button>
                             </div>
                         </div>
