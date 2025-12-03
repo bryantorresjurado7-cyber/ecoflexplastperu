@@ -10,10 +10,6 @@ import {
   Trash2,
   AlertCircle,
   DollarSign,
-  BarChart3,
-  Filter,
-  Download,
-  Upload,
   ChevronLeft,
   ChevronRight,
   FlaskConical
@@ -26,10 +22,13 @@ const AdminProductos = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCategoria, setFilterCategoria] = useState('all')
   const [filterStock, setFilterStock] = useState('all')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
   const [editingPrice, setEditingPrice] = useState(null)
   const [categorias, setCategorias] = useState([])
   const [selectedProducto, setSelectedProducto] = useState(null)
   const [isInsumosModalOpen, setIsInsumosModalOpen] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState(null)
 
   // Paginación
   const [currentPage, setCurrentPage] = useState(1)
@@ -141,22 +140,29 @@ const AdminProductos = () => {
     }
   }
 
-  const handleDeleteProducto = async (id) => {
-    if (!confirm('¿Estás seguro de eliminar este producto?')) return
+  const handleDeleteProducto = (id) => {
+    const producto = productos.find(p => p.id === id)
+    setDeleteConfirm({ id, nombre: producto?.nombre || 'este producto' })
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return
 
     try {
       const { error } = await supabase
         .from('productos_db')
         .delete()
-        .eq('id', id)
+        .eq('id', deleteConfirm.id)
 
       if (error) throw error
 
-      setProductos(productos.filter(p => p.id !== id))
+      setProductos(productos.filter(p => p.id !== deleteConfirm.id))
       alert('Producto eliminado correctamente')
+      setDeleteConfirm(null)
     } catch (error) {
       console.error('Error eliminando producto:', error)
       alert('Error al eliminar producto')
+      setDeleteConfirm(null)
     }
   }
 
@@ -170,7 +176,10 @@ const AdminProductos = () => {
       (filterStock === 'sin-stock' && p.stock_disponible === 0) ||
       (filterStock === 'disponible' && p.stock_disponible > p.stock_minimo)
 
-    return matchSearch && matchCategoria && matchStock
+    const matchDate = (!startDate || new Date(p.created_at) >= new Date(startDate)) &&
+      (!endDate || new Date(p.created_at) <= new Date(endDate))
+
+    return matchSearch && matchCategoria && matchStock && matchDate
   })
 
   // Paginación
@@ -182,7 +191,7 @@ const AdminProductos = () => {
   // Reset a página 1 cuando cambian los filtros
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm, filterCategoria, filterStock])
+  }, [searchTerm, filterCategoria, filterStock, startDate, endDate])
 
   if (loading) {
     return (
@@ -222,9 +231,9 @@ const AdminProductos = () => {
 
           {/* Filters */}
           <div className="bg-white rounded-xl shadow-card p-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
               {/* Search */}
-              <div className="md:col-span-2">
+              <div className="md:col-span-4">
                 <label className="block text-sm font-medium text-negro-principal mb-2">
                   Buscar
                 </label>
@@ -241,7 +250,7 @@ const AdminProductos = () => {
               </div>
 
               {/* Categoría */}
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-negro-principal mb-2">
                   Categoría
                 </label>
@@ -258,7 +267,7 @@ const AdminProductos = () => {
               </div>
 
               {/* Stock */}
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-negro-principal mb-2">
                   Stock
                 </label>
@@ -272,6 +281,46 @@ const AdminProductos = () => {
                   <option value="bajo">Stock Bajo</option>
                   <option value="sin-stock">Sin Stock</option>
                 </select>
+              </div>
+
+              {/* Fecha Inicio */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-negro-principal mb-2">
+                  Desde
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="input-field"
+                />
+              </div>
+
+              {/* Fecha Fin */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-negro-principal mb-2">
+                  Hasta
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="input-field"
+                  />
+                  {(startDate || endDate) && (
+                    <button
+                      onClick={() => {
+                        setStartDate('')
+                        setEndDate('')
+                      }}
+                      className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Limpiar fechas"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -318,6 +367,8 @@ const AdminProductos = () => {
                             setSearchTerm('')
                             setFilterCategoria('all')
                             setFilterStock('all')
+                            setStartDate('')
+                            setEndDate('')
                           }}
                           className="mt-2 text-verde-principal hover:text-verde-hover text-sm"
                         >
@@ -414,8 +465,8 @@ const AdminProductos = () => {
                         <button
                           onClick={() => handleToggleActivo(producto.id, producto.activo)}
                           className={`px-2 py-1 text-xs font-semibold rounded-full ${producto.activo
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-800'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
                             }`}
                         >
                           {producto.activo ? 'Activo' : 'Inactivo'}
@@ -486,8 +537,8 @@ const AdminProductos = () => {
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
                   className={`p-2 rounded-lg transition-colors ${currentPage === 1
-                      ? 'text-gris-claro cursor-not-allowed'
-                      : 'text-negro-principal hover:bg-fondo-claro'
+                    ? 'text-gris-claro cursor-not-allowed'
+                    : 'text-negro-principal hover:bg-fondo-claro'
                     }`}
                 >
                   <ChevronLeft size={20} />
@@ -511,8 +562,8 @@ const AdminProductos = () => {
                         key={pageNum}
                         onClick={() => setCurrentPage(pageNum)}
                         className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${currentPage === pageNum
-                            ? 'bg-verde-principal text-white'
-                            : 'text-negro-principal hover:bg-fondo-claro'
+                          ? 'bg-verde-principal text-white'
+                          : 'text-negro-principal hover:bg-fondo-claro'
                           }`}
                       >
                         {pageNum}
@@ -525,8 +576,8 @@ const AdminProductos = () => {
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
                   className={`p-2 rounded-lg transition-colors ${currentPage === totalPages
-                      ? 'text-gris-claro cursor-not-allowed'
-                      : 'text-negro-principal hover:bg-fondo-claro'
+                    ? 'text-gris-claro cursor-not-allowed'
+                    : 'text-negro-principal hover:bg-fondo-claro'
                     }`}
                 >
                   <ChevronRight size={20} />
@@ -545,6 +596,34 @@ const AdminProductos = () => {
             setSelectedProducto(null)
           }}
         />
+
+        {/* Modal de Confirmación de Eliminación */}
+        {deleteConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+              <h3 className="text-xl font-bold text-negro-principal mb-4">
+                Confirmar Eliminación
+              </h3>
+              <p className="text-gris-medio mb-6">
+                ¿Estás seguro de eliminar el producto <strong>{deleteConfirm.nombre}</strong>? Esta acción no se puede deshacer.
+              </p>
+              <div className="flex items-center justify-end gap-4">
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  className="btn-secondary"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AdminLayout>
   )

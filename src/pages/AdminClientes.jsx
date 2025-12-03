@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { User, Search, Plus, Mail, Phone, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { clientesService } from '../services/clientesService'
 import ClienteFormModal from '../components/ClienteFormModal'
-import ConfirmDialog from '../components/ConfirmDialog'
 
 const itemsPerPage = 10;
 
@@ -19,9 +18,7 @@ const AdminClientes = () => {
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [editingCliente, setEditingCliente] = useState(null);
 
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [targetId, setTargetId] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   // Cargar clientes cuando cambia la página
   useEffect(() => {
@@ -46,8 +43,8 @@ const AdminClientes = () => {
     try {
       setLoading(true);
       setError('');
-      const { data, pagination } = await clientesService.list({ 
-        page, 
+      const { data, pagination } = await clientesService.list({
+        page,
         limit: itemsPerPage,
         q: searchTerm
       });
@@ -91,9 +88,9 @@ const AdminClientes = () => {
         descripcion: values.descripcion?.trim() || null,
         estado: typeof values.estado === 'boolean' ? values.estado : (values.estado === 'true' || values.estado === true)
       }
-      
+
       const clienteId = editingCliente?.id_cliente || editingCliente?.id
-      
+
       if (clienteId) {
         await clientesService.update(clienteId, payload)
       } else {
@@ -112,17 +109,15 @@ const AdminClientes = () => {
 
   const requestDelete = (cliente) => {
     const clienteId = cliente?.id_cliente || cliente?.id || cliente
-    setTargetId(clienteId)
-    setConfirmOpen(true)
+    const clienteNombre = cliente?.nombre || 'este cliente'
+    setDeleteConfirm({ id: clienteId, nombre: clienteNombre })
   };
 
   const confirmDelete = async () => {
-    if (!targetId) return
+    if (!deleteConfirm) return
     try {
-      setDeleting(true)
-      await clientesService.remove(targetId)
-      setConfirmOpen(false)
-      setTargetId(null)
+      await clientesService.remove(deleteConfirm.id)
+      setDeleteConfirm(null)
       const remainingItems = totalItems - 1
       const nextPage = (remainingItems <= startIndex && currentPage > 1) ? currentPage - 1 : currentPage
       setCurrentPage(nextPage)
@@ -130,8 +125,6 @@ const AdminClientes = () => {
     } catch (err) {
       console.error('Error eliminando cliente:', err)
       alert(err.message || 'Error eliminando cliente')
-    } finally {
-      setDeleting(false)
     }
   };
 
@@ -258,7 +251,7 @@ const AdminClientes = () => {
                   </tbody>
                 </table>
               </div>
-              
+
               {/* Paginación - siempre visible cuando hay datos */}
               {totalItems > 0 && (
                 <div className="border-t border-gris-claro px-6 py-4 bg-white">
@@ -275,7 +268,7 @@ const AdminClientes = () => {
                       >
                         <ChevronLeft size={18} />
                       </button>
-                      
+
                       {/* Números de página */}
                       <div className="flex gap-1">
                         {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -289,23 +282,22 @@ const AdminClientes = () => {
                           } else {
                             pageNum = currentPage - 2 + i;
                           }
-                          
+
                           return (
                             <button
                               key={pageNum}
                               onClick={() => setCurrentPage(pageNum)}
-                              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                                currentPage === pageNum
+                              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${currentPage === pageNum
                                   ? 'bg-verde-principal text-white'
                                   : 'border border-gris-claro hover:bg-fondo-claro text-gris-oscuro'
-                              }`}
+                                }`}
                             >
                               {pageNum}
                             </button>
                           );
                         })}
                       </div>
-                      
+
                       <button
                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                         disabled={currentPage === totalPages}
@@ -314,7 +306,7 @@ const AdminClientes = () => {
                       >
                         <ChevronRight size={18} />
                       </button>
-                      
+
                       <span className="text-xs text-gris-medio ml-2 whitespace-nowrap">
                         Página {currentPage} de {totalPages}
                       </span>
@@ -335,15 +327,33 @@ const AdminClientes = () => {
         onClose={() => { if (!formSubmitting) { setFormOpen(false); setEditingCliente(null) } }}
       />
 
-      <ConfirmDialog
-        open={confirmOpen}
-        title="Eliminar cliente"
-        message="Esta acción no se puede deshacer. ¿Desea continuar?"
-        confirmText="Eliminar"
-        onConfirm={confirmDelete}
-        onCancel={() => { if (!deleting) { setConfirmOpen(false); setTargetId(null) } }}
-        loading={deleting}
-      />
+      {/* Modal de Confirmación de Eliminación */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-negro-principal mb-4">
+              Confirmar Eliminación
+            </h3>
+            <p className="text-gris-medio mb-6">
+              ¿Estás seguro de eliminar el cliente <strong>{deleteConfirm.nombre}</strong>? Esta acción no se puede deshacer.
+            </p>
+            <div className="flex items-center justify-end gap-4">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="btn-secondary"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
