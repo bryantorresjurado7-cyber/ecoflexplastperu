@@ -100,7 +100,7 @@ const AdminLayout = ({ children }) => {
         {/* Header */}
         <div className="p-4 flex items-center justify-between border-b border-gris-oscuro">
           {sidebarOpen ? (
-            <h1 className="text-xl font-bold text-verde-principal">EcoFlexPack</h1>
+            <h1 className="text-xl font-bold text-verde-principal">EcoFlexPlast</h1>
           ) : (
             <div className="w-full flex justify-center">
               <Package className="text-verde-principal" size={24} />
