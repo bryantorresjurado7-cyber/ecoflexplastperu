@@ -42,7 +42,7 @@ Este script creará automáticamente:
 Ejecuta el script de migración para cargar productos de ejemplo:
 
 \`\`\`bash
-cd ecoflexpack-website
+cd ecoflexplast-website
 node migrate-products.js
 \`\`\`
 
@@ -62,7 +62,7 @@ Esto insertará 17 productos de ejemplo en la base de datos, incluyendo:
 **URL de Login:** http://localhost:5173/admin/login
 
 **Credenciales:**
-- **Email:** admin@ecoflexpack.com
+- **Email:** admin@ecoflexplast.com
 - **Contraseña:** Admin123!
 
 ⚠️ **IMPORTANTE:** Cambia estas credenciales después del primer login por seguridad.
@@ -340,7 +340,7 @@ Puedes extender la tabla `productos_db` con más campos según tus necesidades.
 **Solución:**
 1. Verifica que ejecutaste el esquema SQL
 2. Verifica las credenciales:
-   - Email: admin@ecoflexpack.com
+   - Email: admin@ecoflexplast.com
    - Password: Admin123!
 3. Revisa la consola del navegador para errores
 

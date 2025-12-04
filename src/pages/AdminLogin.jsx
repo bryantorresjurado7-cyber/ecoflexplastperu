@@ -288,7 +288,7 @@ const AdminLogin = () => {
                     }
                   }}
                   className={`input-field pl-10 ${emailError ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : ''}`}
-                  placeholder="admin@ecoflexpack.com"
+                  placeholder="admin@ecoflexplast.com"
                 />
               </div>
               {emailError && (

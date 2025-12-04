@@ -7,7 +7,7 @@ const Terminos = () => {
       {/* Hero */}
       <section className="bg-white border-b border-gris-muy-claro py-16">
         <div className="container-max section-padding">
-          <motion.div 
+          <motion.div
             className="text-center"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -35,14 +35,14 @@ const Terminos = () => {
             className="max-w-4xl mx-auto bg-white rounded-2xl shadow-card p-8 lg:p-12"
           >
             <div className="prose prose-lg max-w-none space-y-8">
-              
+
               <div>
                 <h2 className="text-2xl font-bold text-negro-principal mb-4">
                   1. Información General
                 </h2>
                 <p className="text-gris-oscuro leading-relaxed">
-                  Estos términos y condiciones regulan el uso del sitio web de EcoFlexPack 
-                  y la adquisición de nuestros productos y servicios. Al acceder a nuestro 
+                  Estos términos y condiciones regulan el uso del sitio web de EcoFlexPlast
+                  y la adquisición de nuestros productos y servicios. Al acceder a nuestro
                   sitio web o realizar una compra, usted acepta estar sujeto a estos términos.
                 </p>
               </div>
@@ -53,18 +53,18 @@ const Terminos = () => {
                 </h2>
                 <div className="space-y-4 text-gris-oscuro">
                   <p>
-                    <strong>2.1 Descripción de productos:</strong> Nos esforzamos por 
-                    proporcionar descripciones precisas de nuestros zunchos de polipropileno 
-                    y accesorios. Las especificaciones técnicas están sujetas a tolerancias 
+                    <strong>2.1 Descripción de productos:</strong> Nos esforzamos por
+                    proporcionar descripciones precisas de nuestros zunchos de polipropileno
+                    y accesorios. Las especificaciones técnicas están sujetas a tolerancias
                     industriales estándar.
                   </p>
                   <p>
-                    <strong>2.2 Disponibilidad:</strong> Los productos están sujetos a 
-                    disponibilidad. Nos reservamos el derecho de discontinuar productos 
+                    <strong>2.2 Disponibilidad:</strong> Los productos están sujetos a
+                    disponibilidad. Nos reservamos el derecho de discontinuar productos
                     o modificar especificaciones con previo aviso.
                   </p>
                   <p>
-                    <strong>2.3 Garantía:</strong> Garantizamos la calidad de nuestros 
+                    <strong>2.3 Garantía:</strong> Garantizamos la calidad de nuestros
                     productos conforme a las especificaciones técnicas publicadas.
                   </p>
                 </div>
@@ -76,16 +76,16 @@ const Terminos = () => {
                 </h2>
                 <div className="space-y-4 text-gris-oscuro">
                   <p>
-                    <strong>3.1 Cotizaciones:</strong> Los precios se proporcionan 
-                    mediante cotización personalizada y son válidos por 30 días desde 
+                    <strong>3.1 Cotizaciones:</strong> Los precios se proporcionan
+                    mediante cotización personalizada y son válidos por 30 días desde
                     su emisión, salvo que se especifique lo contrario.
                   </p>
                   <p>
-                    <strong>3.2 Formas de pago:</strong> Aceptamos transferencias 
+                    <strong>3.2 Formas de pago:</strong> Aceptamos transferencias
                     bancarias, depósitos, cheques y crédito corporativo previa evaluación.
                   </p>
                   <p>
-                    <strong>3.3 IGV:</strong> Todos los precios se cotizan sin IGV. 
+                    <strong>3.3 IGV:</strong> Todos los precios se cotizan sin IGV.
                     El impuesto se aplicará según corresponda.
                   </p>
                 </div>
@@ -97,17 +97,17 @@ const Terminos = () => {
                 </h2>
                 <div className="space-y-4 text-gris-oscuro">
                   <p>
-                    <strong>4.1 Tiempos de entrega:</strong> Los tiempos estimados 
+                    <strong>4.1 Tiempos de entrega:</strong> Los tiempos estimados
                     son referenciales y pueden variar según disponibilidad y ubicación.
                   </p>
                   <p>
-                    <strong>4.2 Responsabilidad de entrega:</strong> Nuestra 
-                    responsabilidad termina al entregar los productos al transportista. 
+                    <strong>4.2 Responsabilidad de entrega:</strong> Nuestra
+                    responsabilidad termina al entregar los productos al transportista.
                     El cliente debe inspeccionar los productos al recibirlos.
                   </p>
                   <p>
-                    <strong>4.3 Entregas fallidas:</strong> En caso de entregas 
-                    fallidas por causas atribuibles al cliente, este asumirá los 
+                    <strong>4.3 Entregas fallidas:</strong> En caso de entregas
+                    fallidas por causas atribuibles al cliente, este asumirá los
                     costos adicionales de reenvío.
                   </p>
                 </div>
@@ -119,18 +119,18 @@ const Terminos = () => {
                 </h2>
                 <div className="space-y-4 text-gris-oscuro">
                   <p>
-                    <strong>5.1 Productos defectuosos:</strong> Aceptamos devoluciones 
-                    de productos defectuosos dentro de los 7 días posteriores a la entrega, 
+                    <strong>5.1 Productos defectuosos:</strong> Aceptamos devoluciones
+                    de productos defectuosos dentro de los 7 días posteriores a la entrega,
                     previa evaluación técnica.
                   </p>
                   <p>
-                    <strong>5.2 Productos en buen estado:</strong> No aceptamos 
-                    devoluciones de productos en buen estado por cambio de opinión 
+                    <strong>5.2 Productos en buen estado:</strong> No aceptamos
+                    devoluciones de productos en buen estado por cambio de opinión
                     del cliente.
                   </p>
                   <p>
-                    <strong>5.3 Proceso de reclamo:</strong> Los reclamos deben 
-                    presentarse por escrito con evidencia fotográfica dentro del 
+                    <strong>5.3 Proceso de reclamo:</strong> Los reclamos deben
+                    presentarse por escrito con evidencia fotográfica dentro del
                     plazo establecido.
                   </p>
                 </div>
@@ -142,17 +142,17 @@ const Terminos = () => {
                 </h2>
                 <div className="space-y-4 text-gris-oscuro">
                   <p>
-                    <strong>6.1 Uso adecuado:</strong> Los productos deben utilizarse 
-                    conforme a las especificaciones técnicas y recomendaciones de uso 
+                    <strong>6.1 Uso adecuado:</strong> Los productos deben utilizarse
+                    conforme a las especificaciones técnicas y recomendaciones de uso
                     proporcionadas.
                   </p>
                   <p>
-                    <strong>6.2 Daños indirectos:</strong> EcoFlexPack no será 
-                    responsable por daños indirectos, lucro cesante o pérdidas 
+                    <strong>6.2 Daños indirectos:</strong> EcoFlexPlast no será
+                    responsable por daños indirectos, lucro cesante o pérdidas
                     consecuenciales derivadas del uso de nuestros productos.
                   </p>
                   <p>
-                    <strong>6.3 Límite de responsabilidad:</strong> Nuestra 
+                    <strong>6.3 Límite de responsabilidad:</strong> Nuestra
                     responsabilidad máxima se limitará al valor de los productos vendidos.
                   </p>
                 </div>
@@ -163,8 +163,8 @@ const Terminos = () => {
                   7. Propiedad Intelectual
                 </h2>
                 <p className="text-gris-oscuro leading-relaxed">
-                  Todos los contenidos de este sitio web, incluyendo textos, imágenes, 
-                  logos y diseños, son propiedad de EcoFlexPack y están protegidos por 
+                  Todos los contenidos de este sitio web, incluyendo textos, imágenes,
+                  logos y diseños, son propiedad de EcoFlexPlast y están protegidos por
                   las leyes de propiedad intelectual. Su uso no autorizado está prohibido.
                 </p>
               </div>
@@ -174,7 +174,7 @@ const Terminos = () => {
                   8. Privacidad y Protección de Datos
                 </h2>
                 <p className="text-gris-oscuro leading-relaxed">
-                  El tratamiento de datos personales se rige por nuestra Política de 
+                  El tratamiento de datos personales se rige por nuestra Política de
                   Privacidad, la cual forma parte integral de estos términos y condiciones.
                 </p>
               </div>
@@ -184,7 +184,7 @@ const Terminos = () => {
                   9. Jurisdicción y Ley Aplicable
                 </h2>
                 <p className="text-gris-oscuro leading-relaxed">
-                  Estos términos se rigen por las leyes de la República del Perú. 
+                  Estos términos se rigen por las leyes de la República del Perú.
                   Cualquier disputa será resuelta en los tribunales de Lima, Perú.
                 </p>
               </div>
@@ -194,8 +194,8 @@ const Terminos = () => {
                   10. Modificaciones
                 </h2>
                 <p className="text-gris-oscuro leading-relaxed">
-                  EcoFlexPack se reserva el derecho de modificar estos términos en 
-                  cualquier momento. Las modificaciones entrarán en vigor desde su 
+                  EcoFlexPlast se reserva el derecho de modificar estos términos en
+                  cualquier momento. Las modificaciones entrarán en vigor desde su
                   publicación en el sitio web.
                 </p>
               </div>
