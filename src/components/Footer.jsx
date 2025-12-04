@@ -9,7 +9,7 @@ const Footer = () => {
       {/* Main Footer */}
       <div className="container-max section-padding py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          
+
           {/* Empresa */}
           <div className="space-y-6">
             <div>
@@ -22,11 +22,11 @@ const Footer = () => {
                 />
               </div>
               <p className="text-gris-claro text-sm leading-relaxed">
-                Especialistas en zunchos de polipropileno de alta calidad. 
+                Especialistas en zunchos de polipropileno de alta calidad.
                 Ofrecemos soluciones completas de enzunchado para todas las industrias.
               </p>
             </div>
-            
+
             {/* Certificaciones (ocultas temporalmente) */}
             {/* <div>
               <h4 className="font-semibold mb-2">Certificaciones</h4>
@@ -116,11 +116,11 @@ const Footer = () => {
                   <p><span className="font-medium text-white">Dirección 2:</span> Jr. Isabel Flores de Oliva 270, Lima 15079</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-3">
                 <Phone className="w-5 h-5 text-verde-principal flex-shrink-0" />
                 <div>
-                  <button 
+                  <button
                     onClick={() => window.open('https://wa.me/message/FP3PXXHAVSTLM1', '_blank')}
                     className="text-gris-claro hover:text-verde-principal transition-colors cursor-pointer bg-transparent border-none p-0 text-left"
                   >
@@ -128,7 +128,7 @@ const Footer = () => {
                   </button>
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-3">
                 <Mail className="w-5 h-5 text-verde-principal flex-shrink-0" />
                 <div>
@@ -137,7 +137,7 @@ const Footer = () => {
                   </a>
                 </div>
               </div>
-              
+
               <div className="flex items-start space-x-3">
                 <Clock className="w-5 h-5 text-verde-principal mt-0.5 flex-shrink-0" />
                 <div className="text-gris-claro text-sm">
@@ -151,15 +151,15 @@ const Footer = () => {
             <div className="mt-6">
               <h4 className="font-semibold mb-3">Síguenos</h4>
               <div className="flex space-x-3">
-                <button 
+                <button
                   className="w-10 h-10 bg-gris-oscuro hover:bg-verde-principal rounded-lg flex items-center justify-center transition-colors cursor-pointer"
                   aria-label="WhatsApp"
                   onClick={() => window.open('https://wa.me/message/FP3PXXHAVSTLM1', '_blank')}
                 >
                   <MessageCircle className="w-5 h-5" />
                 </button>
-                <a 
-                  href="https://www.facebook.com/profile.php?id=61579988324529" 
+                <a
+                  href="https://www.facebook.com/profile.php?id=61579988324529"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-10 h-10 bg-gris-oscuro hover:bg-verde-principal rounded-lg flex items-center justify-center transition-colors"
@@ -167,8 +167,8 @@ const Footer = () => {
                 >
                   <Facebook className="w-5 h-5" />
                 </a>
-                <a 
-                  href="https://www.tiktok.com/@ecoflexplast.peru?_t=ZM-8zU8p2ug1os&_r=1" 
+                <a
+                  href="https://www.tiktok.com/@ecoflexplast.peru?_t=ZM-8zU8p2ug1os&_r=1"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-10 h-10 bg-gris-oscuro hover:bg-verde-principal rounded-lg flex items-center justify-center transition-colors"
@@ -176,8 +176,8 @@ const Footer = () => {
                 >
                   <Music className="w-5 h-5" />
                 </a>
-                <a 
-                  href="#" 
+                <a
+                  href="#"
                   className="w-10 h-10 bg-gris-oscuro hover:bg-verde-principal rounded-lg flex items-center justify-center transition-colors"
                   aria-label="LinkedIn"
                 >
@@ -218,9 +218,9 @@ const Footer = () => {
         <div className="container-max section-padding py-6">
           <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
             <div className="text-gris-claro text-sm flex items-center gap-4">
-              <span>© {currentYear} EcoFlexPack. Todos los derechos reservados.</span>
-              <Link 
-                to="/admin/login" 
+              <span>© {currentYear} EcoFlexPlast. Todos los derechos reservados.</span>
+              <Link
+                to="/admin/login"
                 className="text-gris-medio hover:text-verde-principal transition-colors text-xs opacity-50 hover:opacity-100"
                 title="Acceso Administrador"
               >

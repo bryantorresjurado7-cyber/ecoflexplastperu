@@ -7,7 +7,7 @@ const Privacidad = () => {
       {/* Hero */}
       <section className="bg-white border-b border-gris-muy-claro py-16">
         <div className="container-max section-padding">
-          <motion.div 
+          <motion.div
             className="text-center"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -35,15 +35,15 @@ const Privacidad = () => {
             className="max-w-4xl mx-auto bg-white rounded-2xl shadow-card p-8 lg:p-12"
           >
             <div className="prose prose-lg max-w-none space-y-8">
-              
+
               <div>
                 <h2 className="text-2xl font-bold text-negro-principal mb-4">
                   1. Introducción
                 </h2>
                 <p className="text-gris-oscuro leading-relaxed">
-                  En EcoFlexPack valoramos y respetamos la privacidad de nuestros clientes 
-                  y visitantes. Esta política describe cómo recopilamos, utilizamos y 
-                  protegemos su información personal de acuerdo con la Ley de Protección 
+                  En EcoFlexPlast valoramos y respetamos la privacidad de nuestros clientes
+                  y visitantes. Esta política describe cómo recopilamos, utilizamos y
+                  protegemos su información personal de acuerdo con la Ley de Protección
                   de Datos Personales del Perú (Ley N° 29733).
                 </p>
               </div>
@@ -62,7 +62,7 @@ const Privacidad = () => {
                     <li>Datos de cotizaciones y pedidos</li>
                     <li>Comunicaciones y consultas</li>
                   </ul>
-                  
+
                   <p className="mt-4">
                     <strong>2.2 Información recopilada automáticamente:</strong>
                   </p>
@@ -113,11 +113,11 @@ const Privacidad = () => {
                 </h2>
                 <div className="space-y-4 text-gris-oscuro">
                   <p>
-                    <strong>5.1 No vendemos sus datos:</strong> Nunca vendemos, 
+                    <strong>5.1 No vendemos sus datos:</strong> Nunca vendemos,
                     alquilamos o comercializamos su información personal.
                   </p>
                   <p>
-                    <strong>5.2 Compartir limitado:</strong> Podemos compartir 
+                    <strong>5.2 Compartir limitado:</strong> Podemos compartir
                     información con:
                   </p>
                   <ul className="list-disc pl-6 space-y-2">
@@ -174,7 +174,7 @@ const Privacidad = () => {
                     <li><strong>Información:</strong> Conocer cómo procesamos sus datos</li>
                   </ul>
                   <p className="mt-4">
-                    Para ejercer estos derechos, contáctenos en: 
+                    Para ejercer estos derechos, contáctenos en:
                     <strong> privacidad@ecoflexplastperu.com</strong>
                   </p>
                 </div>
@@ -193,7 +193,7 @@ const Privacidad = () => {
                     <li>Mejorar la funcionalidad del sitio</li>
                   </ul>
                   <p className="mt-4">
-                    Puede configurar su navegador para rechazar cookies, aunque 
+                    Puede configurar su navegador para rechazar cookies, aunque
                     esto puede afectar la funcionalidad del sitio.
                   </p>
                 </div>
@@ -204,8 +204,8 @@ const Privacidad = () => {
                   10. Transferencias Internacionales
                 </h2>
                 <p className="text-gris-oscuro leading-relaxed">
-                  Actualmente no realizamos transferencias internacionales de datos. 
-                  Si esto cambiara en el futuro, implementaremos las salvaguardas 
+                  Actualmente no realizamos transferencias internacionales de datos.
+                  Si esto cambiara en el futuro, implementaremos las salvaguardas
                   apropiadas conforme a la legislación aplicable.
                 </p>
               </div>
@@ -215,8 +215,8 @@ const Privacidad = () => {
                   11. Menores de Edad
                 </h2>
                 <p className="text-gris-oscuro leading-relaxed">
-                  Nuestros servicios no están dirigidos a menores de 18 años. 
-                  No recopilamos intencionalmente información personal de menores 
+                  Nuestros servicios no están dirigidos a menores de 18 años.
+                  No recopilamos intencionalmente información personal de menores
                   sin el consentimiento parental apropiado.
                 </p>
               </div>
@@ -226,8 +226,8 @@ const Privacidad = () => {
                   12. Cambios a esta Política
                 </h2>
                 <p className="text-gris-oscuro leading-relaxed">
-                  Podemos actualizar esta política ocasionalmente. Le notificaremos 
-                  sobre cambios significativos por email o mediante aviso prominente 
+                  Podemos actualizar esta política ocasionalmente. Le notificaremos
+                  sobre cambios significativos por email o mediante aviso prominente
                   en nuestro sitio web.
                 </p>
               </div>
@@ -243,8 +243,8 @@ const Privacidad = () => {
                   <p><strong>Dirección 1:</strong> calle 2 sector 3 grupo 29 Mz.N Lt.45, Villa El Salvador (Q3F6+GXQ, -12.2261667, -76.9375278)</p>
                   <p><strong>Dirección 2:</strong> Jr. Isabel Flores de Oliva 270, Lima 15079</p>
                   <p className="mt-4 text-sm">
-                    También puede presentar una queja ante la Autoridad Nacional 
-                    de Protección de Datos Personales (ANPD) del Ministerio de Justicia 
+                    También puede presentar una queja ante la Autoridad Nacional
+                    de Protección de Datos Personales (ANPD) del Ministerio de Justicia
                     y Derechos Humanos del Perú.
                   </p>
                 </div>

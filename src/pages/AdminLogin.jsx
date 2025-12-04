@@ -25,7 +25,7 @@ const AdminLogin = () => {
   const validateEmail = (value) => {
     // Normalizar
     const normalized = normalizeEmail(value);
-    
+
     // Bloquear caracteres peligrosos: espacios, comillas, acentos, tildes, < > ( ) { } [ ], \ /, , ; :, `, |, &, !, ?, =, *, etc.
     const dangerousChars = /[\s'"áéíóúÁÉÍÓÚàèìòùÀÈÌÒÙâêîôûÂÊÎÔÛäëïöüÄËÏÖÜñÑ<>(){}[\]\\\/,;:`|&!?=*]/;
     if (dangerousChars.test(normalized)) {
@@ -146,7 +146,7 @@ const AdminLogin = () => {
   // Manejar cambio en el campo de email
   const handleEmailChange = (e) => {
     const value = e.target.value;
-    
+
     // Permitir escribir siempre, pero filtrar caracteres peligrosos
     // Eliminar caracteres peligrosos en tiempo real
     let filteredValue = value
@@ -170,7 +170,7 @@ const AdminLogin = () => {
 
     // Validar en tiempo real para mostrar errores
     const validationError = validateEmail(filteredValue);
-    
+
     if (validationError) {
       setEmailError(validationError);
     } else {
@@ -197,7 +197,7 @@ const AdminLogin = () => {
     // Normalizar email antes de validar
     const normalizedEmail = normalizeEmail(email);
     let finalEmail = normalizedEmail;
-    
+
     // Convertir dominio a minúsculas si hay @
     if (normalizedEmail.includes('@')) {
       const parts = normalizedEmail.split('@');
@@ -220,7 +220,7 @@ const AdminLogin = () => {
 
     try {
       const result = await login(finalEmail.trim(), password)
-      
+
       if (result.success) {
         navigate('/admin/dashboard')
       } else {
@@ -246,7 +246,7 @@ const AdminLogin = () => {
             Panel de Administración
           </h2>
           <p className="text-gris-medio">
-            EcoFlexPack
+            EcoFlexPlast
           </p>
         </div>
 
@@ -288,7 +288,7 @@ const AdminLogin = () => {
                     }
                   }}
                   className={`input-field pl-10 ${emailError ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : ''}`}
-                  placeholder="admin@ecoflexpack.com"
+                  placeholder="admin@ecoflexplast.com"
                 />
               </div>
               {emailError && (

@@ -1,14 +1,14 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
-import { 
-  ArrowRight, 
-  Package, 
-  Wrench, 
-  Palette, 
-  Truck, 
-  Shield, 
-  Clock, 
+import {
+  ArrowRight,
+  Package,
+  Wrench,
+  Palette,
+  Truck,
+  Shield,
+  Clock,
   CheckCircle,
   Star,
   Users,
@@ -34,15 +34,15 @@ const Home = () => {
     const cargarProductosDestacados = async () => {
       try {
         setLoadingProductos(true);
-        
+
         // Cargar todos los productos activos
         const result = await loadProductos();
-        
+
         if (result.data && result.data.length > 0) {
           // Excluir accesorios - solo mostrar: zunchos, esquineros, burbupack, mangas
           const categorias = ['zunchos', 'esquineros', 'burbupack', 'mangas'];
           const productosPorCategoria = [];
-          
+
           // Para cada categoría, buscar un producto destacado o el primero disponible
           categorias.forEach(categoria => {
             // Buscar en la categoría original (_categoriaOriginal) o en categoria mapeada
@@ -50,14 +50,14 @@ const Home = () => {
               const catOriginal = p._categoriaOriginal?.toLowerCase() || p.categoria?.toLowerCase();
               return catOriginal === categoria;
             });
-            
+
             if (productosCategoria.length > 0) {
               // Priorizar productos destacados, si no hay, tomar el primero
               const destacado = productosCategoria.find(p => p.destacado) || productosCategoria[0];
               productosPorCategoria.push(destacado);
             }
           });
-          
+
           setProductosDestacados(productosPorCategoria);
         }
       } catch (error) {
@@ -91,7 +91,7 @@ const Home = () => {
   const orgJson = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'EcoFlexPack',
+    name: 'EcoFlexPlast',
     url: typeof window !== 'undefined' ? window.location.origin : '',
     logo: '/images/logo/logoEmpresa.png',
   };
@@ -99,7 +99,7 @@ const Home = () => {
   return (
     <div className="pt-16 lg:pt-20">
       <SEO
-        title="EcoFlexPack | Zunchos, Esquineros y Burbupack para embalaje industrial"
+        title="EcoFlexPlast | Zunchos, Esquineros y Burbupack para embalaje industrial"
         description="Soluciones B2B en embalaje: Zunchos PP, Esquineros plásticos y Burbupack. Stock permanente, entrega 24-48h y asesoría técnica."
         url={typeof window !== 'undefined' ? window.location.href : ''}
         image="/images/og-home.jpg"
@@ -116,9 +116,9 @@ const Home = () => {
 
         <div className="container-max section-padding relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            
+
             {/* Contenido */}
-            <motion.div 
+            <motion.div
               className="space-y-8"
               initial="initial"
               animate="animate"
@@ -140,13 +140,13 @@ const Home = () => {
                     Embalaje Industrial
                   </span>
                 </h1>
-                
+
                 <p className="text-xl text-gris-oscuro leading-relaxed">
                   Zunchos PP, Esquineros plásticos y Burbupack. Stock permanente, entrega rápida y asesoría técnica para todas las industrias.
                 </p>
               </motion.div>
 
-              <motion.div 
+              <motion.div
                 variants={fadeInUp}
                 className="flex flex-col sm:flex-row gap-3"
               >
@@ -160,7 +160,7 @@ const Home = () => {
               </motion.div>
 
               {/* Stats */}
-              <motion.div 
+              <motion.div
                 variants={fadeInUp}
                 className="grid grid-cols-3 gap-6 pt-8 border-t border-gris-muy-claro"
               >
@@ -180,7 +180,7 @@ const Home = () => {
             </motion.div>
 
             {/* Imagen Hero - Grid fijo de categorías */}
-            <motion.div 
+            <motion.div
               className="relative"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -241,7 +241,7 @@ const Home = () => {
       {/* Productos Destacados */}
       <section className="py-20 bg-white">
         <div className="container-max section-padding">
-          <motion.div 
+          <motion.div
             className="text-center mb-16"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -257,7 +257,7 @@ const Home = () => {
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-            <motion.div 
+            <motion.div
               className="card p-8 text-center group hover:shadow-industrial transition-all duration-300 flex flex-col h-full"
               whileHover={{ y: -10 }}
             >
@@ -272,7 +272,7 @@ const Home = () => {
               </p>
               <div className="flex flex-wrap gap-2 justify-center mb-6">
                 {colores.slice(0, 5).map(color => (
-                  <div 
+                  <div
                     key={color.id}
                     className="w-6 h-6 rounded-full border-2 border-white shadow-md"
                     style={{ backgroundColor: color.hex }}
@@ -285,7 +285,7 @@ const Home = () => {
               </Link>
             </motion.div>
 
-            <motion.div 
+            <motion.div
               className="card p-8 text-center group hover:shadow-industrial transition-all duration-300 flex flex-col h-full"
               whileHover={{ y: -10 }}
             >
@@ -308,7 +308,7 @@ const Home = () => {
               </Link>
             </motion.div>
 
-            <motion.div 
+            <motion.div
               className="card p-8 text-center group hover:shadow-industrial transition-all duration-300 flex flex-col h-full"
               whileHover={{ y: -10 }}
             >
@@ -331,7 +331,7 @@ const Home = () => {
               </Link>
             </motion.div>
 
-            <motion.div 
+            <motion.div
               className="card p-8 text-center group hover:shadow-industrial transition-all duration-300 flex flex-col h-full"
               whileHover={{ y: -10 }}
             >
@@ -371,7 +371,7 @@ const Home = () => {
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1 }}
                 >
-                  <ProductCard 
+                  <ProductCard
                     producto={producto}
                     onAddToQuote={() => addToQuote(producto, 1)}
                   />
@@ -384,95 +384,95 @@ const Home = () => {
             </div>
           )}
 
-                     <motion.div 
-             className="text-center mt-12"
-             initial={{ opacity: 0 }}
-             whileInView={{ opacity: 1 }}
-             viewport={{ once: true }}
-           >
-             <Link 
-               to="/productos" 
-               className="group inline-flex items-center px-10 py-5 bg-gradient-to-r from-verde-principal to-verde-hover text-white rounded-2xl font-bold text-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105"
-             >
-               Ver Catálogo Completo
-               <ArrowRight className="w-6 h-6 ml-4 transition-transform group-hover:translate-x-2" />
-             </Link>
-           </motion.div>
+          <motion.div
+            className="text-center mt-12"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+          >
+            <Link
+              to="/productos"
+              className="group inline-flex items-center px-10 py-5 bg-gradient-to-r from-verde-principal to-verde-hover text-white rounded-2xl font-bold text-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105"
+            >
+              Ver Catálogo Completo
+              <ArrowRight className="w-6 h-6 ml-4 transition-transform group-hover:translate-x-2" />
+            </Link>
+          </motion.div>
         </div>
       </section>
 
       {/* Ventajas Competitivas */}
       <section className="py-20 bg-fondo-claro">
         <div className="container-max section-padding">
-          <motion.div 
+          <motion.div
             className="text-center mb-16"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
             <h2 className="text-3xl lg:text-4xl font-bold text-negro-principal mb-4">
-              ¿Por qué elegir EcoFlexPack?
+              ¿Por qué elegir EcoFlexPlast?
             </h2>
             <p className="text-gris-oscuro text-lg max-w-2xl mx-auto">
-              Somos líderes en soluciones de enzunchado industrial, comprometidos con 
+              Somos líderes en soluciones de enzunchado industrial, comprometidos con
               la calidad y el servicio excepcional.
             </p>
           </motion.div>
 
-			<div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-				{[
-					{
-						icon: Truck,
-						title: 'Entrega rápida',
-						description: 'Envío en 24-48 horas a todo el país',
-						gradient: 'from-sky-500 to-blue-600'
-					},
-					{
-						icon: Shield,
-						title: 'Calidad garantizada',
-						description: 'Materiales premium',
-						gradient: 'from-emerald-500 to-green-600'
-					},
-					{
-						icon: Users,
-						title: 'Asesoría técnica',
-						description: 'Soporte especializado gratuito',
-						gradient: 'from-violet-500 to-purple-600'
-					},
-					{
-						icon: Award,
-						title: 'Stock permanente',
-						description: 'Disponibilidad inmediata de productos',
-						gradient: 'from-amber-500 to-orange-600'
-					}
-				].map((ventaja, index) => (
-					<motion.div
-						key={index}
-						className="group bg-white rounded-2xl border border-gris-muy-claro/60 p-6 text-center shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1"
-						initial={{ opacity: 0, y: 30 }}
-						whileInView={{ opacity: 1, y: 0 }}
-						viewport={{ once: true }}
-						transition={{ delay: index * 0.1 }}
-					>
-						<div className={`mx-auto mb-4 w-14 h-14 rounded-xl bg-gradient-to-br ${ventaja.gradient} flex items-center justify-center shadow-lg ring-1 ring-black/5`}>
-							<ventaja.icon className="w-7 h-7 text-white" />
-						</div>
-						<h3 className="text-lg font-semibold text-negro-principal mb-2">
-							{ventaja.title}
-						</h3>
-						<p className="text-sm text-gris-medio leading-relaxed">
-							{ventaja.description}
-						</p>
-					</motion.div>
-				))}
-			</div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+            {[
+              {
+                icon: Truck,
+                title: 'Entrega rápida',
+                description: 'Envío en 24-48 horas a todo el país',
+                gradient: 'from-sky-500 to-blue-600'
+              },
+              {
+                icon: Shield,
+                title: 'Calidad garantizada',
+                description: 'Materiales premium',
+                gradient: 'from-emerald-500 to-green-600'
+              },
+              {
+                icon: Users,
+                title: 'Asesoría técnica',
+                description: 'Soporte especializado gratuito',
+                gradient: 'from-violet-500 to-purple-600'
+              },
+              {
+                icon: Award,
+                title: 'Stock permanente',
+                description: 'Disponibilidad inmediata de productos',
+                gradient: 'from-amber-500 to-orange-600'
+              }
+            ].map((ventaja, index) => (
+              <motion.div
+                key={index}
+                className="group bg-white rounded-2xl border border-gris-muy-claro/60 p-6 text-center shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <div className={`mx-auto mb-4 w-14 h-14 rounded-xl bg-gradient-to-br ${ventaja.gradient} flex items-center justify-center shadow-lg ring-1 ring-black/5`}>
+                  <ventaja.icon className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-negro-principal mb-2">
+                  {ventaja.title}
+                </h3>
+                <p className="text-sm text-gris-medio leading-relaxed">
+                  {ventaja.description}
+                </p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Industrias que Atendemos */}
       <section className="py-20 bg-white">
         <div className="container-max section-padding">
-          <motion.div 
+          <motion.div
             className="text-center mb-16"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -544,7 +544,7 @@ const Home = () => {
       {/* CTA Final */}
       <section className="py-20 bg-gradiente-principal">
         <div className="container-max section-padding">
-          <motion.div 
+          <motion.div
             className="text-center text-white"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -554,19 +554,19 @@ const Home = () => {
               ¿Listo para optimizar tu proceso de enzunchado?
             </h2>
             <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-              Contacta con nuestros especialistas y recibe una cotización personalizada 
+              Contacta con nuestros especialistas y recibe una cotización personalizada
               para tu empresa.
             </p>
-                         <div className="flex flex-col sm:flex-row gap-6 justify-center">
-              <Link 
-                to="/contacto" 
+            <div className="flex flex-col sm:flex-row gap-6 justify-center">
+              <Link
+                to="/contacto"
                 className="group bg-white text-verde-principal px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 inline-flex items-center justify-center"
               >
                 Solicitar Cotización
                 <ArrowRight className="w-5 h-5 ml-3 transition-transform group-hover:translate-x-1" />
               </Link>
-              <Link 
-                to="/productos" 
+              <Link
+                to="/productos"
                 className="group border-2 border-white text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white hover:text-verde-principal transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 inline-flex items-center justify-center"
               >
                 Ver Catálogo
