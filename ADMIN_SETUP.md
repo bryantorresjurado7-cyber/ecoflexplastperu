@@ -1,8 +1,8 @@
-# 🎯 Sistema de Administración - EcoFlexPack
+# 🎯 Sistema de Administración - EcoFlexPlast
 
 ## ✅ ¡Sistema Completo Implementado!
 
-Se ha implementado un sistema completo de administración para tu sitio web EcoFlexPack. Ahora puedes gestionar todos tus productos, precios y stock desde un panel administrativo web.
+Se ha implementado un sistema completo de administración para tu sitio web EcoFlexPlast. Ahora puedes gestionar todos tus productos, precios y stock desde un panel administrativo web.
 
 ---
 
