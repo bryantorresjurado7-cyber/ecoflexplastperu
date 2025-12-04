@@ -168,7 +168,7 @@ const AdminProduccion = () => {
 
   return (
     <AdminLayout>
-      <div className="min-h-screen bg-fondo-claro p-8">
+      <div className="min-h-screen bg-fondo-claro p-4 md:p-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
