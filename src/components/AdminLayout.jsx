@@ -166,8 +166,6 @@ const AdminLayout = ({ children }) => {
             <div className="w-full flex justify-center">
               <Package className="text-verde-principal" size={24} />
             </div>
-          ) : (
-            <h1 className="text-xl font-bold text-verde-principal truncate">EcoFlexPack</h1>
           )}
 
           <button
