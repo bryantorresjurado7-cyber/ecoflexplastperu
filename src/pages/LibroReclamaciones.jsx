@@ -19,7 +19,7 @@ const LibroReclamaciones = () => {
       return;
     }
     // Evitar crear "--" consecutivo
-    if (k === '-' ) {
+    if (k === '-') {
       const el = e.currentTarget;
       const pos = el.selectionStart || 0;
       const prev = el.value?.charAt(pos - 1) || '';
@@ -100,7 +100,7 @@ const LibroReclamaciones = () => {
             <div className="bg-white rounded-xl shadow-card p-6">
               <h3 className="text-lg font-semibold mb-3">Información de la empresa</h3>
               <ul className="text-sm text-gris-oscuro space-y-2">
-                <li><span className="font-medium">Razón Social:</span> EcoFlexPack S.A.C.</li>
+                <li><span className="font-medium">Razón Social:</span> EcoFlexPlast S.A.C.</li>
                 <li><span className="font-medium">RUC:</span> 20601236547</li>
                 <li><span className="font-medium">Dirección 1:</span> Calle 2 Sector 3 Grupo 29 Mz.N Lt.45, Villa El Salvador</li>
                 <li><span className="font-medium">Dirección 2:</span> Jr. Isabel Flores de Oliva 270, Lima 15079</li>
