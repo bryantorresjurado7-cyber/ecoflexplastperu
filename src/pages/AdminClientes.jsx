@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { User, Search, Plus, Mail, Phone, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { User, Search, Plus, Mail, Phone, Edit, Trash2, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { clientesService } from '../services/clientesService'
 import ClienteFormModal from '../components/ClienteFormModal'
+import { exportToExcel } from '../utils/exportToExcel'
 
 const itemsPerPage = 10;
 
@@ -139,10 +140,38 @@ const AdminClientes = () => {
             </h2>
             <p className="text-gris-medio mt-1">{totalItems} clientes en total</p>
           </div>
-          <button className="btn-primary flex items-center justify-center gap-2 w-full md:w-auto" onClick={openCreate}>
-            <Plus size={20} />
-            Nuevo Cliente
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={async () => {
+                // Cargar todos los clientes para exportar
+                try {
+                  const { data } = await clientesService.list({ page: 1, limit: 10000 })
+                  const columns = [
+                    { key: 'nombre', label: 'Nombre' },
+                    { key: 'email', label: 'Email' },
+                    { key: 'telefono', label: 'Teléfono' },
+                    { key: 'tipo_documento', label: 'Tipo Documento' },
+                    { key: 'numero_documento', label: 'Número Documento' },
+                    { key: 'direccion', label: 'Dirección' },
+                    { key: 'descripcion', label: 'Descripción' },
+                    { key: 'estado', label: 'Estado' }
+                  ]
+                  exportToExcel(data || [], columns, 'clientes')
+                } catch (error) {
+                  console.error('Error al exportar:', error)
+                  alert('Error al exportar los datos')
+                }
+              }}
+              className="bg-negro-principal hover:bg-black text-white px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors shadow-lg"
+            >
+              <Download size={20} />
+              Exportar Excel
+            </button>
+            <button className="btn-primary flex items-center justify-center gap-2 w-full md:w-auto" onClick={openCreate}>
+              <Plus size={20} />
+              Nuevo Cliente
+            </button>
+          </div>
         </div>
       </header>
       <div className="p-4 md:p-8">
@@ -288,8 +317,8 @@ const AdminClientes = () => {
                               key={pageNum}
                               onClick={() => setCurrentPage(pageNum)}
                               className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${currentPage === pageNum
-                                  ? 'bg-verde-principal text-white'
-                                  : 'border border-gris-claro hover:bg-fondo-claro text-gris-oscuro'
+                                ? 'bg-verde-principal text-white'
+                                : 'border border-gris-claro hover:bg-fondo-claro text-gris-oscuro'
                                 }`}
                             >
                               {pageNum}

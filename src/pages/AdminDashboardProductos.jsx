@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AdminLayout from '../components/AdminLayout'
+import NotificationButton from '../components/NotificationButton'
 import {
     Package,
     TrendingUp,
@@ -176,24 +177,26 @@ const AdminDashboardProductos = () => {
                 <div className="bg-white border-b border-gris-claro">
                     <div className="px-8 py-6">
                         <div className="flex justify-between items-center">
-                            <div>
-                                <h1 className="text-3xl font-bold text-negro-principal flex items-center gap-3">
-                                    <Package className="text-blue-600" size={32} />
-                                    Dashboard de Inventario
-                                </h1>
-                                <p className="text-gris-medio mt-1">Control de ingresos, salidas y stock</p>
+                            <div className="flex flex-col">
+                                <div className="flex items-center gap-4 mb-2">
+                                    <button
+                                        onClick={() => navigate('/admin/dashboard')}
+                                        className="p-2 rounded-full border-2 border-[#0EA5E9] text-[#0EA5E9] hover:bg-sky-50 transition-colors"
+                                        title="Volver al Dashboard"
+                                    >
+                                        <ArrowLeft size={24} strokeWidth={2.5} />
+                                    </button>
+                                    <h1 className="text-3xl font-bold text-negro-principal">
+                                        Dashboard de Inventario
+                                    </h1>
+                                </div>
+                                <p className="text-gris-medio ml-16">Control de ingresos, salidas y stock</p>
                             </div>
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => navigate('/admin/dashboard')}
-                                    className="flex items-center gap-2 px-4 py-2 border border-gris-claro rounded-lg hover:bg-fondo-claro transition-colors"
-                                >
-                                    <ArrowLeft size={20} />
-                                    Volver
-                                </button>
+                            <div className="flex gap-3 items-center">
+                                <NotificationButton />
                                 <button
                                     onClick={() => navigate('/admin/productos/nuevo')}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
+                                    className="bg-verde-principal hover:bg-verde-hover text-white px-6 py-2.5 rounded-lg font-semibold transition-colors flex items-center gap-2 shadow-sm"
                                 >
                                     <Plus size={20} />
                                     Nuevo Producto

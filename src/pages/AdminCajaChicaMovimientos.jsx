@@ -12,8 +12,10 @@ import {
     X,
     Clock,
     Upload,
-    Save
+    Save,
+    Trash2
 } from 'lucide-react'
+import { exportToExcel } from '../utils/exportToExcel'
 
 const AdminCajaChicaMovimientos = () => {
     const [movimientos, setMovimientos] = useState([])
@@ -137,37 +139,46 @@ const AdminCajaChicaMovimientos = () => {
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                         <div className="flex items-center gap-4">
                             <Link
-                                to="/admin/caja-chica"
+                                to="/admin/transacciones"
                                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gris-medio"
                             >
                                 <ArrowLeft size={24} />
                             </Link>
                             <div>
                                 <h1 className="text-3xl font-bold text-negro-principal">
-                                    Movimientos
+                                    Movimientos de Caja Chica
                                 </h1>
-                                <p className="text-gris-medio mt-1">Registro de ingresos y egresos</p>
+                                <p className="text-gris-medio mt-1">Gestión de movimientos, ingresos y egresos</p>
                             </div>
                         </div>
                         <div className="flex gap-3 w-full md:w-auto">
                             <button
-                                onClick={() => handleOpenModal('egreso')}
-                                className="btn-secondary flex-1 md:flex-none flex items-center justify-center gap-2 text-red-600 border-red-200 hover:bg-red-50"
+                                onClick={() => {
+                                    const columns = [
+                                        { key: 'fecha', label: 'Fecha' },
+                                        { key: 'tipo', label: 'Tipo' },
+                                        { key: 'motivo', label: 'Motivo' },
+                                        { key: 'responsable', label: 'Responsable' },
+                                        { key: 'monto', label: 'Monto' },
+                                        { key: 'estado', label: 'Estado' }
+                                    ]
+                                    exportToExcel(filteredMovimientos, columns, 'movimientos_caja_chica')
+                                }}
+                                className="bg-negro-principal hover:bg-black text-white px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors shadow-lg whitespace-nowrap"
                             >
-                                <Minus size={20} />
-                                Registrar Gasto
+                                <Download size={20} />
+                                Exportar Excel
                             </button>
                             <button
-                                onClick={() => handleOpenModal('ingreso')}
-                                className="btn-primary flex-1 md:flex-none flex items-center justify-center gap-2"
+                                onClick={() => handleOpenModal('egreso')}
+                                className="bg-verde-principal text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-verde-hover transition-colors shadow-lg whitespace-nowrap"
                             >
                                 <Plus size={20} />
-                                Registrar Ingreso
+                                Nuevo Registro
                             </button>
                         </div>
                     </div>
 
-                    {/* Filters */}
                     {/* Filters */}
                     <div className="bg-white rounded-xl shadow-card p-4">
                         <div className="flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-between">
@@ -190,7 +201,8 @@ const AdminCajaChicaMovimientos = () => {
                                     onChange={(e) => setFilterResponsable(e.target.value)}
                                     className="input-field w-auto max-w-[150px]"
                                 >
-                                    <option value="all">Resp: Todos</option>
+                                    <option value="all" className="hidden">Responsable</option>
+                                    <option value="all">Todos</option>
                                     {responsablesUnicos.map(resp => (
                                         <option key={resp} value={resp}>{resp}</option>
                                     ))}
@@ -202,7 +214,8 @@ const AdminCajaChicaMovimientos = () => {
                                     onChange={(e) => setFilterTipo(e.target.value)}
                                     className="input-field w-auto"
                                 >
-                                    <option value="all">Tipo: Todos</option>
+                                    <option value="all" className="hidden">Tipo</option>
+                                    <option value="all">Todos</option>
                                     <option value="ingreso">Ingresos</option>
                                     <option value="egreso">Egresos</option>
                                 </select>
@@ -213,36 +226,46 @@ const AdminCajaChicaMovimientos = () => {
                                     onChange={(e) => setFilterEstado(e.target.value)}
                                     className="input-field w-auto"
                                 >
-                                    <option value="all">Estado: Todos</option>
+                                    <option value="all" className="hidden">Estado</option>
+                                    <option value="all">Todos</option>
                                     <option value="aprobado">Aprobado</option>
                                     <option value="pendiente">Pendiente</option>
                                     <option value="rechazado">Rechazado</option>
                                 </select>
 
                                 {/* Fechas */}
-                                <div className="flex items-center gap-2 bg-fondo-claro p-1 rounded-lg border border-gris-claro">
-                                    <input
-                                        type="date"
-                                        value={filterFechaInicio}
-                                        onChange={(e) => setFilterFechaInicio(e.target.value)}
-                                        className="bg-transparent border-none text-sm focus:ring-0 p-1 text-gris-oscuro"
-                                        title="Fecha Inicio"
-                                    />
-                                    <span className="text-gris-medio">-</span>
-                                    <input
-                                        type="date"
-                                        value={filterFechaFin}
-                                        onChange={(e) => setFilterFechaFin(e.target.value)}
-                                        className="bg-transparent border-none text-sm focus:ring-0 p-1 text-gris-oscuro"
-                                        title="Fecha Fin"
-                                    />
+                                <div className="flex flex-col gap-1 h-full justify-center">
+                                    <div className="flex items-center gap-2 bg-fondo-claro p-1 rounded-lg border border-gris-claro">
+                                        <input
+                                            type="date"
+                                            value={filterFechaInicio}
+                                            onChange={(e) => setFilterFechaInicio(e.target.value)}
+                                            className="bg-transparent border-none text-sm focus:ring-0 p-1 text-gris-oscuro"
+                                            title="Fecha Inicio"
+                                        />
+                                        <span className="text-gris-medio">-</span>
+                                        <input
+                                            type="date"
+                                            value={filterFechaFin}
+                                            onChange={(e) => setFilterFechaFin(e.target.value)}
+                                            className="bg-transparent border-none text-sm focus:ring-0 p-1 text-gris-oscuro"
+                                            title="Fecha Fin"
+                                        />
+                                    </div>
+                                    {(filterFechaInicio || filterFechaFin) && (
+                                        <button
+                                            onClick={() => {
+                                                setFilterFechaInicio('')
+                                                setFilterFechaFin('')
+                                            }}
+                                            className="text-xs text-red-500 hover:text-red-700 hover:underline flex items-center justify-center gap-1 w-full"
+                                        >
+                                            <X size={12} />
+                                            Limpiar fechas
+                                        </button>
+                                    )}
                                 </div>
                             </div>
-
-                            <button className="flex items-center gap-2 text-gris-medio hover:text-negro-principal px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap ml-auto xl:ml-0">
-                                <Download size={20} />
-                                Exportar
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -336,8 +359,20 @@ const AdminCajaChicaMovimientos = () => {
                                                 <button
                                                     onClick={() => handleView(mov)}
                                                     className="text-azul hover:text-blue-900"
+                                                    title="Ver detalle"
                                                 >
                                                     <FileText size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        if (window.confirm('¿Estás seguro de que deseas eliminar este movimiento?')) {
+                                                            setMovimientos(movimientos.filter(m => m.id !== mov.id))
+                                                        }
+                                                    }}
+                                                    className="text-red-500 hover:text-red-700 ml-3"
+                                                    title="Eliminar"
+                                                >
+                                                    <Trash2 size={18} />
                                                 </button>
                                             </td>
                                         </tr>
@@ -362,6 +397,42 @@ const AdminCajaChicaMovimientos = () => {
                             </div>
 
                             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                                <div className="p-4 bg-gray-50 rounded-lg border border-gray-100 mb-4">
+                                    <label className="block text-sm font-semibold text-negro-principal mb-2">
+                                        Tipo de Movimiento
+                                    </label>
+                                    <div className="flex gap-4">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="tipo"
+                                                value="ingreso"
+                                                checked={modalType === 'ingreso'}
+                                                onChange={() => {
+                                                    setModalType('ingreso')
+                                                    setFormData(prev => ({ ...prev, categoria: 'Reposición' }))
+                                                }}
+                                                className="text-verde-principal focus:ring-verde-principal"
+                                            />
+                                            <span className="text-sm text-gray-700">Ingreso (Reposición)</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="radio"
+                                                name="tipo"
+                                                value="egreso"
+                                                checked={modalType === 'egreso'}
+                                                onChange={() => {
+                                                    setModalType('egreso')
+                                                    setFormData(prev => ({ ...prev, categoria: '' }))
+                                                }}
+                                                className="text-red-600 focus:ring-red-600"
+                                            />
+                                            <span className="text-sm text-gray-700">Gasto / Egreso</span>
+                                        </label>
+                                    </div>
+                                </div>
+
                                 <div>
                                     <label className="block text-sm font-medium text-negro-principal mb-1">
                                         Monto (S/) *

@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AdminLayout from '../components/AdminLayout'
 import { supabase } from '../lib/supabase'
-import { FileText, Search, Eye, Trash2, Filter, Download, Mail, Phone, Package, User, X, Calendar, DollarSign, Edit } from 'lucide-react'
+import { FileText, Search, Eye, Trash2, Filter, Download, Mail, Phone, Package, User, X, Calendar, DollarSign, Edit, Plus } from 'lucide-react'
+import { exportToExcel } from '../utils/exportToExcel'
 
 const SUPABASE_URL = 'https://uecolzuwhgfhicacodqj.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlY29senV3aGdmaGljYWNvZHFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4NjQwMTksImV4cCI6MjA3MjQ0MDAxOX0.EuCWuFr6W-pv8_QBgjbEWzDmnI-iA5L4rFr5CMWpNl4'
@@ -312,13 +313,44 @@ const AdminCotizaciones = () => {
             </h2>
             <p className="text-gris-medio mt-1">{cotizaciones.length} cotizaciones en total</p>
           </div>
-          <button
-            onClick={() => navigate('/admin/cotizaciones/nueva')}
-            className="btn-primary flex items-center gap-2"
-          >
-            <FileText size={20} />
-            Nueva Cotización
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                const filtered = cotizaciones.filter(cotizacion => {
+                  const matchSearch = !searchTerm ||
+                    cotizacion.cliente?.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    cotizacion.id_cotizacion?.toString().includes(searchTerm)
+                  const matchEstado = filterEstado === 'all' || cotizacion.estado === filterEstado
+                  return matchSearch && matchEstado
+                })
+                const columns = [
+                  { key: 'id_cotizacion', label: 'ID Cotización' },
+                  { key: 'cliente.nombre', label: 'Cliente' },
+                  { key: 'cliente.email', label: 'Email Cliente' },
+                  { key: 'cliente.telefono', label: 'Teléfono Cliente' },
+                  { key: 'fecha_cotizacion', label: 'Fecha Cotización' },
+                  { key: 'fecha_vencimiento', label: 'Fecha Vencimiento' },
+                  { key: 'estado', label: 'Estado' },
+                  { key: 'subtotal', label: 'Subtotal' },
+                  { key: 'impuesto', label: 'Impuesto' },
+                  { key: 'total', label: 'Total' },
+                  { key: 'observaciones', label: 'Observaciones' }
+                ]
+                exportToExcel(filtered, columns, 'cotizaciones')
+              }}
+              className="bg-negro-principal hover:bg-black text-white px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors shadow-lg"
+            >
+              <Download size={20} />
+              Exportar Excel
+            </button>
+            <button
+              onClick={() => navigate('/admin/cotizaciones/nueva')}
+              className="btn-primary flex items-center gap-2"
+            >
+              <FileText size={20} />
+              Nueva Cotización
+            </button>
+          </div>
         </div>
       </header>
 
@@ -349,7 +381,7 @@ const AdminCotizaciones = () => {
                 <option value="cancelada">Cancelada</option>
               </select>
             </div>
-            <button className="flex items-center gap-2 px-4 py-2 bg-verde-principal hover:bg-verde-hover text-white rounded-lg transition-colors">
+            <button className="flex items-center gap-2 px-3 py-1.5 bg-negro-principal hover:bg-black text-white rounded-lg transition-colors">
               <Download size={20} />
               Exportar
             </button>

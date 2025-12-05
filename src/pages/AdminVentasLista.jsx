@@ -17,8 +17,10 @@ import {
   XCircle,
   Plus,
   Edit,
-  Trash2
+  Trash2,
+  Download
 } from 'lucide-react'
+import { exportToExcel } from '../utils/exportToExcel'
 
 const SUPABASE_URL = 'https://uecolzuwhgfhicacodqj.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlY29senV3aGdmaGljYWNvZHFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4NjQwMTksImV4cCI6MjA3MjQ0MDAxOX0.EuCWuFr6W-pv8_QBgjbEWzDmnI-iA5L4rFr5CMWpNl4'
@@ -171,13 +173,37 @@ const AdminVentasLista = () => {
               </h1>
               <p className="text-gris-medio mt-1">Historial completo de ventas</p>
             </div>
-            <button
-              onClick={() => window.location.href = '/admin/venta'}
-              className="bg-verde-principal hover:bg-verde-oscuro text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
-            >
-              <Plus size={20} />
-              Nueva Venta
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  const columns = [
+                    { key: 'id_pedido', label: 'ID Pedido' },
+                    { key: 'cliente.nombre', label: 'Cliente' },
+                    { key: 'cliente.email', label: 'Email Cliente' },
+                    { key: 'fecha_pedido', label: 'Fecha Pedido' },
+                    { key: 'fecha_entrega', label: 'Fecha Entrega' },
+                    { key: 'direccion_entrega', label: 'Dirección Entrega' },
+                    { key: 'metodo_pago', label: 'Método de Pago' },
+                    { key: 'estado_pedido', label: 'Estado' },
+                    { key: 'subtotal', label: 'Subtotal' },
+                    { key: 'total_impuesto', label: 'IGV' },
+                    { key: 'total', label: 'Total' }
+                  ]
+                  exportToExcel(filteredVentas, columns, 'ventas')
+                }}
+                className="bg-negro-principal hover:bg-black text-white px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors shadow-lg"
+              >
+                <Download size={20} />
+                Exportar Excel
+              </button>
+              <button
+                onClick={() => window.location.href = '/admin/venta'}
+                className="bg-verde-principal hover:bg-verde-oscuro text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
+              >
+                <Plus size={20} />
+                Nueva Venta
+              </button>
+            </div>
           </div>
         </div>
       </div>

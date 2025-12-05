@@ -14,8 +14,10 @@ import {
   UserX,
   Shield,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Download
 } from 'lucide-react'
+import { exportToExcel } from '../utils/exportToExcel'
 
 const AdminUsuarios = () => {
   const [usuarios, setUsuarios] = useState([])
@@ -195,13 +197,32 @@ const AdminUsuarios = () => {
                 {usuarios.length} usuarios en total
               </p>
             </div>
-            <Link
-              to="/admin/usuarios/nuevo"
-              className="btn-primary flex items-center gap-2"
-            >
-              <Plus size={20} />
-              Nuevo Usuario
-            </Link>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  const columns = [
+                    { key: 'nombre', label: 'Nombre' },
+                    { key: 'apellido', label: 'Apellido' },
+                    { key: 'email', label: 'Email' },
+                    { key: 'rol', label: 'Rol' },
+                    { key: 'activo', label: 'Activo' },
+                    { key: 'created_at', label: 'Fecha Creación' }
+                  ]
+                  exportToExcel(filteredUsuarios, columns, 'usuarios')
+                }}
+                className="bg-negro-principal hover:bg-black text-white px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors shadow-lg"
+              >
+                <Download size={20} />
+                Exportar Excel
+              </button>
+              <Link
+                to="/admin/usuarios/nuevo"
+                className="btn-primary flex items-center gap-2"
+              >
+                <Plus size={20} />
+                Nuevo Usuario
+              </Link>
+            </div>
           </div>
 
           {/* Filters */}
@@ -339,8 +360,8 @@ const AdminUsuarios = () => {
                         <button
                           onClick={() => handleToggleActivo(usuario.id, usuario.activo)}
                           className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium transition-colors ${usuario.activo
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
                             }`}
                         >
                           {usuario.activo ? (

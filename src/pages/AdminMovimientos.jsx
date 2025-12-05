@@ -11,10 +11,12 @@ import {
     ChevronLeft,
     ChevronRight,
     X,
-    ChevronDown
+    ChevronDown,
+    Download
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { exportToExcel } from '../utils/exportToExcel'
 
 const AdminMovimientos = () => {
     const { user } = useAuth()
@@ -189,7 +191,7 @@ const AdminMovimientos = () => {
             m.solicitante?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             m.observacion?.toLowerCase().includes(searchTerm.toLowerCase())
 
-        const matchType = filterType === 'all' || 
+        const matchType = filterType === 'all' ||
             (filterType === 'ingreso' && m.tipo === 'INGRESO') ||
             (filterType === 'salida' && m.tipo === 'SALIDA')
 
@@ -213,11 +215,11 @@ const AdminMovimientos = () => {
         try {
             // Obtener usuario actual
             const { data: { user: currentUser } } = await supabase.auth.getUser()
-            
+
             // Obtener datos del producto seleccionado
             const selectedProduct = products.find(p => p.id === formData.id_producto)
             const medidaProducto = selectedProduct?.unidad_medida || selectedProduct?.medida || formData.medida || ''
-            
+
             const movimientoData = {
                 id_usuario: currentUser?.id || null,
                 id_producto: formData.id_producto,
@@ -246,7 +248,7 @@ const AdminMovimientos = () => {
             // Recargar movimientos
             await loadMovements()
             setIsModalOpen(false)
-            
+
             // Reset form
             setFormData({
                 id_producto: null,
@@ -263,7 +265,7 @@ const AdminMovimientos = () => {
                 estado: 1
             })
             setProductSearchTerm('')
-            
+
             alert('Movimiento guardado exitosamente')
         } catch (error) {
             console.error('Error guardando movimiento:', error)
@@ -315,36 +317,57 @@ const AdminMovimientos = () => {
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                         <div>
                             <h1 className="text-3xl font-bold text-negro-principal">
-                                Movimientos
+                                Movimientos de Inventario
                             </h1>
                             <p className="text-gris-medio mt-1">Registro de ingresos y salidas de inventario</p>
                         </div>
                         <div className="flex gap-3">
-                    <button
-                        onClick={() => {
-                            setProductSearchTerm('')
-                            setShowProductSuggestions(false)
-                            setFormData({
-                                id_producto: null,
-                                id_cliente: null,
-                                id_tipo_movimiento: null,
-                                fecha_movimiento: new Date().toISOString().split('T')[0],
-                                fecha_vencimiento: '',
-                                cantidad: 1,
-                                producto: '',
-                                categoria: '',
-                                medida: '',
-                                observacion: '',
-                                solicitante: '',
-                                estado: 1
-                            })
-                            setIsModalOpen(true)
-                        }}
-                        className="bg-negro-principal text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-gray-800 transition-colors shadow-lg"
-                    >
-                        <Plus size={20} />
-                        Nuevo Movimiento
-                    </button>
+                            <button
+                                onClick={() => {
+                                    const columns = [
+                                        { key: 'id_movimiento', label: 'ID Movimiento' },
+                                        { key: 'producto', label: 'Producto' },
+                                        { key: 'categoria', label: 'Categoría' },
+                                        { key: 'tipo_movimiento', label: 'Tipo Movimiento' },
+                                        { key: 'cantidad', label: 'Cantidad' },
+                                        { key: 'fecha_movimiento', label: 'Fecha Movimiento' },
+                                        { key: 'fecha_vencimiento', label: 'Fecha Vencimiento' },
+                                        { key: 'solicitante', label: 'Solicitante' },
+                                        { key: 'observacion', label: 'Observación' },
+                                        { key: 'estado', label: 'Estado' }
+                                    ]
+                                    exportToExcel(filteredMovements, columns, 'movimientos')
+                                }}
+                                className="bg-negro-principal hover:bg-black text-white px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors shadow-lg"
+                            >
+                                <Download size={20} />
+                                Exportar Excel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setProductSearchTerm('')
+                                    setShowProductSuggestions(false)
+                                    setFormData({
+                                        id_producto: null,
+                                        id_cliente: null,
+                                        id_tipo_movimiento: null,
+                                        fecha_movimiento: new Date().toISOString().split('T')[0],
+                                        fecha_vencimiento: '',
+                                        cantidad: 1,
+                                        producto: '',
+                                        categoria: '',
+                                        medida: '',
+                                        observacion: '',
+                                        solicitante: '',
+                                        estado: 1
+                                    })
+                                    setIsModalOpen(true)
+                                }}
+                                className="bg-verde-principal text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-verde-hover transition-colors shadow-lg"
+                            >
+                                <Plus size={20} />
+                                Nuevo Movimiento
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -559,7 +582,7 @@ const AdminMovimientos = () => {
 
                 {/* Modal Nuevo Movimiento */}
                 {isModalOpen && (
-                    <div 
+                    <div
                         className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
                         onClick={(e) => {
                             // Cerrar modal al hacer clic fuera de él
@@ -619,7 +642,7 @@ const AdminMovimientos = () => {
                                                         <div className="flex items-center justify-between">
                                                             <div className="flex-1">
                                                                 <div className="font-medium text-negro-principal group-hover:text-verde-principal transition-colors">
-                                                            {product.nombre}
+                                                                    {product.nombre}
                                                                 </div>
                                                                 {product.codigo && (
                                                                     <div className="text-xs text-gris-medio mt-0.5">
@@ -631,12 +654,12 @@ const AdminMovimientos = () => {
                                                                 {product.categoria && (
                                                                     <span className="text-xs text-gris-medio bg-blue-100 text-blue-700 px-2 py-1 rounded-full whitespace-nowrap">
                                                                         {product.categoria}
-                                                        </span>
+                                                                    </span>
                                                                 )}
                                                                 {(product.tipo_producto || product.medida || product.unidad_medida) && (
                                                                     <span className="text-xs text-gris-medio bg-gray-100 px-2 py-1 rounded-full whitespace-nowrap">
                                                                         {product.tipo_producto || product.medida || product.unidad_medida}
-                                                        </span>
+                                                                    </span>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -755,7 +778,7 @@ const AdminMovimientos = () => {
                                 <span className="text-xs text-gris-medio">
                                     Última Actualización: {new Date().toLocaleDateString()} Por Admin
                                 </span>
-                                <button 
+                                <button
                                     onClick={handleSaveMovement}
                                     disabled={isSaving}
                                     className="bg-verde-principal text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-green-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"

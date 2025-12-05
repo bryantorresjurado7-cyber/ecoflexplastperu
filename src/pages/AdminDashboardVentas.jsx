@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AdminLayout from '../components/AdminLayout'
+import NotificationButton from '../components/NotificationButton'
 import {
   DollarSign,
   TrendingUp,
@@ -17,7 +18,7 @@ import { supabase } from '../lib/supabase'
 
 const AdminDashboardVentas = () => {
   const navigate = useNavigate()
-  
+
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({
     totalPedidos: 0,
@@ -46,27 +47,27 @@ const AdminDashboardVentas = () => {
       const { count: total } = await supabase
         .from('pedido')
         .select('*', { count: 'exact', head: true })
-      
+
       // Pedidos confirmados
       const { count: confirmados } = await supabase
         .from('pedido')
         .select('*', { count: 'exact', head: true })
         .eq('estado_pedido', 'confirmado')
-      
+
       // Pedidos pendientes
       const { count: pendientes } = await supabase
         .from('pedido')
         .select('*', { count: 'exact', head: true })
         .eq('estado_pedido', 'pendiente')
-      
+
       // Total de ventas (todos los confirmados)
       const { data: ventasData } = await supabase
         .from('pedido')
         .select('total')
         .eq('estado_pedido', 'confirmado')
-      
+
       const totalVentas = ventasData?.reduce((sum, p) => sum + (p.total || 0), 0) || 0
-      
+
       // Ventas en el rango de fechas
       const { data: ventasRango } = await supabase
         .from('pedido')
@@ -74,12 +75,12 @@ const AdminDashboardVentas = () => {
         .eq('estado_pedido', 'confirmado')
         .gte('created_at', dateRange.start)
         .lte('created_at', dateRange.end + 'T23:59:59')
-      
+
       const ventasMes = ventasRango?.reduce((sum, p) => sum + (p.total || 0), 0) || 0
-      
+
       // Calcular meta mensual realista basada en proyección histórica
       const metaMensualCalculada = await calcularMetaMensualRealista()
-      
+
       // Pedidos recientes
       const { data: pedidosData } = await supabase
         .from('pedido')
@@ -93,10 +94,10 @@ const AdminDashboardVentas = () => {
         `)
         .order('created_at', { ascending: false })
         .limit(5)
-      
+
       // Calcular porcentaje de meta de ventas basado en el rango seleccionado
       const porcentajeMeta = calculateMetaVentasPorcentaje(ventasMes, dateRange.start, dateRange.end, metaMensualCalculada)
-      
+
       setStats({
         totalPedidos: total || 0,
         confirmados: confirmados || 0,
@@ -105,9 +106,9 @@ const AdminDashboardVentas = () => {
         ventasMes,
         metaVentasPorcentaje: porcentajeMeta
       })
-      
+
       setRecentPedidos(pedidosData || [])
-      
+
       // Obtener todos los pedidos para la tabla
       const { data: allPedidosData } = await supabase
         .from('pedido')
@@ -120,13 +121,13 @@ const AdminDashboardVentas = () => {
           cliente:cliente(nombre)
         `)
         .order('created_at', { ascending: false })
-      
+
       setAllPedidos(allPedidosData || [])
-      
+
       // Calcular ventas por mes
       const salesByMonthData = calculateSalesByMonth(allPedidosData || [])
       setSalesByMonth(salesByMonthData)
-      
+
     } catch (error) {
       console.error('Error cargando stats de pedidos:', error)
     } finally {
@@ -139,7 +140,7 @@ const AdminDashboardVentas = () => {
       const fechaHoy = new Date()
       const inicioMesActual = new Date(fechaHoy.getFullYear(), fechaHoy.getMonth(), 1)
       const finMesActual = new Date(fechaHoy.getFullYear(), fechaHoy.getMonth() + 1, 0)
-      
+
       // Obtener ventas del mes actual hasta hoy
       const { data: ventasMesActual } = await supabase
         .from('pedido')
@@ -147,28 +148,28 @@ const AdminDashboardVentas = () => {
         .eq('estado_pedido', 'confirmado')
         .gte('created_at', inicioMesActual.toISOString())
         .lte('created_at', fechaHoy.toISOString())
-      
+
       const ventasHastaHoy = ventasMesActual?.reduce((sum, p) => sum + (p.total || 0), 0) || 0
       const diasTranscurridos = fechaHoy.getDate()
       const diasDelMes = finMesActual.getDate()
-      
+
       // Proyección: Si llevamos X% del mes, proyectar ventas mensuales
       if (diasTranscurridos > 0 && ventasHastaHoy > 0) {
         const proyeccionMensual = (ventasHastaHoy / diasTranscurridos) * diasDelMes
         // Aplicar un factor de crecimiento conservador (1.2 = 20% más)
         return Math.max(proyeccionMensual * 1.2, ventasHastaHoy * 2)
       }
-      
+
       // Si no hay ventas aún, obtener promedio histórico de últimos 3 meses
       const tresMesesAtras = new Date(fechaHoy.getFullYear(), fechaHoy.getMonth() - 3, 1)
-      
+
       const { data: ventasHistoricas } = await supabase
         .from('pedido')
         .select('total, created_at')
         .eq('estado_pedido', 'confirmado')
         .gte('created_at', tresMesesAtras.toISOString())
         .lt('created_at', inicioMesActual.toISOString())
-      
+
       if (ventasHistoricas && ventasHistoricas.length > 0) {
         // Agrupar ventas por mes
         const ventasPorMes = {}
@@ -180,7 +181,7 @@ const AdminDashboardVentas = () => {
           }
           ventasPorMes[mesKey] += pedido.total || 0
         })
-        
+
         // Calcular promedio mensual
         const meses = Object.keys(ventasPorMes)
         if (meses.length > 0) {
@@ -190,7 +191,7 @@ const AdminDashboardVentas = () => {
           return Math.max(promedioMensual * 1.1, 500)
         }
       }
-      
+
       // Valor mínimo por defecto si no hay datos históricos
       return Math.max(ventasHastaHoy * 10, 500)
     } catch (error) {
@@ -205,40 +206,40 @@ const AdminDashboardVentas = () => {
     const startDate = new Date(dateStart)
     const endDate = new Date(dateEnd)
     const diasEnRango = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1
-    
+
     // Calcular días del mes actual
     const diasDelMes = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()
-    
+
     // Meta proporcional al rango de fechas seleccionado
     const metaProporcional = (metaMensual / diasDelMes) * diasEnRango
-    
+
     // Calcular porcentaje de cumplimiento
     if (metaProporcional === 0) return 0
     const porcentaje = Math.min(100, Math.round((ventasReales / metaProporcional) * 100))
-    
+
     return porcentaje
   }
 
   const calculateSalesByMonth = (pedidos) => {
     const monthlySales = {}
-    
+
     pedidos.forEach(pedido => {
       const date = new Date(pedido.created_at)
       const monthYear = `${date.toLocaleString('es-PE', { month: 'short' })} ${date.getFullYear()}`
-      
+
       if (!monthlySales[monthYear]) {
         monthlySales[monthYear] = { month: monthYear, total: 0, count: 0 }
       }
-      
+
       monthlySales[monthYear].total += pedido.total || 0
       monthlySales[monthYear].count += 1
     })
-    
+
     // Convertir a array y ordenar
     const result = Object.values(monthlySales).sort((a, b) => {
       return new Date(a.month) - new Date(b.month)
     })
-    
+
     return result.slice(-12) // Últimos 12 meses
   }
 
@@ -278,24 +279,26 @@ const AdminDashboardVentas = () => {
         <div className="bg-white border-b border-gris-claro">
           <div className="px-8 py-6">
             <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold text-negro-principal flex items-center gap-3">
-                  <DollarSign className="text-verde-principal" size={32} />
-                  Dashboard de Ventas
-                </h1>
-                <p className="text-gris-medio mt-1">Análisis y control de ventas</p>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-4 mb-2">
+                  <button
+                    onClick={() => navigate('/admin/dashboard')}
+                    className="p-2 rounded-full border-2 border-[#0EA5E9] text-[#0EA5E9] hover:bg-sky-50 transition-colors"
+                    title="Volver al Dashboard"
+                  >
+                    <ArrowLeft size={24} strokeWidth={2.5} />
+                  </button>
+                  <h1 className="text-3xl font-bold text-negro-principal">
+                    Dashboard de Ventas
+                  </h1>
+                </div>
+                <p className="text-gris-medio ml-16">Análisis y control de ventas</p>
               </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => navigate('/admin/dashboard')}
-                  className="flex items-center gap-2 px-4 py-2 border border-gris-claro rounded-lg hover:bg-fondo-claro transition-colors"
-                >
-                  <ArrowLeft size={20} />
-                  Volver
-                </button>
+              <div className="flex gap-3 items-center">
+                <NotificationButton />
                 <button
                   onClick={() => navigate('/admin/venta')}
-                  className="bg-verde-principal hover:bg-verde-hover text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
+                  className="bg-verde-principal hover:bg-verde-hover text-white px-6 py-2.5 rounded-lg font-semibold transition-colors flex items-center gap-2 shadow-sm"
                 >
                   <Plus size={20} />
                   Nueva Venta
@@ -525,8 +528,8 @@ const AdminDashboardVentas = () => {
                   </h3>
                   <div className="space-y-3">
                     {recentPedidos.map((pedido) => (
-                      <div 
-                        key={pedido.id_pedido} 
+                      <div
+                        key={pedido.id_pedido}
                         className="p-3 bg-fondo-claro rounded-lg hover:shadow-md transition-shadow cursor-pointer"
                         onClick={() => navigate(`/admin/ventas`)}
                       >
@@ -610,7 +613,7 @@ const AdminDashboardVentas = () => {
                   {salesByMonth.map((sales, index) => {
                     const maxSales = Math.max(...salesByMonth.map(s => s.total))
                     const percentage = (sales.total / maxSales) * 100
-                    
+
                     return (
                       <div key={index}>
                         <div className="flex justify-between items-center mb-2">

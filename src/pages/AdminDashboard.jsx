@@ -7,7 +7,9 @@ import {
   ShoppingCart,
   Users,
   AlertCircle,
-  FileText
+  FileText,
+  BarChart2,
+  Wallet
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
@@ -19,7 +21,8 @@ const AdminDashboard = () => {
     productosStockBajo: 0,
     cotizacionesPendientes: 0,
     contactosNuevos: 0,
-    totalPedidos: 0
+    totalPedidos: 0,
+    movimientosHoy: 0
   })
   const [loading, setLoading] = useState(true)
 
@@ -52,12 +55,21 @@ const AdminDashboard = () => {
         .from('pedido')
         .select('*', { count: 'exact', head: true })
 
+      // Movimientos Caja Chica (Hoy)
+      const today = new Date().toISOString().split('T')[0]
+      const { count: movimientosCount } = await supabase
+        .from('caja_chica_movimientos')
+        .select('*', { count: 'exact', head: true })
+        .gte('fecha', `${today}T00:00:00`)
+        .lte('fecha', `${today}T23:59:59`)
+
       setStats({
         totalProductos: productosCount || 0,
         productosStockBajo: stockBajoCount || 0,
         cotizacionesPendientes: cotizacionesCount || 0,
         contactosNuevos: 0,
-        totalPedidos: totalPedidosCount || 0
+        totalPedidos: totalPedidosCount || 0,
+        movimientosHoy: movimientosCount || 0
       })
     } catch (error) {
       console.error('Error cargando estadísticas:', error)
@@ -74,7 +86,6 @@ const AdminDashboard = () => {
       color: 'bg-blue-500',
       link: '/admin/dashboard/productos'
     },
-
     {
       title: 'Total Pedidos',
       value: stats.totalPedidos,
@@ -87,7 +98,7 @@ const AdminDashboard = () => {
       value: stats.cotizacionesPendientes,
       icon: ShoppingCart,
       color: 'bg-green-500',
-      link: '/admin/cotizaciones'
+      link: '/admin/dashboard-cotizaciones'
     },
     {
       title: 'Contactos Nuevos',
@@ -95,7 +106,16 @@ const AdminDashboard = () => {
       icon: Users,
       color: 'bg-purple-500',
       link: '/admin/dashboard/clientes-nuevos'
-    }
+    },
+    {
+      title: 'Caja Chica',
+      value: stats.movimientosHoy,
+      icon: Wallet,
+      color: 'bg-orange-500',
+      link: '/admin/transacciones',
+      isAction: true
+    },
+
   ]
 
   return (
@@ -119,7 +139,7 @@ const AdminDashboard = () => {
         ) : (
           <>
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
               {statsCards.map((stat, index) => {
                 const Icon = stat.icon
                 return (
@@ -142,7 +162,7 @@ const AdminDashboard = () => {
                     <h3 className="text-gris-medio text-sm font-medium mb-1">
                       {stat.title}
                     </h3>
-                    <p className="text-3xl font-bold text-negro-principal">
+                    <p className={`font-bold text-negro-principal ${stat.isAction ? 'text-xl' : 'text-3xl'}`}>
                       {stat.value}
                     </p>
                   </div>
@@ -220,4 +240,3 @@ const AdminDashboard = () => {
 }
 
 export default AdminDashboard
-

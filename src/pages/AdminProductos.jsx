@@ -12,8 +12,10 @@ import {
   DollarSign,
   ChevronLeft,
   ChevronRight,
-  FlaskConical
+  FlaskConical,
+  Download
 } from 'lucide-react'
+import { exportToExcel } from '../utils/exportToExcel'
 import AdminProductosInsumosModal from '../components/AdminProductosInsumosModal'
 
 const AdminProductos = () => {
@@ -220,13 +222,35 @@ const AdminProductos = () => {
                 {productos.length} productos en total
               </p>
             </div>
-            <Link
-              to="/admin/productos/nuevo"
-              className="btn-primary flex items-center justify-center gap-2 w-full md:w-auto"
-            >
-              <Plus size={20} />
-              Nuevo Producto
-            </Link>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  const columns = [
+                    { key: 'codigo', label: 'Código' },
+                    { key: 'nombre', label: 'Nombre' },
+                    { key: 'categoria', label: 'Categoría' },
+                    { key: 'precio_unitario', label: 'Precio Unitario' },
+                    { key: 'precio_mayorista', label: 'Precio Mayorista' },
+                    { key: 'stock_disponible', label: 'Stock Disponible' },
+                    { key: 'stock_minimo', label: 'Stock Mínimo' },
+                    { key: 'activo', label: 'Activo' },
+                    { key: 'created_at', label: 'Fecha Creación' }
+                  ]
+                  exportToExcel(filteredProductos, columns, 'productos')
+                }}
+                className="bg-negro-principal hover:bg-black text-white px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors shadow-lg"
+              >
+                <Download size={20} />
+                Exportar Excel
+              </button>
+              <Link
+                to="/admin/productos/nuevo"
+                className="btn-primary flex items-center justify-center gap-2 w-full md:w-auto"
+              >
+                <Plus size={20} />
+                Nuevo Producto
+              </Link>
+            </div>
           </div>
 
           {/* Filters */}
