@@ -19,6 +19,8 @@ const AdminCotizaciones = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [exportFormat, setExportFormat] = useState('csv')
 
   useEffect(() => {
     loadCotizaciones()
@@ -301,6 +303,14 @@ const AdminCotizaciones = () => {
     }
   }
 
+  const handleExportConfirm = () => {
+    console.log('Exporting as', exportFormat)
+    // Aquí iría la lógica real de exportación
+    setShowExportModal(false)
+    // Simulación de feedback al usuario
+    alert(`Iniciando exportación en formato ${exportFormat.toUpperCase()}...`)
+  }
+
   return (
     <AdminLayout>
       <header className="bg-white border-b border-gray-200 px-8 py-6">
@@ -349,7 +359,10 @@ const AdminCotizaciones = () => {
                 <option value="cancelada">Cancelada</option>
               </select>
             </div>
-            <button className="flex items-center gap-2 px-4 py-2 bg-verde-principal hover:bg-verde-hover text-white rounded-lg transition-colors">
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-verde-principal hover:bg-verde-hover text-white rounded-lg transition-colors"
+            >
               <Download size={20} />
               Exportar
             </button>
@@ -720,6 +733,50 @@ const AdminCotizaciones = () => {
                 className="bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
               >
                 Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Exportación */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-negro-principal mb-2">
+              Exportar Cotizaciones
+            </h3>
+            <p className="text-gris-medio mb-6">
+              Selecciona el formato de exportación para descargar los datos.
+            </p>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-negro-principal mb-2">
+                Formato
+              </label>
+              <select
+                value={exportFormat}
+                onChange={(e) => setExportFormat(e.target.value)}
+                className="w-full px-4 py-2 border border-gris-claro rounded-lg focus:outline-none focus:ring-2 focus:ring-verde-principal"
+              >
+                <option value="csv">CSV (Valores separados por comas)</option>
+                <option value="excel">Excel (.xlsx)</option>
+              </select>
+            </div>
+
+            <div className="flex items-center justify-end gap-4">
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="px-4 py-2 border border-gris-claro rounded-lg hover:bg-fondo-claro transition-colors font-medium text-negro-principal"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleExportConfirm}
+                className="bg-verde-principal hover:bg-verde-hover text-white font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+              >
+                <Download size={18} />
+                Exportar
               </button>
             </div>
           </div>

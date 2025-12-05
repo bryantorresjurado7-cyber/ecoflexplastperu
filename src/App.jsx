@@ -56,6 +56,7 @@ import AdminCajaChicaArqueo from './pages/AdminCajaChicaArqueo';
 import AdminCajaChicaConfig from './pages/AdminCajaChicaConfig';
 import AdminCajaChicaReportes from './pages/AdminCajaChicaReportes'
 import AdminClientesNuevosDashboard from './pages/AdminClientesNuevosDashboard';
+import PrintView from './pages/PrintView';
 
 function App() {
   return (
@@ -435,6 +436,12 @@ function App() {
             <Route path="/admin/configuracion" element={
               <ProtectedRoute>
                 <AdminConfiguracion />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/print" element={
+              <ProtectedRoute>
+                <PrintView />
               </ProtectedRoute>
             } />
 
