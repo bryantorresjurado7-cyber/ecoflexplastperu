@@ -59,6 +59,9 @@ import AdminCajaChicaConfig from './pages/AdminCajaChicaConfig';
 import AdminCajaChicaReportes from './pages/AdminCajaChicaReportes'
 
 import AdminClientesNuevosDashboard from './pages/AdminClientesNuevosDashboard';
+import AdminProyeccionVentas from './pages/AdminProyeccionVentas';
+import AdminOrdenMantenimiento from './pages/AdminOrdenMantenimiento';
+import AdminListaOrdenesMantenimiento from './pages/AdminListaOrdenesMantenimiento';
 
 function App() {
   return (
@@ -277,6 +280,14 @@ function App() {
               </ProtectedRoute>
             } />
 
+            <Route path="/admin/ventas/proyeccion" element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <AdminProyeccionVentas />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+
             <Route path="/admin/productos/nuevo" element={
               <ProtectedRoute>
                 <AdminProductoForm />
@@ -340,6 +351,35 @@ function App() {
             <Route path="/admin/maquinarias/editar/:id" element={
               <ProtectedRoute>
                 <AdminMaquinariaForm />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/maquinarias/orden-mantenimiento" element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <AdminOrdenMantenimiento />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/maquinarias/ordenes/editar/:id" element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <AdminOrdenMantenimiento />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/maquinarias/ordenes/ver/:id" element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <AdminOrdenMantenimiento />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/maquinarias/lista-ordenes" element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <AdminListaOrdenesMantenimiento />
+                </AdminLayout>
               </ProtectedRoute>
             } />
             {/* Usuarios routes */}

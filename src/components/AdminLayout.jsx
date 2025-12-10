@@ -18,7 +18,9 @@ import {
   Cog,
   ArrowLeftRight,
   Wallet,
-  Bell
+  Bell,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react'
 
 const AdminLayout = ({ children }) => {
@@ -29,6 +31,17 @@ const AdminLayout = ({ children }) => {
   // State for sidebar
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+
+  // State for expanded menus (accordion)
+  const [expandedMenus, setExpandedMenus] = useState({})
+
+  const toggleSubmenu = (title) => {
+    if (!sidebarOpen) setSidebarOpen(true);
+    setExpandedMenus(prev => ({
+      ...prev,
+      [title]: !prev[title]
+    }))
+  }
 
   // State for notifications
   const [showNotifications, setShowNotifications] = useState(false)
@@ -128,7 +141,11 @@ const AdminLayout = ({ children }) => {
     {
       title: 'Ventas',
       icon: History,
-      path: '/admin/ventas'
+      path: '/admin/ventas', // Base path needed for active check, but item works as toggle
+      subItems: [
+        { title: 'Gestión de Ventas', path: '/admin/ventas' },
+        { title: 'Proyección de ventas', path: '/admin/ventas/proyeccion' }
+      ]
     },
     {
       title: 'Cotizaciones',
@@ -148,7 +165,11 @@ const AdminLayout = ({ children }) => {
     {
       title: 'Maquinarias',
       icon: Cog,
-      path: '/admin/maquinarias'
+      path: '/admin/maquinarias',
+      subItems: [
+        { title: 'Gestión de Maquinaria', path: '/admin/maquinarias' },
+        { title: 'Generar orden de mantenimiento', path: '/admin/maquinarias/orden-mantenimiento' }
+      ]
     },
     {
       title: 'Producción',
@@ -231,8 +252,54 @@ const AdminLayout = ({ children }) => {
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto no-scrollbar">
           {menuItems.map((item) => {
             const Icon = item.icon
+            // Check if active (modified for parent items)
             const isActive = location.pathname === item.path ||
               (item.path !== '/admin/dashboard' && location.pathname.startsWith(item.path))
+
+            const hasSubItems = item.subItems && item.subItems.length > 0
+            const isExpanded = expandedMenus[item.title]
+
+            if (hasSubItems) {
+              return (
+                <div key={item.title}>
+                  <button
+                    onClick={() => toggleSubmenu(item.title)}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all whitespace-nowrap ${isActive ? 'text-white' : 'text-gris-claro hover:bg-gris-oscuro hover:text-white'
+                      }`}
+                    title={!sidebarOpen && !isMobile ? item.title : ''}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon size={20} className="min-w-[20px]" />
+                      {(sidebarOpen || isMobile) && <span className="font-medium">{item.title}</span>}
+                    </div>
+                    {(sidebarOpen || isMobile) && (
+                      isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />
+                    )}
+                  </button>
+
+                  {/* Submenu Items */}
+                  <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-40' : 'max-h-0'}`}>
+                    {(sidebarOpen || isMobile) && item.subItems.map(subItem => {
+                      const isSubActive = location.pathname === subItem.path
+                      return (
+                        <Link
+                          key={subItem.path}
+                          to={subItem.path}
+                          onClick={() => isMobile && setSidebarOpen(false)}
+                          className={`flex items-center gap-3 px-4 py-2 pl-12 text-sm rounded-lg transition-all whitespace-nowrap ${isSubActive
+                            ? 'text-verde-principal font-medium'
+                            : 'text-gris-medio hover:text-white'
+                            }`}
+                        >
+                          <div className={`w-1.5 h-1.5 rounded-full ${isSubActive ? 'bg-verde-principal' : 'bg-gris-medio'}`}></div>
+                          {subItem.title}
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            }
 
             return (
               <Link

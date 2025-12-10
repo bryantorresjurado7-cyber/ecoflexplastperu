@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import AdminLayout from '../components/AdminLayout'
 import usuariosService from '../services/usuariosService'
 import NotificationToast from '../components/NotificationToast'
-import { ArrowLeft, Save, Users, Mail, Lock, Shield, UserCheck } from 'lucide-react'
+import { ArrowLeft, Save, Users, Mail, Lock, Shield, UserCheck, ChevronDown, Eye, EyeOff } from 'lucide-react'
 
 const AdminUsuarioForm = () => {
   const navigate = useNavigate()
@@ -17,6 +17,21 @@ const AdminUsuarioForm = () => {
     title: '',
     message: ''
   })
+
+  // Estado para sugerencias de rol
+  const [showRoleSuggestions, setShowRoleSuggestions] = useState(false)
+
+  // Estado para mostrar/ocultar contraseñas
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+  const predefinedRoles = [
+    { value: 'operario', label: 'Operario' },
+    { value: 'supervisor', label: 'Supervisor' },
+    { value: 'control_calidad', label: 'Control de Calidad' },
+    { value: 'admin', label: 'Administrador' },
+    { value: 'super_admin', label: 'Super Administrador' }
+  ]
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -40,15 +55,15 @@ const AdminUsuarioForm = () => {
     try {
       setLoading(true)
       const result = await usuariosService.loadUsuario(id)
-      
+
       if (result.error) throw new Error(result.error)
-      
+
       const data = result.data
       // Asegurarse de que apellido sea string vacío si es null o undefined
       const apellido = data.apellido ? String(data.apellido).trim() : ''
       // Asegurarse de que email sea string vacío si es null o undefined
       const email = data.email ? String(data.email).trim() : ''
-      
+
       setFormData({
         nombre: data.nombre ? String(data.nombre).trim() : '',
         apellido: apellido,
@@ -77,7 +92,7 @@ const AdminUsuarioForm = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }))
-    
+
     // Limpiar error del campo al escribir
     if (errors[name]) {
       setErrors(prev => ({
@@ -136,8 +151,8 @@ const AdminUsuarioForm = () => {
     try {
       const usuarioData = {
         nombre: formData.nombre.trim(),
-        apellido: formData.apellido.trim() || null,
-        email: formData.email.trim().toLowerCase(),
+        apellido: (formData.apellido || '').trim() || null,
+        email: (formData.email || '').trim().toLowerCase(),
         rol: formData.rol,
         activo: formData.activo
       }
@@ -159,8 +174,8 @@ const AdminUsuarioForm = () => {
       setNotification({
         open: true,
         type: 'success',
-        title: isEditing ? 'Usuario actualizado' : 'Usuario creado',
-        message: `El usuario ha sido ${isEditing ? 'actualizado' : 'creado'} correctamente.`
+        title: isEditing ? 'Actualización Completada' : 'Creación Exito',
+        message: 'El cambio se realizó de manera exitosa.'
       })
 
       setTimeout(() => {
@@ -168,11 +183,39 @@ const AdminUsuarioForm = () => {
       }, 2000)
     } catch (error) {
       console.error('Error guardando usuario:', error)
+
+      let errorMessage = error.message || `No se pudo ${isEditing ? 'actualizar' : 'crear'} el usuario.`
+
+      const newErrors = {}
+      const msgLower = errorMessage.toLowerCase()
+
+      // Mapeo de errores de API a campos específicos
+      if (msgLower.includes('email') || msgLower.includes('correo')) {
+        newErrors.email = errorMessage
+      }
+
+      if (msgLower.includes('password') || msgLower.includes('contraseña')) {
+        newErrors.password = errorMessage
+      }
+
+      if (msgLower.includes('name') || msgLower.includes('nombre')) {
+        newErrors.nombre = errorMessage
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(prev => ({ ...prev, ...newErrors }))
+      }
+
+      if (errorMessage.toLowerCase().includes('constraint') || errorMessage.toLowerCase().includes('violates check constraint')) {
+        errorMessage = 'Error de base de datos: El rol ingresado no está permitido actualmente.'
+        setErrors(prev => ({ ...prev, rol: errorMessage }))
+      }
+
       setNotification({
         open: true,
         type: 'error',
         title: 'Error',
-        message: error.message || `No se pudo ${isEditing ? 'actualizar' : 'crear'} el usuario.`
+        message: 'No se pudo guardar. Revise los campos marcados en rojo.'
       })
     } finally {
       setLoading(false)
@@ -212,7 +255,11 @@ const AdminUsuarioForm = () => {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} autoComplete="off">
+            {/* Hack para evitar autocompletado en algunos navegadores */}
+            <input type="password" style={{ display: 'none' }} />
+            <input type="email" style={{ display: 'none' }} />
+
             <div className="bg-white rounded-xl shadow-card p-6 space-y-6">
               {/* Información Personal */}
               <div>
@@ -221,64 +268,65 @@ const AdminUsuarioForm = () => {
                   Información Personal
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-negro-principal mb-2">
-                    Nombre *
-                  </label>
-                  <input
-                    type="text"
-                    name="nombre"
-                    value={formData.nombre}
-                    onChange={handleChange}
-                    className={`input-field ${errors.nombre ? 'border-red-500' : ''}`}
-                    placeholder="Ingrese el nombre"
-                    required
-                  />
-                  {errors.nombre && (
-                    <p className="text-xs text-red-600 mt-1">{errors.nombre}</p>
-                  )}
-                </div>
+                  <div>
+                    <label className="block text-sm font-medium text-negro-principal mb-2">
+                      Nombre *
+                    </label>
+                    <input
+                      type="text"
+                      name="nombre"
+                      value={formData.nombre}
+                      onChange={handleChange}
+                      className={`input-field ${errors.nombre ? 'border-red-500' : ''}`}
+                      placeholder="Ingrese el nombre"
+                      autoComplete="off"
+                      required
+                    />
+                    {errors.nombre && (
+                      <p className="text-xs text-red-600 mt-1">{errors.nombre}</p>
+                    )}
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-negro-principal mb-2">
-                    Apellido
-                  </label>
-                  <input
-                    type="text"
-                    name="apellido"
-                    value={formData.apellido}
-                    onChange={handleChange}
-                    className="input-field"
-                    placeholder="Ingrese el apellido (opcional)"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-sm font-medium text-negro-principal mb-2">
+                      Apellido
+                    </label>
+                    <input
+                      type="text"
+                      name="apellido"
+                      value={formData.apellido}
+                      onChange={handleChange}
+                      className="input-field"
+                      placeholder="Ingrese el apellido (opcional)"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-negro-principal mb-2 flex items-center gap-2">
-                    <Mail size={16} />
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    disabled={isEditing}
-                    className={`input-field ${errors.email ? 'border-red-500' : ''} ${isEditing ? 'bg-gray-50 cursor-not-allowed' : ''}`}
-                    placeholder="usuario@ejemplo.com"
-                    required
-                  />
-                  {errors.email && (
-                    <p className="text-xs text-red-600 mt-1">{errors.email}</p>
-                  )}
-                  {isEditing && (
-                    <p className="text-xs text-gris-medio mt-1">
-                      El email no se puede modificar
-                    </p>
-                  )}
+                  <div className="relative">
+                    <label className="block text-sm font-medium text-negro-principal mb-2 flex items-center gap-2">
+                      <Mail size={16} />
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email || ''}
+                      onChange={handleChange}
+                      className={`input-field ${errors.email ? 'border-red-500' : ''}`}
+                      placeholder="usuario@ejemplo.com"
+                      autoComplete="off"
+                      required
+                    />
+                    {errors.email && (
+                      <p className="text-xs text-red-600 mt-1">{errors.email}</p>
+                    )}
+                    {isEditing && (
+                      <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                        Nota: Si cambia el email, deberá usar el nuevo para iniciar sesión.
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
 
               {/* Contraseña */}
               <div>
@@ -286,47 +334,76 @@ const AdminUsuarioForm = () => {
                   <Lock size={20} />
                   {isEditing ? 'Cambiar Contraseña' : 'Contraseña'}
                 </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-negro-principal mb-2">
-                    {isEditing ? 'Nueva Contraseña' : 'Contraseña *'}
-                  </label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className={`input-field ${errors.password ? 'border-red-500' : ''}`}
-                    placeholder={isEditing ? 'Deje vacío para no cambiar' : 'Mínimo 6 caracteres'}
-                    required={!isEditing}
-                  />
-                  {errors.password && (
-                    <p className="text-xs text-red-600 mt-1">{errors.password}</p>
-                  )}
-                  {isEditing && (
-                    <p className="text-xs text-gris-medio mt-1">
-                      Deje en blanco si no desea cambiar la contraseña
-                    </p>
-                  )}
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="relative">
+                    <label className="block text-sm font-medium text-negro-principal mb-2">
+                      {isEditing ? 'Nueva Contraseña' : 'Contraseña *'}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        className={`input-field pr-10 ${errors.password ? 'border-red-500' : ''}`}
+                        placeholder={isEditing ? 'Deje vacío para no cambiar' : 'Mínimo 6 caracteres'}
+                        autoComplete="new-password"
+                        required={!isEditing}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gris-medio hover:text-negro-principal transition-colors p-1"
+                        onMouseDown={() => setShowPassword(true)}
+                        onMouseUp={() => setShowPassword(false)}
+                        onMouseLeave={() => setShowPassword(false)}
+                        onTouchStart={() => setShowPassword(true)}
+                        onTouchEnd={() => setShowPassword(false)}
+                        title="Mantener presionado para ver"
+                      >
+                        {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
+                      </button>
+                    </div>
+                    {errors.password && (
+                      <p className="text-xs text-red-600 mt-1">{errors.password}</p>
+                    )}
+                    {isEditing && (
+                      <p className="text-xs text-gris-medio mt-1">
+                        Deje en blanco si no desea cambiar la contraseña
+                      </p>
+                    )}
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-negro-principal mb-2">
-                    Confirmar Contraseña {!isEditing && '*'}
-                  </label>
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    className={`input-field ${errors.confirmPassword ? 'border-red-500' : ''}`}
-                    placeholder="Confirme la contraseña"
-                    required={!isEditing}
-                  />
-                  {errors.confirmPassword && (
-                    <p className="text-xs text-red-600 mt-1">{errors.confirmPassword}</p>
-                  )}
-                </div>
+                  <div>
+                    <label className="block text-sm font-medium text-negro-principal mb-2">
+                      Confirmar Contraseña {!isEditing && '*'}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        className={`input-field pr-10 ${errors.confirmPassword ? 'border-red-500' : ''}`}
+                        placeholder="Confirme la contraseña"
+                        required={!isEditing}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gris-medio hover:text-negro-principal transition-colors p-1"
+                        onMouseDown={() => setShowConfirmPassword(true)}
+                        onMouseUp={() => setShowConfirmPassword(false)}
+                        onMouseLeave={() => setShowConfirmPassword(false)}
+                        onTouchStart={() => setShowConfirmPassword(true)}
+                        onTouchEnd={() => setShowConfirmPassword(false)}
+                        title="Mantener presionado para ver"
+                      >
+                        {showConfirmPassword ? <Eye size={20} /> : <EyeOff size={20} />}
+                      </button>
+                    </div>
+                    {errors.confirmPassword && (
+                      <p className="text-xs text-red-600 mt-1">{errors.confirmPassword}</p>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -337,59 +414,99 @@ const AdminUsuarioForm = () => {
                   Permisos y Estado
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-negro-principal mb-2">
-                    Rol *
-                  </label>
-                  <select
-                    name="rol"
-                    value={formData.rol}
-                    onChange={handleChange}
-                    className={`input-field ${errors.rol ? 'border-red-500' : ''}`}
-                    required
-                  >
-                    <option value="operario">Operario</option>
-                    <option value="supervisor">Supervisor</option>
-                    <option value="control_calidad">Control de Calidad</option>
-                    <option value="admin">Administrador</option>
-                    <option value="super_admin">Super Administrador</option>
-                  </select>
-                  {errors.rol && (
-                    <p className="text-xs text-red-600 mt-1">{errors.rol}</p>
-                  )}
-                  <p className="text-xs text-gris-medio mt-1">
-                    El rol determina los permisos del usuario en el sistema
-                  </p>
-                </div>
+                  <div>
+                    <label className="block text-sm font-medium text-negro-principal mb-2">
+                      Rol *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="rol"
+                        value={formData.rol}
+                        onChange={handleChange}
+                        onFocus={() => setShowRoleSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowRoleSuggestions(false), 200)}
+                        className={`input-field pr-10 ${errors.rol ? 'border-red-500' : ''}`}
+                        placeholder="Seleccione o escriba un rol"
+                        autoComplete="off"
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gris-medio hover:text-negro-principal transition-colors"
+                        onClick={() => setShowRoleSuggestions(!showRoleSuggestions)}
+                      >
+                        <ChevronDown size={20} />
+                      </button>
 
-                <div>
-                  <label className="flex items-center gap-3 p-4 border border-gris-muy-claro rounded-lg hover:bg-gris-muy-claro cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="activo"
-                      checked={formData.activo}
-                      onChange={handleChange}
-                      className="w-4 h-4 text-verde-principal focus:ring-verde-principal border-gris-muy-claro rounded"
-                    />
-                    <div className="flex items-center gap-2">
-                      <UserCheck className="text-verde-principal" size={20} />
-                      <span className="text-sm font-medium text-negro-principal">
-                        Usuario Activo
-                      </span>
+                      {showRoleSuggestions && (
+                        <ul className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-auto">
+                          {predefinedRoles
+                            .filter(r =>
+                              r.label.toLowerCase().includes(formData.rol.toLowerCase()) ||
+                              r.value.toLowerCase().includes(formData.rol.toLowerCase())
+                            )
+                            .map(role => (
+                              <li
+                                key={role.value}
+                                className="px-4 py-2 hover:bg-fondo-claro cursor-pointer text-sm text-negro-principal flex items-center justify-between group"
+                                onMouseDown={() => {
+                                  setFormData(prev => ({ ...prev, rol: role.value }))
+                                  setErrors(prev => ({ ...prev, rol: '' }))
+                                  setShowRoleSuggestions(false)
+                                }}
+                              >
+                                <span>{role.label}</span>
+                                <span className="text-gris-medio text-xs group-hover:text-negro-principal transition-colors">
+                                  {role.value}
+                                </span>
+                              </li>
+                            ))
+                          }
+                          {formData.rol && !predefinedRoles.some(r => r.value === formData.rol) && (
+                            <li className="px-4 py-2 text-sm text-gris-medio italic bg-gray-50 border-t border-gray-100">
+                              Nuevo rol personalizado: <span className="font-medium text-negro-principal">{formData.rol}</span>
+                            </li>
+                          )}
+                        </ul>
+                      )}
                     </div>
-                  </label>
-                  <p className="text-xs text-gris-medio mt-1">
-                    Los usuarios inactivos no pueden iniciar sesión
-                  </p>
-                </div>
+                    {errors.rol && (
+                      <p className="text-xs text-red-600 mt-1">{errors.rol}</p>
+                    )}
+                    <p className="text-xs text-gris-medio mt-1">
+                      Seleccione un rol existente o escriba uno nuevo
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-3 p-4 border border-gris-muy-claro rounded-lg hover:bg-gris-muy-claro cursor-pointer">
+                      <input
+                        type="checkbox"
+                        name="activo"
+                        checked={formData.activo}
+                        onChange={handleChange}
+                        className="w-4 h-4 text-verde-principal focus:ring-verde-principal border-gris-muy-claro rounded"
+                      />
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="text-verde-principal" size={20} />
+                        <span className="text-sm font-medium text-negro-principal">
+                          Usuario Activo
+                        </span>
+                      </div>
+                    </label>
+                    <p className="text-xs text-gris-medio mt-1">
+                      Los usuarios inactivos no pueden iniciar sesión
+                    </p>
+                  </div>
                 </div>
               </div>
 
               {/* Botones */}
               <div className="flex justify-end gap-4 pt-4 border-t border-gray-200">
-              <button
-                type="button"
-                onClick={() => navigate('/admin/usuarios')}
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin/usuarios')}
                   className="px-6 py-2 border border-gris-medio text-gris-medio rounded-lg hover:bg-gris-muy-claro transition-colors"
                 >
                   Cancelar
