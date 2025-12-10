@@ -550,7 +550,13 @@ const AdminProductoForm = () => {
           </div>
         </form>
       </div>
-    </AdminLayout>
+
+      <PrintPreviewModal
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        data={printData}
+      />
+    </AdminLayout >
   )
 }
 

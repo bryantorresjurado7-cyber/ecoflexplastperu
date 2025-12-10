@@ -405,11 +405,11 @@ const AdminMaquinariaForm = () => {
                     extra: {
                       marca: formData.marca,
                       modelo: formData.modelo,
-                      serie: formData.serie,
+                      serie: formData.numero_serie,
                       estado: formData.estado,
                       ubicacion: formData.ubicacion
                     },
-                    observaciones: `Último mantenimiento: ${formData.ultimo_mantenimiento || 'No registrado'}`
+                    observaciones: `Último mantenimiento: ${formData.fecha_ultimo_mantenimiento || 'No registrado'}`
                   })
                   setShowPrintModal(true)
                 }}
