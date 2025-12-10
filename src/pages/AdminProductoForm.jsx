@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { ArrowLeft, Save, Package } from 'lucide-react'
+import { ArrowLeft, Save, Package, Printer } from 'lucide-react'
 import AdminLayout from '../components/AdminLayout'
+import PrintPreviewModal from '../components/PrintPreviewModal'
 
 const AdminProductoForm = () => {
   const navigate = useNavigate()
@@ -33,6 +34,10 @@ const AdminProductoForm = () => {
 
   const [coloresInput, setColoresInput] = useState('')
   const [medidasInput, setMedidasInput] = useState('')
+
+  // Estado para el modal de impresión
+  const [showPrintModal, setShowPrintModal] = useState(false)
+  const [printData, setPrintData] = useState(null)
 
   useEffect(() => {
     loadCategorias()
@@ -487,6 +492,42 @@ const AdminProductoForm = () => {
                 disabled={loading}
               >
                 Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPrintData({
+                    type: 'PRODUCTO',
+                    titulo: 'FICHA DE PRODUCTO',
+                    fecha: new Date().toLocaleDateString(),
+                    cliente: {
+                      empresa: 'ECO FLEX PLAST'
+                    },
+                    detalles: [{
+                      codigo: formData.codigo || 'N/A',
+                      nombre: formData.nombre || 'Sin nombre',
+                      descripcion: formData.descripcion || '',
+                      cantidad: formData.stock_disponible || 0,
+                      precio_unitario: formData.precio_base || 0,
+                      subtotal: (formData.stock_disponible || 0) * (formData.precio_base || 0)
+                    }],
+                    resumen: {
+                      subtotal: (formData.stock_disponible || 0) * (formData.precio_base || 0),
+                      total: (formData.stock_disponible || 0) * (formData.precio_base || 0)
+                    },
+                    extra: {
+                      categoria: formData.categoria,
+                      ubicacion: formData.ubicacion_almacen,
+                      estado: formData.activo ? 'Activo' : 'Inactivo'
+                    },
+                    observaciones: formData.observaciones
+                  })
+                  setShowPrintModal(true)
+                }}
+                className="px-6 py-3 border border-gris-muy-claro rounded-xl font-medium text-gris-oscuro hover:bg-fondo-claro transition-colors flex items-center gap-2"
+              >
+                <Printer size={20} />
+                Imprimir
               </button>
               <button
                 type="submit"

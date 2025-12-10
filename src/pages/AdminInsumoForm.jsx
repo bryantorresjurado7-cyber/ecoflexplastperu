@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import AdminLayout from '../components/AdminLayout'
+import PrintPreviewModal from '../components/PrintPreviewModal'
 import NotificationToast from '../components/NotificationToast'
-import { ArrowLeft, Save, FlaskConical } from 'lucide-react'
+import { ArrowLeft, Save, FlaskConical, Printer } from 'lucide-react'
 
 const AdminInsumoForm = () => {
   const navigate = useNavigate()
@@ -35,6 +36,10 @@ const AdminInsumoForm = () => {
     message: ''
   })
 
+  // Estado para el modal de impresión
+  const [showPrintModal, setShowPrintModal] = useState(false)
+  const [printData, setPrintData] = useState(null)
+
   useEffect(() => {
     loadProveedores()
     if (isEditing) {
@@ -49,7 +54,7 @@ const AdminInsumoForm = () => {
         .select('id_proveedor, nombre')
         .eq('estado', true)
         .order('nombre')
-      
+
       if (error) throw error
       setProveedores(data || [])
     } catch (error) {
@@ -64,9 +69,9 @@ const AdminInsumoForm = () => {
         .select('*')
         .eq('id_insumo', id)
         .single()
-      
+
       if (error) throw error
-      
+
       setFormData({
         codigo_insumo: data.codigo_insumo || '',
         nombre: data.nombre || '',
@@ -123,7 +128,7 @@ const AdminInsumoForm = () => {
           .eq('id_insumo', id)
           .select()
           .single()
-        
+
         if (error) throw error
         result = data
       } else {
@@ -132,9 +137,9 @@ const AdminInsumoForm = () => {
           .insert([insumoData])
           .select()
           .single()
-        
-      if (error) throw error
-      result = data
+
+        if (error) throw error
+        result = data
       }
 
       // Mostrar notificación de éxito
@@ -142,11 +147,11 @@ const AdminInsumoForm = () => {
         open: true,
         type: 'success',
         title: isEditing ? '¡Insumo actualizado exitosamente!' : '¡Insumo creado exitosamente!',
-        message: isEditing 
+        message: isEditing
           ? 'El insumo ha sido actualizado correctamente.'
           : 'El insumo ha sido guardado correctamente.'
       })
-      
+
       // Navegar después de 2 segundos
       setTimeout(() => {
         navigate('/admin/insumos')
@@ -411,6 +416,44 @@ const AdminInsumoForm = () => {
                 Cancelar
               </button>
               <button
+                type="button"
+                onClick={() => {
+                  setPrintData({
+                    type: 'INSUMO',
+                    titulo: 'FICHA DE INSUMO',
+                    fecha: new Date().toLocaleDateString(),
+                    cliente: {
+                      empresa: 'ECO FLEX PLAST',
+                      documento: 'INTERNO'
+                    },
+                    detalles: [{
+                      codigo: formData.codigo_insumo || 'N/A',
+                      nombre: formData.nombre || 'Sin nombre',
+                      descripcion: formData.descripcion || '',
+                      cantidad: formData.stock_disponible || 0,
+                      precio_unitario: formData.costo_unitario || 0,
+                      subtotal: (formData.stock_disponible || 0) * (formData.costo_unitario || 0)
+                    }],
+                    resumen: {
+                      subtotal: (formData.stock_disponible || 0) * (formData.costo_unitario || 0),
+                      total: (formData.stock_disponible || 0) * (formData.costo_unitario || 0)
+                    },
+                    extra: {
+                      categoria: formData.categoria,
+                      unidad: formData.unidad_medida,
+                      proveedor: proveedores.find(p => p.id_proveedor === formData.id_proveedor)?.nombre || 'No asignado',
+                      ubicacion: formData.ubicacion_almacen
+                    },
+                    observaciones: formData.observaciones
+                  })
+                  setShowPrintModal(true)
+                }}
+                className="px-6 py-3 border border-verde-principal text-verde-principal rounded-xl font-semibold hover:bg-verde-principal hover:text-white transition-colors flex items-center gap-2"
+              >
+                <Printer size={18} />
+                Imprimir
+              </button>
+              <button
                 type="submit"
                 disabled={loading}
                 className="btn-primary flex items-center gap-2"
@@ -435,6 +478,12 @@ const AdminInsumoForm = () => {
         message={notification.message}
         onClose={() => setNotification({ ...notification, open: false })}
         duration={notification.type === 'success' ? 3000 : 5000}
+      />
+
+      <PrintPreviewModal
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        data={printData}
       />
     </AdminLayout>
   )

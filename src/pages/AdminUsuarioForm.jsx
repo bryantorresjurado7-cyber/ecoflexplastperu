@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import AdminLayout from '../components/AdminLayout'
 import usuariosService from '../services/usuariosService'
 import NotificationToast from '../components/NotificationToast'
-import { ArrowLeft, Save, Users, Mail, Lock, Shield, UserCheck } from 'lucide-react'
+import { ArrowLeft, Save, Users, Mail, Lock, Shield, UserCheck, Printer } from 'lucide-react'
+import PrintPreviewModal from '../components/PrintPreviewModal'
 
 const AdminUsuarioForm = () => {
   const navigate = useNavigate()
@@ -30,6 +31,10 @@ const AdminUsuarioForm = () => {
 
   const [errors, setErrors] = useState({})
 
+  // Estado para el modal de impresión
+  const [showPrintModal, setShowPrintModal] = useState(false)
+  const [printData, setPrintData] = useState(null)
+
   useEffect(() => {
     if (isEditing) {
       loadUsuario()
@@ -40,15 +45,15 @@ const AdminUsuarioForm = () => {
     try {
       setLoading(true)
       const result = await usuariosService.loadUsuario(id)
-      
+
       if (result.error) throw new Error(result.error)
-      
+
       const data = result.data
       // Asegurarse de que apellido sea string vacío si es null o undefined
       const apellido = data.apellido ? String(data.apellido).trim() : ''
       // Asegurarse de que email sea string vacío si es null o undefined
       const email = data.email ? String(data.email).trim() : ''
-      
+
       setFormData({
         nombre: data.nombre ? String(data.nombre).trim() : '',
         apellido: apellido,
@@ -77,7 +82,7 @@ const AdminUsuarioForm = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }))
-    
+
     // Limpiar error del campo al escribir
     if (errors[name]) {
       setErrors(prev => ({
@@ -221,64 +226,64 @@ const AdminUsuarioForm = () => {
                   Información Personal
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-negro-principal mb-2">
-                    Nombre *
-                  </label>
-                  <input
-                    type="text"
-                    name="nombre"
-                    value={formData.nombre}
-                    onChange={handleChange}
-                    className={`input-field ${errors.nombre ? 'border-red-500' : ''}`}
-                    placeholder="Ingrese el nombre"
-                    required
-                  />
-                  {errors.nombre && (
-                    <p className="text-xs text-red-600 mt-1">{errors.nombre}</p>
-                  )}
-                </div>
+                  <div>
+                    <label className="block text-sm font-medium text-negro-principal mb-2">
+                      Nombre *
+                    </label>
+                    <input
+                      type="text"
+                      name="nombre"
+                      value={formData.nombre}
+                      onChange={handleChange}
+                      className={`input-field ${errors.nombre ? 'border-red-500' : ''}`}
+                      placeholder="Ingrese el nombre"
+                      required
+                    />
+                    {errors.nombre && (
+                      <p className="text-xs text-red-600 mt-1">{errors.nombre}</p>
+                    )}
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-negro-principal mb-2">
-                    Apellido
-                  </label>
-                  <input
-                    type="text"
-                    name="apellido"
-                    value={formData.apellido}
-                    onChange={handleChange}
-                    className="input-field"
-                    placeholder="Ingrese el apellido (opcional)"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-sm font-medium text-negro-principal mb-2">
+                      Apellido
+                    </label>
+                    <input
+                      type="text"
+                      name="apellido"
+                      value={formData.apellido}
+                      onChange={handleChange}
+                      className="input-field"
+                      placeholder="Ingrese el apellido (opcional)"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-negro-principal mb-2 flex items-center gap-2">
-                    <Mail size={16} />
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    disabled={isEditing}
-                    className={`input-field ${errors.email ? 'border-red-500' : ''} ${isEditing ? 'bg-gray-50 cursor-not-allowed' : ''}`}
-                    placeholder="usuario@ejemplo.com"
-                    required
-                  />
-                  {errors.email && (
-                    <p className="text-xs text-red-600 mt-1">{errors.email}</p>
-                  )}
-                  {isEditing && (
-                    <p className="text-xs text-gris-medio mt-1">
-                      El email no se puede modificar
-                    </p>
-                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-negro-principal mb-2 flex items-center gap-2">
+                      <Mail size={16} />
+                      Email *
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      disabled={isEditing}
+                      className={`input-field ${errors.email ? 'border-red-500' : ''} ${isEditing ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                      placeholder="usuario@ejemplo.com"
+                      required
+                    />
+                    {errors.email && (
+                      <p className="text-xs text-red-600 mt-1">{errors.email}</p>
+                    )}
+                    {isEditing && (
+                      <p className="text-xs text-gris-medio mt-1">
+                        El email no se puede modificar
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
 
               {/* Contraseña */}
               <div>
@@ -286,47 +291,47 @@ const AdminUsuarioForm = () => {
                   <Lock size={20} />
                   {isEditing ? 'Cambiar Contraseña' : 'Contraseña'}
                 </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-negro-principal mb-2">
-                    {isEditing ? 'Nueva Contraseña' : 'Contraseña *'}
-                  </label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className={`input-field ${errors.password ? 'border-red-500' : ''}`}
-                    placeholder={isEditing ? 'Deje vacío para no cambiar' : 'Mínimo 6 caracteres'}
-                    required={!isEditing}
-                  />
-                  {errors.password && (
-                    <p className="text-xs text-red-600 mt-1">{errors.password}</p>
-                  )}
-                  {isEditing && (
-                    <p className="text-xs text-gris-medio mt-1">
-                      Deje en blanco si no desea cambiar la contraseña
-                    </p>
-                  )}
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-negro-principal mb-2">
+                      {isEditing ? 'Nueva Contraseña' : 'Contraseña *'}
+                    </label>
+                    <input
+                      type="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className={`input-field ${errors.password ? 'border-red-500' : ''}`}
+                      placeholder={isEditing ? 'Deje vacío para no cambiar' : 'Mínimo 6 caracteres'}
+                      required={!isEditing}
+                    />
+                    {errors.password && (
+                      <p className="text-xs text-red-600 mt-1">{errors.password}</p>
+                    )}
+                    {isEditing && (
+                      <p className="text-xs text-gris-medio mt-1">
+                        Deje en blanco si no desea cambiar la contraseña
+                      </p>
+                    )}
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-negro-principal mb-2">
-                    Confirmar Contraseña {!isEditing && '*'}
-                  </label>
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    className={`input-field ${errors.confirmPassword ? 'border-red-500' : ''}`}
-                    placeholder="Confirme la contraseña"
-                    required={!isEditing}
-                  />
-                  {errors.confirmPassword && (
-                    <p className="text-xs text-red-600 mt-1">{errors.confirmPassword}</p>
-                  )}
-                </div>
+                  <div>
+                    <label className="block text-sm font-medium text-negro-principal mb-2">
+                      Confirmar Contraseña {!isEditing && '*'}
+                    </label>
+                    <input
+                      type="password"
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      className={`input-field ${errors.confirmPassword ? 'border-red-500' : ''}`}
+                      placeholder="Confirme la contraseña"
+                      required={!isEditing}
+                    />
+                    {errors.confirmPassword && (
+                      <p className="text-xs text-red-600 mt-1">{errors.confirmPassword}</p>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -337,62 +342,94 @@ const AdminUsuarioForm = () => {
                   Permisos y Estado
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-negro-principal mb-2">
-                    Rol *
-                  </label>
-                  <select
-                    name="rol"
-                    value={formData.rol}
-                    onChange={handleChange}
-                    className={`input-field ${errors.rol ? 'border-red-500' : ''}`}
-                    required
-                  >
-                    <option value="operario">Operario</option>
-                    <option value="supervisor">Supervisor</option>
-                    <option value="control_calidad">Control de Calidad</option>
-                    <option value="admin">Administrador</option>
-                    <option value="super_admin">Super Administrador</option>
-                  </select>
-                  {errors.rol && (
-                    <p className="text-xs text-red-600 mt-1">{errors.rol}</p>
-                  )}
-                  <p className="text-xs text-gris-medio mt-1">
-                    El rol determina los permisos del usuario en el sistema
-                  </p>
-                </div>
-
-                <div>
-                  <label className="flex items-center gap-3 p-4 border border-gris-muy-claro rounded-lg hover:bg-gris-muy-claro cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="activo"
-                      checked={formData.activo}
+                  <div>
+                    <label className="block text-sm font-medium text-negro-principal mb-2">
+                      Rol *
+                    </label>
+                    <select
+                      name="rol"
+                      value={formData.rol}
                       onChange={handleChange}
-                      className="w-4 h-4 text-verde-principal focus:ring-verde-principal border-gris-muy-claro rounded"
-                    />
-                    <div className="flex items-center gap-2">
-                      <UserCheck className="text-verde-principal" size={20} />
-                      <span className="text-sm font-medium text-negro-principal">
-                        Usuario Activo
-                      </span>
-                    </div>
-                  </label>
-                  <p className="text-xs text-gris-medio mt-1">
-                    Los usuarios inactivos no pueden iniciar sesión
-                  </p>
-                </div>
+                      className={`input-field ${errors.rol ? 'border-red-500' : ''}`}
+                      required
+                    >
+                      <option value="operario">Operario</option>
+                      <option value="supervisor">Supervisor</option>
+                      <option value="control_calidad">Control de Calidad</option>
+                      <option value="admin">Administrador</option>
+                      <option value="super_admin">Super Administrador</option>
+                    </select>
+                    {errors.rol && (
+                      <p className="text-xs text-red-600 mt-1">{errors.rol}</p>
+                    )}
+                    <p className="text-xs text-gris-medio mt-1">
+                      El rol determina los permisos del usuario en el sistema
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-3 p-4 border border-gris-muy-claro rounded-lg hover:bg-gris-muy-claro cursor-pointer">
+                      <input
+                        type="checkbox"
+                        name="activo"
+                        checked={formData.activo}
+                        onChange={handleChange}
+                        className="w-4 h-4 text-verde-principal focus:ring-verde-principal border-gris-muy-claro rounded"
+                      />
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="text-verde-principal" size={20} />
+                        <span className="text-sm font-medium text-negro-principal">
+                          Usuario Activo
+                        </span>
+                      </div>
+                    </label>
+                    <p className="text-xs text-gris-medio mt-1">
+                      Los usuarios inactivos no pueden iniciar sesión
+                    </p>
+                  </div>
                 </div>
               </div>
 
               {/* Botones */}
               <div className="flex justify-end gap-4 pt-4 border-t border-gray-200">
-              <button
-                type="button"
-                onClick={() => navigate('/admin/usuarios')}
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin/usuarios')}
                   className="px-6 py-2 border border-gris-medio text-gris-medio rounded-lg hover:bg-gris-muy-claro transition-colors"
                 >
                   Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPrintData({
+                      type: 'USUARIO',
+                      titulo: 'FICHA DE USUARIO',
+                      fecha: new Date().toLocaleDateString(),
+                      cliente: {
+                        nombre: `${formData.nombre} ${formData.apellido || ''}`.trim(),
+                        empresa: 'ECO FLEX PLAST',
+                        email: formData.email,
+                        documento: 'INTERNO'
+                      },
+                      detalles: [],
+                      resumen: {
+                        subtotal: 'N/A',
+                        total: 'N/A'
+                      },
+                      extra: {
+                        rol: formData.rol,
+                        estado: formData.activo ? 'Activo' : 'Inactivo',
+                        id: id || 'Nuevo'
+                      },
+                      observaciones: 'Usuario del sistema administrativo'
+                    })
+                    setShowPrintModal(true)
+                  }}
+                  className="px-6 py-2 border border-gris-medio text-gris-medio rounded-lg hover:bg-gris-muy-claro transition-colors flex items-center gap-2"
+                >
+                  <Printer size={20} />
+                  Imprimir
                 </button>
                 <button
                   type="submit"
@@ -409,14 +446,20 @@ const AdminUsuarioForm = () => {
       </div>
 
       {/* Notificación */}
-      {notification.open && (
-        <NotificationToast
-          type={notification.type}
-          title={notification.title}
-          message={notification.message}
-          onClose={() => setNotification({ ...notification, open: false })}
-        />
-      )}
+      <NotificationToast
+        open={notification.open}
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+        onClose={() => setNotification({ ...notification, open: false })}
+        duration={notification.type === 'success' ? 3000 : 5000}
+      />
+
+      <PrintPreviewModal
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        data={printData}
+      />
     </AdminLayout>
   )
 }

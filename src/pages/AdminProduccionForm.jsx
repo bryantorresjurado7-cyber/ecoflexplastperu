@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import AdminLayout from '../components/AdminLayout'
+import PrintPreviewModal from '../components/PrintPreviewModal'
 import produccionService from '../services/produccionService'
 import NotificationToast from '../components/NotificationToast'
 import { ArrowLeft, Save, Factory, Package, Calendar, DollarSign, Users, Settings, AlertTriangle, CheckCircle2, Printer } from 'lucide-react'
@@ -44,6 +45,10 @@ const AdminProduccionForm = () => {
   const [maquinarias, setMaquinarias] = useState([])
   const [operarios, setOperarios] = useState([])
   const [operariosSeleccionados, setOperariosSeleccionados] = useState([])
+
+  // Estado para el modal de impresión
+  const [showPrintModal, setShowPrintModal] = useState(false)
+  const [printData, setPrintData] = useState(null)
 
   // Función para validar stock - debe estar definida antes del useEffect que la usa
   const validateStock = useCallback(async (idProducto, cantidadPlanificada) => {
@@ -365,7 +370,7 @@ const AdminProduccionForm = () => {
   }
 
   const handlePrint = () => {
-    // Find related data names
+    // Buscar datos relacionados
     const producto = productos.find(p => p.id === formData.id_producto)
     const maquinaria = maquinarias.find(m => m.id_maquinaria === formData.id_maquinaria)
     const operariosNombres = operarios
@@ -373,16 +378,30 @@ const AdminProduccionForm = () => {
       .map(o => o.nombre)
       .join(', ')
 
-    const printData = {
-      type: 'ORDEN_PRODUCCION',
+    const modalData = {
+      type: 'PRODUCCION',
       titulo: 'ORDEN DE PRODUCCIÓN',
       numero: isEditing ? `OP-${id.slice(0, 8)}` : 'BORRADOR',
-      fecha: formData.fecha_produccion,
-      valido_hasta: formData.fecha_vencimiento,
+      fecha: new Date(formData.fecha_produccion).toLocaleDateString(),
+      valido_hasta: formData.fecha_vencimiento ? new Date(formData.fecha_vencimiento).toLocaleDateString() : 'Por definir',
       cliente: {
-        nombre: 'Interno',
+        nombre: 'Producción Interna',
         empresa: 'ECO FLEX PLAST',
-        documento: 'RUC: 20610012345'
+        documento: 'RUC: 20602432321', // Asumiendo RUC de la empresa
+        email: 'produccion@ecoflexplast.com',
+        direccion: 'Planta Principal'
+      },
+      detalles: [{
+        codigo: producto?.codigo || 'N/A',
+        nombre: producto?.nombre || 'Producto no seleccionado',
+        descripcion: `Lote: ${formData.lote || 'N/A'}`,
+        cantidad: formData.cantidad_planificada || 0,
+        precio_unitario: formData.costo_unitario || 0,
+        subtotal: formData.costo_total || 0
+      }],
+      resumen: {
+        subtotal: formData.costo_total || 0,
+        total: formData.costo_total || 0
       },
       extra: {
         turno: formData.turno,
@@ -390,23 +409,11 @@ const AdminProduccionForm = () => {
         operarios: operariosNombres || 'No asignados',
         estado: formData.estado
       },
-      detalles: [{
-        codigo: producto?.codigo || 'N/A',
-        nombre: producto?.nombre || 'Producto no seleccionado',
-        cantidad: formData.cantidad_planificada,
-        precio_unitario: formData.costo_unitario,
-        subtotal: formData.costo_total
-      }],
-      resumen: {
-        subtotal: formData.costo_total,
-        impuestos: 0,
-        total: formData.costo_total
-      },
       observaciones: formData.observaciones
     }
 
-    localStorage.setItem('printData', JSON.stringify(printData))
-    window.open('/print', '_blank')
+    setPrintData(modalData)
+    setShowPrintModal(true)
   }
 
   if (loading && isEditing) {
@@ -931,6 +938,12 @@ const AdminProduccionForm = () => {
           message={notification.message}
           onClose={() => setNotification({ ...notification, open: false })}
           duration={notification.type === 'success' ? 3000 : 5000}
+        />
+
+        <PrintPreviewModal
+          isOpen={showPrintModal}
+          onClose={() => setShowPrintModal(false)}
+          data={printData}
         />
       </div>
     </AdminLayout>

@@ -124,7 +124,7 @@ const AdminLayout = ({ children }) => {
 
   // Sidebar classes calculation
   const getSidebarClasses = () => {
-    const baseClasses = "bg-negro-principal text-white transition-all duration-300 flex flex-col fixed h-full z-50"
+    const baseClasses = "bg-negro-principal text-white transition-all duration-300 flex flex-col fixed h-full z-50 print:hidden"
 
     if (isMobile) {
       // Mobile: Fixed width, slide in/out
@@ -137,7 +137,7 @@ const AdminLayout = ({ children }) => {
 
   // Main content margin calculation
   const getMainClasses = () => {
-    const baseClasses = "flex-1 transition-all duration-300 min-h-screen"
+    const baseClasses = "flex-1 transition-all duration-300 min-h-screen print:ml-0"
 
     if (isMobile) {
       return `${baseClasses} ml-0`
@@ -227,7 +227,7 @@ const AdminLayout = ({ children }) => {
       <main className={getMainClasses()}>
         {/* Mobile Header Toggle */}
         {isMobile && !sidebarOpen && (
-          <div className="bg-white p-4 shadow-sm flex items-center justify-between sticky top-0 z-30">
+          <div className="bg-white p-4 shadow-sm flex items-center justify-between sticky top-0 z-30 print:hidden">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(true)}

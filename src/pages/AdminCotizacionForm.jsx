@@ -19,6 +19,7 @@ import {
   FileText,
   Printer
 } from 'lucide-react'
+import PrintPreviewModal from '../components/PrintPreviewModal'
 
 const SUPABASE_URL = 'https://uecolzuwhgfhicacodqj.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlY29senV3aGdmaGljYWNvZHFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4NjQwMTksImV4cCI6MjA3MjQ0MDAxOX0.EuCWuFr6W-pv8_QBgjbEWzDmnI-iA5L4rFr5CMWpNl4'
@@ -34,6 +35,10 @@ const AdminCotizacionForm = () => {
   const [loadingCotizacion, setLoadingCotizacion] = useState(false)
   const [loadingCotizacionExistente, setLoadingCotizacionExistente] = useState(false)
   const [cotizacionCargada, setCotizacionCargada] = useState(false)
+
+  // Estado para el modal de impresión
+  const [showPrintModal, setShowPrintModal] = useState(false)
+  const [printData, setPrintData] = useState(null)
 
   // Estado para notificaciones
   const [notification, setNotification] = useState({
@@ -509,12 +514,12 @@ const AdminCotizacionForm = () => {
   }
 
   const handlePrint = () => {
-    const printData = {
+    const modalData = {
       type: 'COTIZACION',
       titulo: 'COTIZACIÓN',
       numero: cotizacionNumero || 'BORRADOR',
-      fecha: new Date().toISOString().split('T')[0],
-      valido_hasta: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      fecha: new Date().toLocaleDateString(),
+      valido_hasta: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toLocaleDateString(),
       cliente: {
         nombre: clienteNombre,
         documento: `${clienteTipoDocumento}: ${clienteNumeroDocumento}`,
@@ -526,6 +531,7 @@ const AdminCotizacionForm = () => {
       detalles: carrito.map(item => ({
         codigo: item.codigo,
         nombre: item.nombre,
+        descripcion: item.descripcion || '',
         cantidad: item.cantidad,
         precio_unitario: item.precio_unitario,
         subtotal: item.precio_unitario * item.cantidad
@@ -539,8 +545,8 @@ const AdminCotizacionForm = () => {
       observaciones: observaciones
     }
 
-    localStorage.setItem('printData', JSON.stringify(printData))
-    window.open('/print', '_blank')
+    setPrintData(modalData)
+    setShowPrintModal(true)
   }
 
   return (
@@ -961,6 +967,12 @@ const AdminCotizacionForm = () => {
         message={notification.message}
         onClose={() => setNotification({ ...notification, open: false })}
         duration={notification.type === 'success' ? 3000 : 5000}
+      />
+
+      <PrintPreviewModal
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        data={printData}
       />
     </AdminLayout>
   )

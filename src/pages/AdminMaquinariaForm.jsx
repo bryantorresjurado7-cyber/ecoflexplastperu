@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import AdminLayout from '../components/AdminLayout'
+import PrintPreviewModal from '../components/PrintPreviewModal'
 import NotificationToast from '../components/NotificationToast'
-import { ArrowLeft, Save, Settings } from 'lucide-react'
+import { ArrowLeft, Save, Settings, Printer } from 'lucide-react'
 
 const SUPABASE_URL = 'https://uecolzuwhgfhicacodqj.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlY29senV3aGdmaGljYWNvZHFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4NjQwMTksImV4cCI6MjA3MjQ0MDAxOX0.EuCWuFr6W-pv8_QBgjbEWzDmnI-iA5L4rFr5CMWpNl4'
@@ -38,6 +39,10 @@ const AdminMaquinariaForm = () => {
     message: ''
   })
 
+  // Estado para el modal de impresión
+  const [showPrintModal, setShowPrintModal] = useState(false)
+  const [printData, setPrintData] = useState(null)
+
   useEffect(() => {
     if (isEditing) {
       loadMaquinaria()
@@ -59,9 +64,9 @@ const AdminMaquinariaForm = () => {
       })
 
       const result = await response.json()
-      
+
       if (!result.success) throw new Error(result.error)
-      
+
       const data = result.data
       setFormData({
         codigo_maquinaria: data.codigo_maquinaria || '',
@@ -119,7 +124,7 @@ const AdminMaquinariaForm = () => {
       const url = isEditing
         ? `${SUPABASE_URL}/functions/v1/crud-maquinarias?id=${id}`
         : `${SUPABASE_URL}/functions/v1/crud-maquinarias`
-      
+
       const method = isEditing ? 'PUT' : 'POST'
 
       const response = await fetch(url, {
@@ -133,7 +138,7 @@ const AdminMaquinariaForm = () => {
       })
 
       const result = await response.json()
-      
+
       if (!result.success) throw new Error(result.error)
 
       // Mostrar notificación de éxito
@@ -141,11 +146,11 @@ const AdminMaquinariaForm = () => {
         open: true,
         type: 'success',
         title: isEditing ? '¡Maquinaria actualizada exitosamente!' : '¡Maquinaria creada exitosamente!',
-        message: isEditing 
+        message: isEditing
           ? 'La maquinaria ha sido actualizada correctamente.'
           : 'La maquinaria ha sido guardada correctamente.'
       })
-      
+
       // Navegar después de 2 segundos
       setTimeout(() => {
         navigate('/admin/maquinarias')
@@ -375,6 +380,45 @@ const AdminMaquinariaForm = () => {
                 Cancelar
               </button>
               <button
+                type="button"
+                onClick={() => {
+                  setPrintData({
+                    type: 'MAQUINARIA',
+                    titulo: 'FICHA DE MAQUINARIA',
+                    fecha: new Date().toLocaleDateString(),
+                    cliente: {
+                      empresa: 'ECO FLEX PLAST',
+                      documento: 'INTERNO'
+                    },
+                    detalles: [{
+                      codigo: formData.codigo || 'N/A',
+                      nombre: formData.nombre || 'Sin nombre',
+                      descripcion: formData.descripcion || '',
+                      cantidad: 1,
+                      precio_unitario: 'N/A',
+                      subtotal: 'N/A'
+                    }],
+                    resumen: {
+                      subtotal: 'N/A',
+                      total: 'N/A'
+                    },
+                    extra: {
+                      marca: formData.marca,
+                      modelo: formData.modelo,
+                      serie: formData.serie,
+                      estado: formData.estado,
+                      ubicacion: formData.ubicacion
+                    },
+                    observaciones: `Último mantenimiento: ${formData.ultimo_mantenimiento || 'No registrado'}`
+                  })
+                  setShowPrintModal(true)
+                }}
+                className="px-6 py-3 border border-verde-principal text-verde-principal rounded-xl font-semibold hover:bg-verde-principal hover:text-white transition-colors flex items-center gap-2"
+              >
+                <Printer size={18} />
+                Imprimir
+              </button>
+              <button
                 type="submit"
                 disabled={loading}
                 className="btn-primary flex items-center gap-2"
@@ -399,6 +443,12 @@ const AdminMaquinariaForm = () => {
         message={notification.message}
         onClose={() => setNotification({ ...notification, open: false })}
         duration={notification.type === 'success' ? 3000 : 5000}
+      />
+
+      <PrintPreviewModal
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        data={printData}
       />
     </AdminLayout>
   )
