@@ -563,13 +563,22 @@ const AdminCotizacionForm = () => {
               {isEditing ? 'Modifica los datos de la cotización' : 'Complete el formulario para crear una cotización'}
             </p>
           </div>
-          <button
-            onClick={() => navigate('/admin/cotizaciones')}
-            className="btn-secondary flex items-center gap-2"
-          >
-            <ArrowLeft size={20} />
-            Volver
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePrint}
+              className="btn-secondary flex items-center gap-2"
+            >
+              <Printer size={20} />
+              Imprimir
+            </button>
+            <button
+              onClick={() => navigate('/admin/cotizaciones')}
+              className="btn-secondary flex items-center gap-2"
+            >
+              <ArrowLeft size={20} />
+              Volver
+            </button>
+          </div>
         </div>
       </header>
 
