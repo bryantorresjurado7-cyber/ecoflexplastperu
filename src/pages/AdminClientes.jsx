@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { User, Search, Plus, Mail, Phone, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import AdminLayout from '../components/AdminLayout';
 import { clientesService } from '../services/clientesService'
 import ClienteFormModal from '../components/ClienteFormModal'
 
@@ -129,232 +130,234 @@ const AdminClientes = () => {
   };
 
   return (
-    <>
-      <header className="bg-white border-b border-gray-200 px-4 md:px-8 py-6">
-        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-negro-principal flex items-center gap-3">
-              <User className="text-verde-principal" size={28} />
-              Gestión de Clientes
-            </h2>
-            <p className="text-gris-medio mt-1">{totalItems} clientes en total</p>
-          </div>
-          <button className="btn-primary flex items-center justify-center gap-2 w-full md:w-auto" onClick={openCreate}>
-            <Plus size={20} />
-            Nuevo Cliente
-          </button>
-        </div>
-      </header>
-      <div className="p-4 md:p-8">
-        <div className="bg-white rounded-xl shadow-card p-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gris-medio" size={20} />
-              <input
-                type="text"
-                placeholder="Buscar por nombre, email o teléfono..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gris-claro rounded-lg focus:outline-none focus:ring-2 focus:ring-verde-principal"
-              />
+    <AdminLayout>
+      <div className="w-full min-h-screen bg-fondo-claro p-4 md:p-8">
+        <div className="mb-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-negro-principal flex items-center gap-3">
+                <User className="text-verde-principal" size={28} />
+                Gestión de Clientes
+              </h2>
+              <p className="text-gris-medio mt-1">{totalItems} clientes en total</p>
             </div>
+            <button className="btn-primary flex items-center justify-center gap-2 w-full md:w-auto" onClick={openCreate}>
+              <Plus size={20} />
+              Nuevo Cliente
+            </button>
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-card overflow-hidden">
-          {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-verde-principal"></div>
+        <div>
+          <div className="bg-white rounded-xl shadow-card p-6 mb-6">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gris-medio" size={20} />
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre, email o teléfono..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gris-claro rounded-lg focus:outline-none focus:ring-2 focus:ring-verde-principal"
+                />
+              </div>
             </div>
-          ) : error ? (
-            <div className="p-6 text-center text-red-600">{error}</div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-full">
-                  <thead className="bg-fondo-claro border-b border-gris-claro">
-                    <tr>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">NOMBRE</th>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">EMAIL</th>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">TELÉFONO</th>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">TIPO DOC.</th>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">NÚM. DOC.</th>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">DIRECCIÓN</th>
-                      <th className="text-center py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">ESTADO</th>
-                      <th className="text-center py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">ACCIONES</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {clientes.length === 0 ? (
+          </div>
+          <div className="bg-white rounded-xl shadow-card overflow-hidden">
+            {loading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-verde-principal"></div>
+              </div>
+            ) : error ? (
+              <div className="p-6 text-center text-red-600">{error}</div>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-fondo-claro border-b border-gris-claro">
                       <tr>
-                        <td colSpan="8" className="py-8 text-center text-gris-medio">
-                          No se encontraron clientes
-                        </td>
+                        <th className="text-left py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">NOMBRE</th>
+                        <th className="text-left py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">EMAIL</th>
+                        <th className="text-left py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">TELÉFONO</th>
+                        <th className="text-left py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">TIPO DOC.</th>
+                        <th className="text-left py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">NÚM. DOC.</th>
+                        <th className="text-left py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">DIRECCIÓN</th>
+                        <th className="text-center py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">ESTADO</th>
+                        <th className="text-center py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">ACCIONES</th>
                       </tr>
-                    ) : (
-                      clientes.map((cliente) => (
-                        <tr key={cliente.id} className="border-b border-gris-claro hover:bg-fondo-claro transition-colors">
-                          <td className="py-4 px-6">
-                            <div className="flex items-center gap-2">
-                              <User size={18} className="text-gris-oscuro flex-shrink-0" />
-                              <span className="font-medium text-sm text-negro-principal">{cliente.nombre || 'N/A'}</span>
-                            </div>
-                          </td>
-                          <td className="py-4 px-6 text-sm text-gris-oscuro">
-                            {cliente.email ? (
-                              <div className="flex items-center gap-1">
-                                <Mail size={14} className="flex-shrink-0" />
-                                <span>{cliente.email}</span>
-                              </div>
-                            ) : (
-                              <span className="text-gris-medio">N/A</span>
-                            )}
-                          </td>
-                          <td className="py-4 px-6 text-sm text-gris-oscuro">
-                            {cliente.telefono ? (
-                              <div className="flex items-center gap-1">
-                                <Phone size={14} className="flex-shrink-0" />
-                                <span>{cliente.telefono}</span>
-                              </div>
-                            ) : (
-                              <span className="text-gris-medio">N/A</span>
-                            )}
-                          </td>
-                          <td className="py-4 px-6 text-sm text-gris-oscuro">
-                            {cliente.tipo_documento || 'DNI'}
-                          </td>
-                          <td className="py-4 px-6 text-sm text-gris-oscuro font-mono">
-                            {cliente.numero_documento || <span className="text-gris-medio">N/A</span>}
-                          </td>
-                          <td className="py-4 px-6 text-sm text-gris-oscuro max-w-xs">
-                            <span className="truncate block" title={cliente.direccion || ''}>
-                              {cliente.direccion || 'N/A'}
-                            </span>
-                          </td>
-                          <td className="py-4 px-6 text-center">
-                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${cliente.estado ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                              {cliente.estado ? 'Activo' : 'Inactivo'}
-                            </span>
-                          </td>
-                          <td className="py-4 px-6 text-center">
-                            <div className="flex items-center justify-center gap-2">
-                              <button title="Editar" onClick={() => openEdit(cliente)} className="p-2 hover:bg-blue-50 rounded-lg transition-colors text-blue-600">
-                                <Edit size={18} />
-                              </button>
-                              <button title="Eliminar" onClick={() => requestDelete(cliente)} className="p-2 hover:bg-red-50 rounded-lg transition-colors text-red-500">
-                                <Trash2 size={18} />
-                              </button>
-                            </div>
+                    </thead>
+                    <tbody>
+                      {clientes.length === 0 ? (
+                        <tr>
+                          <td colSpan="8" className="py-8 text-center text-gris-medio">
+                            No se encontraron clientes
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      ) : (
+                        clientes.map((cliente) => (
+                          <tr key={cliente.id} className="border-b border-gris-claro hover:bg-fondo-claro transition-colors">
+                            <td className="py-4 px-6">
+                              <div className="flex items-center gap-2">
+                                <User size={18} className="text-gris-oscuro flex-shrink-0" />
+                                <span className="font-medium text-sm text-negro-principal">{cliente.nombre || 'N/A'}</span>
+                              </div>
+                            </td>
+                            <td className="py-4 px-6 text-sm text-gris-oscuro">
+                              {cliente.email ? (
+                                <div className="flex items-center gap-1">
+                                  <Mail size={14} className="flex-shrink-0" />
+                                  <span>{cliente.email}</span>
+                                </div>
+                              ) : (
+                                <span className="text-gris-medio">N/A</span>
+                              )}
+                            </td>
+                            <td className="py-4 px-6 text-sm text-gris-oscuro">
+                              {cliente.telefono ? (
+                                <div className="flex items-center gap-1">
+                                  <Phone size={14} className="flex-shrink-0" />
+                                  <span>{cliente.telefono}</span>
+                                </div>
+                              ) : (
+                                <span className="text-gris-medio">N/A</span>
+                              )}
+                            </td>
+                            <td className="py-4 px-6 text-sm text-gris-oscuro">
+                              {cliente.tipo_documento || 'DNI'}
+                            </td>
+                            <td className="py-4 px-6 text-sm text-gris-oscuro font-mono">
+                              {cliente.numero_documento || <span className="text-gris-medio">N/A</span>}
+                            </td>
+                            <td className="py-4 px-6 text-sm text-gris-oscuro max-w-xs">
+                              <span className="truncate block" title={cliente.direccion || ''}>
+                                {cliente.direccion || 'N/A'}
+                              </span>
+                            </td>
+                            <td className="py-4 px-6 text-center">
+                              <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${cliente.estado ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                {cliente.estado ? 'Activo' : 'Inactivo'}
+                              </span>
+                            </td>
+                            <td className="py-4 px-6 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <button title="Editar" onClick={() => openEdit(cliente)} className="p-2 hover:bg-blue-50 rounded-lg transition-colors text-blue-600">
+                                  <Edit size={18} />
+                                </button>
+                                <button title="Eliminar" onClick={() => requestDelete(cliente)} className="p-2 hover:bg-red-50 rounded-lg transition-colors text-red-500">
+                                  <Trash2 size={18} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
 
-              {/* Paginación - siempre visible cuando hay datos */}
-              {totalItems > 0 && (
-                <div className="border-t border-gris-claro px-6 py-4 bg-white">
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <p className="text-sm text-gris-medio">
-                      Mostrando <span className="font-semibold">{startIndex + 1}</span> a <span className="font-semibold">{endIndex}</span> de <span className="font-semibold">{totalItems}</span> clientes
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                        className="p-2 border border-gris-claro rounded-lg hover:bg-fondo-claro transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Página anterior"
-                      >
-                        <ChevronLeft size={18} />
-                      </button>
+                {/* Paginación - siempre visible cuando hay datos */}
+                {totalItems > 0 && (
+                  <div className="border-t border-gris-claro px-6 py-4 bg-white">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <p className="text-sm text-gris-medio">
+                        Mostrando <span className="font-semibold">{startIndex + 1}</span> a <span className="font-semibold">{endIndex}</span> de <span className="font-semibold">{totalItems}</span> clientes
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          className="p-2 border border-gris-claro rounded-lg hover:bg-fondo-claro transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Página anterior"
+                        >
+                          <ChevronLeft size={18} />
+                        </button>
 
-                      {/* Números de página */}
-                      <div className="flex gap-1">
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                          let pageNum;
-                          if (totalPages <= 5) {
-                            pageNum = i + 1;
-                          } else if (currentPage <= 3) {
-                            pageNum = i + 1;
-                          } else if (currentPage >= totalPages - 2) {
-                            pageNum = totalPages - 4 + i;
-                          } else {
-                            pageNum = currentPage - 2 + i;
-                          }
+                        {/* Números de página */}
+                        <div className="flex gap-1">
+                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum;
+                            if (totalPages <= 5) {
+                              pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                              pageNum = i + 1;
+                            } else if (currentPage >= totalPages - 2) {
+                              pageNum = totalPages - 4 + i;
+                            } else {
+                              pageNum = currentPage - 2 + i;
+                            }
 
-                          return (
-                            <button
-                              key={pageNum}
-                              onClick={() => setCurrentPage(pageNum)}
-                              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${currentPage === pageNum
+                            return (
+                              <button
+                                key={pageNum}
+                                onClick={() => setCurrentPage(pageNum)}
+                                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${currentPage === pageNum
                                   ? 'bg-verde-principal text-white'
                                   : 'border border-gris-claro hover:bg-fondo-claro text-gris-oscuro'
-                                }`}
-                            >
-                              {pageNum}
-                            </button>
-                          );
-                        })}
+                                  }`}
+                              >
+                                {pageNum}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        <button
+                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                          className="p-2 border border-gris-claro rounded-lg hover:bg-fondo-claro transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Página siguiente"
+                        >
+                          <ChevronRight size={18} />
+                        </button>
+
+                        <span className="text-xs text-gris-medio ml-2 whitespace-nowrap">
+                          Página {currentPage} de {totalPages}
+                        </span>
                       </div>
-
-                      <button
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                        className="p-2 border border-gris-claro rounded-lg hover:bg-fondo-claro transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Página siguiente"
-                      >
-                        <ChevronRight size={18} />
-                      </button>
-
-                      <span className="text-xs text-gris-medio ml-2 whitespace-nowrap">
-                        Página {currentPage} de {totalPages}
-                      </span>
                     </div>
                   </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      <ClienteFormModal
-        open={formOpen}
-        initialData={editingCliente}
-        submitting={formSubmitting}
-        onSubmit={handleSubmitForm}
-        onClose={() => { if (!formSubmitting) { setFormOpen(false); setEditingCliente(null) } }}
-      />
-
-      {/* Modal de Confirmación de Eliminación */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold text-negro-principal mb-4">
-              Confirmar Eliminación
-            </h3>
-            <p className="text-gris-medio mb-6">
-              ¿Estás seguro de eliminar el cliente <strong>{deleteConfirm.nombre}</strong>? Esta acción no se puede deshacer.
-            </p>
-            <div className="flex items-center justify-end gap-4">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="btn-secondary"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
-              >
-                Eliminar
-              </button>
-            </div>
+                )}
+              </>
+            )}
           </div>
         </div>
-      )}
-    </>
+
+        <ClienteFormModal
+          open={formOpen}
+          initialData={editingCliente}
+          submitting={formSubmitting}
+          onSubmit={handleSubmitForm}
+          onClose={() => { if (!formSubmitting) { setFormOpen(false); setEditingCliente(null) } }}
+        />
+
+        {/* Modal de Confirmación de Eliminación */}
+        {deleteConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+              <h3 className="text-xl font-bold text-negro-principal mb-4">
+                Confirmar Eliminación
+              </h3>
+              <p className="text-gris-medio mb-6">
+                ¿Estás seguro de eliminar el cliente <strong>{deleteConfirm.nombre}</strong>? Esta acción no se puede deshacer.
+              </p>
+              <div className="flex items-center justify-end gap-4">
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  className="btn-secondary"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </AdminLayout>
   );
 };
 

@@ -137,7 +137,7 @@ const AdminLayout = ({ children }) => {
 
   // Main content margin calculation
   const getMainClasses = () => {
-    const baseClasses = "flex-1 transition-all duration-300 min-h-screen print:ml-0"
+    const baseClasses = "flex-1 min-w-0 transition-all duration-300 min-h-screen print:ml-0"
 
     if (isMobile) {
       return `${baseClasses} ml-0`

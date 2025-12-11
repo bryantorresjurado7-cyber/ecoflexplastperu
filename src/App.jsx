@@ -263,9 +263,7 @@ function App() {
 
             <Route path="/admin/ventas" element={
               <ProtectedRoute>
-                <AdminLayout>
-                  <AdminVentasLista />
-                </AdminLayout>
+                <AdminVentasLista />
               </ProtectedRoute>
             } />
 
@@ -371,9 +369,7 @@ function App() {
 
             <Route path="/admin/clientes" element={
               <ProtectedRoute>
-                <AdminLayout>
-                  <AdminClientes />
-                </AdminLayout>
+                <AdminClientes />
               </ProtectedRoute>
             } />
 
