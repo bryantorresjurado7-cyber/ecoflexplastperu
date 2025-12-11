@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import {
+  Download,
   DollarSign,
   Package,
   Calendar,
@@ -19,6 +20,7 @@ import {
   Edit,
   Trash2
 } from 'lucide-react'
+import { exportToCsv } from '../lib/exportToCsv'
 import AdminLayout from '../components/AdminLayout'
 
 const SUPABASE_URL = 'https://uecolzuwhgfhicacodqj.supabase.co'
@@ -159,6 +161,29 @@ const AdminVentasLista = () => {
     venta.direccion_entrega?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
+  // Exportar a CSV
+  const handleExport = () => {
+    const columns = [
+      'ID Pedido',
+      'Cliente',
+      'Fecha',
+      'Total',
+      'Estado',
+      'Dirección Entrega'
+    ]
+
+    const rows = filteredVentas.map(v => [
+      v.id_pedido || '',
+      v.cliente?.nombre || 'Cliente Eliminado',
+      new Date(v.fecha_pedido).toLocaleDateString('es-PE'),
+      Number(v.total || 0).toFixed(2),
+      v.estado || 'Pendiente',
+      v.direccion_entrega || ''
+    ])
+
+    exportToCsv('ventas', columns, rows)
+  }
+
   return (
     <AdminLayout>
       <div className="w-full min-h-screen bg-fondo-claro p-4 md:p-8">
@@ -178,6 +203,13 @@ const AdminVentasLista = () => {
             >
               <Plus size={20} />
               Nueva Venta
+            </button>
+            <button
+              onClick={handleExport}
+              className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 w-full md:w-auto justify-center"
+            >
+              <Download size={20} />
+              Exportar
             </button>
           </div>
         </div>
@@ -221,7 +253,7 @@ const AdminVentasLista = () => {
           </div>
 
           {/* Tabla de Ventas */}
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-white rounded-xl shadow-sm w-full">
             {loading ? (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-verde-principal"></div>
@@ -234,8 +266,8 @@ const AdminVentasLista = () => {
               </div>
             ) : (
               <>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
+                <div className="w-full">
+                  <table className="w-full divide-y divide-gray-200 table-auto">
                     <thead className="bg-fondo-claro">
                       <tr>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gris-medio uppercase tracking-wider">Cliente</th>
@@ -244,13 +276,13 @@ const AdminVentasLista = () => {
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gris-medio uppercase tracking-wider">Método de Pago</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gris-medio uppercase tracking-wider">Estado</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gris-medio uppercase tracking-wider">Total</th>
-                        <th className="px-6 py-4 text-center text-xs font-semibold text-gris-medio uppercase tracking-wider">Acciones</th>
+                        <th className="pl-6 pr-10 py-4 text-center text-xs font-semibold text-gris-medio uppercase tracking-wider">Acciones</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gris-claro">
                       {filteredVentas.map((venta) => (
                         <tr key={venta.id_pedido} className="hover:bg-fondo-claro transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <div className="bg-verde-light rounded-full p-2">
                                 <User className="text-verde-principal" size={20} />
@@ -294,7 +326,7 @@ const AdminVentasLista = () => {
                               S/ {parseFloat(venta.total || 0).toFixed(2)}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="pl-6 pr-10 py-4 whitespace-nowrap">
                             <div className="flex items-center justify-center gap-3">
                               <button
                                 onClick={() => loadDetalleVenta(venta.id_pedido)}

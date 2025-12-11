@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import AdminLayout from '../components/AdminLayout'
 import usuariosService from '../services/usuariosService'
 import NotificationToast from '../components/NotificationToast'
+import { exportToCsv } from '../lib/exportToCsv'
 import {
   Users,
   Plus,
@@ -14,7 +15,8 @@ import {
   UserX,
   Shield,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Download
 } from 'lucide-react'
 
 const AdminUsuarios = () => {
@@ -161,6 +163,31 @@ const AdminUsuarios = () => {
     return matchSearch && matchRol && matchActivo
   })
 
+  // Exportar a CSV
+  const handleExport = () => {
+    const columns = [
+      'Nombre',
+      'Apellido',
+      'Email',
+      'Rol',
+      'Estado',
+      'Último Acceso'
+    ]
+
+    const rows = filteredUsuarios.map(u => [
+      u.nombre || '',
+      u.apellido || '',
+      u.email || '',
+      getRolLabel(u.rol),
+      u.activo ? 'Activo' : 'Inactivo',
+      u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleDateString('es-PE', {
+        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+      }) : 'Nunca'
+    ])
+
+    exportToCsv('usuarios', columns, rows)
+  }
+
   // Paginación
   const totalPages = Math.ceil(filteredUsuarios.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -202,6 +229,13 @@ const AdminUsuarios = () => {
               <Plus size={20} />
               Nuevo Usuario
             </Link>
+            <button
+              onClick={handleExport}
+              className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
+            >
+              <Download size={18} />
+              Exportar
+            </button>
           </div>
 
           {/* Filters */}
@@ -339,8 +373,8 @@ const AdminUsuarios = () => {
                         <button
                           onClick={() => handleToggleActivo(usuario.id, usuario.activo)}
                           className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium transition-colors ${usuario.activo
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
                             }`}
                         >
                           {usuario.activo ? (

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { User, Search, Plus, Mail, Phone, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { User, Search, Plus, Mail, Phone, Edit, Trash2, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { exportToCsv } from '../lib/exportToCsv'
 import AdminLayout from '../components/AdminLayout';
 import { clientesService } from '../services/clientesService'
 import ClienteFormModal from '../components/ClienteFormModal'
@@ -129,6 +130,31 @@ const AdminClientes = () => {
     }
   };
 
+  // Exportar a CSV
+  const handleExport = () => {
+    const columns = [
+      'Nombre',
+      'Email',
+      'Teléfono',
+      'Tipo Doc.',
+      'Núm. Doc.',
+      'Dirección',
+      'Estado'
+    ]
+
+    const rows = clientes.map(c => [
+      c.nombre || '',
+      c.email || '',
+      c.telefono || '',
+      c.tipo_documento || '',
+      c.numero_documento || '',
+      c.direccion || '',
+      c.estado ? 'Activo' : 'Inactivo'
+    ])
+
+    exportToCsv('clientes', columns, rows)
+  }
+
   return (
     <AdminLayout>
       <div className="w-full min-h-screen bg-fondo-claro p-4 md:p-8">
@@ -144,6 +170,10 @@ const AdminClientes = () => {
             <button className="btn-primary flex items-center justify-center gap-2 w-full md:w-auto" onClick={openCreate}>
               <Plus size={20} />
               Nuevo Cliente
+            </button>
+            <button className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 w-full md:w-auto" onClick={handleExport}>
+              <Download size={20} />
+              Exportar
             </button>
           </div>
         </div>
@@ -162,7 +192,7 @@ const AdminClientes = () => {
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-xl shadow-card overflow-hidden">
+          <div className="bg-white rounded-xl shadow-sm w-full">
             {loading ? (
               <div className="flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-verde-principal"></div>
@@ -171,8 +201,8 @@ const AdminClientes = () => {
               <div className="p-6 text-center text-red-600">{error}</div>
             ) : (
               <>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
+                <div className="w-full">
+                  <table className="w-full divide-y divide-gray-200 table-auto">
                     <thead className="bg-fondo-claro border-b border-gris-claro">
                       <tr>
                         <th className="text-left py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">NOMBRE</th>
@@ -182,7 +212,7 @@ const AdminClientes = () => {
                         <th className="text-left py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">NÚM. DOC.</th>
                         <th className="text-left py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">DIRECCIÓN</th>
                         <th className="text-center py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">ESTADO</th>
-                        <th className="text-center py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">ACCIONES</th>
+                        <th className="pl-6 pr-10 py-4 text-center text-xs font-semibold text-gris-medio uppercase tracking-wider">ACCIONES</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -237,7 +267,7 @@ const AdminClientes = () => {
                                 {cliente.estado ? 'Activo' : 'Inactivo'}
                               </span>
                             </td>
-                            <td className="py-4 px-6 text-center">
+                            <td className="pl-6 pr-10 py-4 text-center">
                               <div className="flex items-center justify-center gap-2">
                                 <button title="Editar" onClick={() => openEdit(cliente)} className="p-2 hover:bg-blue-50 rounded-lg transition-colors text-blue-600">
                                   <Edit size={18} />

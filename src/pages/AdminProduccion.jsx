@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import AdminLayout from '../components/AdminLayout'
 import produccionService from '../services/produccionService'
+import { exportToCsv } from '../lib/exportToCsv'
 import {
   Factory,
   Plus,
@@ -16,7 +17,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
-  ClipboardCheck
+  ClipboardCheck,
+  Download
 } from 'lucide-react'
 
 const AdminProduccion = () => {
@@ -25,7 +27,7 @@ const AdminProduccion = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterEstado, setFilterEstado] = useState('all')
   const [productos, setProductos] = useState([])
-  
+
   // Paginación
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(20)
@@ -42,9 +44,9 @@ const AdminProduccion = () => {
         search: searchTerm,
         estado: filterEstado
       })
-      
+
       if (result.error) throw new Error(result.error)
-      
+
       setProducciones(result.data || [])
     } catch (error) {
       console.error('Error cargando producciones:', error)
@@ -60,7 +62,7 @@ const AdminProduccion = () => {
         .select('id, nombre, codigo')
         .eq('activo', true)
         .order('nombre')
-      
+
       if (error) throw error
       setProductos(data || [])
     } catch (error) {
@@ -74,12 +76,12 @@ const AdminProduccion = () => {
 
   const handleDeleteProduccion = async (id) => {
     if (!confirm('¿Estás seguro de eliminar esta orden de producción?')) return
-    
+
     try {
       const result = await produccionService.deleteProduccion(id)
-      
+
       if (result.error) throw new Error(result.error)
-      
+
       setProducciones(producciones.filter(p => p.id_produccion !== id))
       alert('Orden de producción eliminada correctamente')
     } catch (error) {
@@ -91,10 +93,10 @@ const AdminProduccion = () => {
   const handleToggleEstado = async (id, nuevoEstado) => {
     try {
       const result = await produccionService.updateProduccion(id, { estado: nuevoEstado })
-      
+
       if (result.error) throw new Error(result.error)
-      
-      setProducciones(producciones.map(p => 
+
+      setProducciones(producciones.map(p =>
         p.id_produccion === id ? { ...p, estado: nuevoEstado } : p
       ))
     } catch (error) {
@@ -135,12 +137,42 @@ const AdminProduccion = () => {
   // Filtrar producciones
   const filteredProducciones = producciones.filter(p => {
     const matchSearch = p.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       p.codigo_produccion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       p.producto?.nombre?.toLowerCase().includes(searchTerm.toLowerCase())
+      p.codigo_produccion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.producto?.nombre?.toLowerCase().includes(searchTerm.toLowerCase())
     const matchEstado = filterEstado === 'all' || p.estado === filterEstado
-    
+
     return matchSearch && matchEstado
   })
+
+  // Exportar a CSV
+  const handleExport = () => {
+    const columns = [
+      'Código',
+      'Nombre Orden',
+      'Producto',
+      'Planificada',
+      'Producida',
+      'Costo Total',
+      'Fecha',
+      'Estado'
+    ]
+
+    const rows = filteredProducciones.map(p => {
+      const producto = Array.isArray(p.producto) ? p.producto[0] : p.producto
+      return [
+        p.codigo_produccion || '',
+        p.nombre || '',
+        producto?.nombre || '',
+        p.cantidad_planificada || 0,
+        p.cantidad_producida || 0,
+        Number(p.costo_total || 0).toFixed(2),
+        p.fecha_produccion ? new Date(p.fecha_produccion).toLocaleDateString('es-PE') : '',
+        p.estado || ''
+      ]
+    })
+
+    exportToCsv('produccion', columns, rows)
+  }
 
   // Paginación
   const totalPages = Math.ceil(filteredProducciones.length / itemsPerPage)
@@ -188,6 +220,13 @@ const AdminProduccion = () => {
               <Plus size={20} />
               Nueva Orden de Producción
             </Link>
+            <button
+              onClick={handleExport}
+              className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
+            >
+              <Download size={18} />
+              Exportar
+            </button>
           </div>
 
           {/* Filters */}
@@ -284,10 +323,10 @@ const AdminProduccion = () => {
                   </tr>
                 ) : (
                   paginatedProducciones.map((produccion) => {
-                    const producto = Array.isArray(produccion.producto) 
-                      ? produccion.producto[0] 
+                    const producto = Array.isArray(produccion.producto)
+                      ? produccion.producto[0]
                       : produccion.producto
-                    
+
                     return (
                       <tr key={produccion.id_produccion} className="hover:bg-fondo-claro transition-colors">
                         <td className="px-6 py-4">
@@ -407,7 +446,7 @@ const AdminProduccion = () => {
                   <span className="font-medium">{Math.min(endIndex, filteredProducciones.length)}</span> de{' '}
                   <span className="font-medium">{filteredProducciones.length}</span> órdenes
                 </p>
-                
+
                 <select
                   value={itemsPerPage}
                   onChange={(e) => {
@@ -427,11 +466,10 @@ const AdminProduccion = () => {
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className={`p-2 rounded-lg transition-colors ${
-                    currentPage === 1
+                  className={`p-2 rounded-lg transition-colors ${currentPage === 1
                       ? 'text-gris-claro cursor-not-allowed'
                       : 'text-negro-principal hover:bg-fondo-claro'
-                  }`}
+                    }`}
                 >
                   <ChevronLeft size={20} />
                 </button>
@@ -453,11 +491,10 @@ const AdminProduccion = () => {
                       <button
                         key={pageNum}
                         onClick={() => setCurrentPage(pageNum)}
-                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                          currentPage === pageNum
+                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${currentPage === pageNum
                             ? 'bg-verde-principal text-white'
                             : 'text-negro-principal hover:bg-fondo-claro'
-                        }`}
+                          }`}
                       >
                         {pageNum}
                       </button>
@@ -468,11 +505,10 @@ const AdminProduccion = () => {
                 <button
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
-                  className={`p-2 rounded-lg transition-colors ${
-                    currentPage === totalPages
+                  className={`p-2 rounded-lg transition-colors ${currentPage === totalPages
                       ? 'text-gris-claro cursor-not-allowed'
                       : 'text-negro-principal hover:bg-fondo-claro'
-                  }`}
+                    }`}
                 >
                   <ChevronRight size={20} />
                 </button>

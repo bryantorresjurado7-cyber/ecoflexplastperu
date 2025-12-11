@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import AdminLayout from '../components/AdminLayout'
+import { exportToCsv } from '../lib/exportToCsv'
 import {
   Package,
   Plus,
@@ -12,7 +13,8 @@ import {
   DollarSign,
   ChevronLeft,
   ChevronRight,
-  FlaskConical
+  FlaskConical,
+  Download
 } from 'lucide-react'
 import AdminProductosInsumosModal from '../components/AdminProductosInsumosModal'
 
@@ -182,6 +184,33 @@ const AdminProductos = () => {
     return matchSearch && matchCategoria && matchStock && matchDate
   })
 
+  // Exportar a CSV
+  const handleExport = () => {
+    const columns = [
+      'Nombre',
+      'Código',
+      'Categoría',
+      'Stock Total',
+      'Stock Mínimo',
+      'Precio Venta',
+      'Costo',
+      'Estado'
+    ]
+
+    const rows = filteredProductos.map(p => [
+      p.nombre || '',
+      p.codigo || '',
+      p.categoria || '',
+      p.stock_disponible || 0,
+      p.stock_minimo || 0,
+      Number(p.precio_venta || 0).toFixed(2),
+      Number(p.costo_unitario || 0).toFixed(2),
+      p.activo ? 'Activo' : 'Inactivo'
+    ])
+
+    exportToCsv('productos', columns, rows)
+  }
+
   // Paginación
   const totalPages = Math.ceil(filteredProductos.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -220,13 +249,22 @@ const AdminProductos = () => {
                 {productos.length} productos en total
               </p>
             </div>
-            <Link
-              to="/admin/productos/nuevo"
-              className="btn-primary flex items-center justify-center gap-2 w-full md:w-auto"
-            >
-              <Plus size={20} />
-              Nuevo Producto
-            </Link>
+            <div className="flex gap-3 w-full md:w-auto justify-end">
+              <Link
+                to="/admin/productos/nuevo"
+                className="btn-primary flex items-center justify-center gap-2 w-full md:w-auto"
+              >
+                <Plus size={20} />
+                Nuevo Producto
+              </Link>
+              <button
+                onClick={handleExport}
+                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
+              >
+                <Download size={18} />
+                Exportar
+              </button>
+            </div>
           </div>
 
           {/* Filters */}
