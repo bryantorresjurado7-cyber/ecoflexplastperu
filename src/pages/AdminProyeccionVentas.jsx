@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
-import { Filter, Download, TrendingUp, DollarSign, Package, Calendar, X, Settings, ArrowUpRight } from 'lucide-react';
+import { Filter, Download, TrendingUp, DollarSign, Package, Calendar, X, Settings, ArrowUpRight, Printer } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 // Credenciales y URL API
@@ -67,6 +67,10 @@ const AdminProyeccionVentas = () => {
         diasOperativos: 26
     });
     const [showSettingsModal, setShowSettingsModal] = useState(false);
+    const [targetMonthStr, setTargetMonthStr] = useState(() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    });
 
     // Datos y estados de carga
     const [productData, setProductData] = useState([]);
@@ -77,6 +81,14 @@ const AdminProyeccionVentas = () => {
     useEffect(() => {
         loadSalesAnalytics();
     }, [startDate, endDate, projSettings]); // Recargar si cambian los settings
+
+    // Sincronizar el selector de meta con el rango de fechas actual al abrir el modal
+    useEffect(() => {
+        if (showSettingsModal && startDate) {
+            const [y, m] = startDate.split('-');
+            setTargetMonthStr(`${y}-${m}`);
+        }
+    }, [showSettingsModal]);
 
     const loadSalesAnalytics = async () => {
         setLoading(true);
@@ -158,7 +170,7 @@ const AdminProyeccionVentas = () => {
                 const day = String(d.getDate()).padStart(2, '0');
                 const key = `${year}-${monthStr}-${day}`;
 
-                trendMap.set(key, { name: label, real: 0, proyectado: 0, sortKey: key, monthIndex: monthInfo });
+                trendMap.set(key, { name: label, real: 0, proyectado: 0, sortKey: key, monthIndex: monthInfo, year: year });
             }
         } else {
             let current = new Date(startD.getFullYear(), startD.getMonth(), 1);
@@ -166,7 +178,7 @@ const AdminProyeccionVentas = () => {
             while (current <= endMonth) {
                 const label = current.toLocaleDateString('es-PE', { month: 'short', year: '2-digit' });
                 const key = `${current.getFullYear()}-${current.getMonth()}`;
-                trendMap.set(key, { name: label, real: 0, proyectado: 0, sortKey: current.getTime(), monthIndex: current.getMonth() });
+                trendMap.set(key, { name: label, real: 0, proyectado: 0, sortKey: current.getTime(), monthIndex: current.getMonth(), year: current.getFullYear() });
                 current.setMonth(current.getMonth() + 1);
             }
         }
@@ -193,10 +205,17 @@ const AdminProyeccionVentas = () => {
         });
 
         const sortedData = Array.from(trendMap.values()).map(item => {
-            // Obtener meta específica del mes o fallback a la global
-            const monthlyGoal = projSettings.metasMensuales[item.monthIndex] !== undefined
-                ? projSettings.metasMensuales[item.monthIndex]
-                : projSettings.metaMensual;
+            // Obtener meta específica del mes (YYYY-MM), fallback a genérica (MM), fallback a global
+            const specificKey = `${item.year}-${item.monthIndex}`;
+
+            let monthlyGoal;
+            if (projSettings.metasMensuales[specificKey] !== undefined) {
+                monthlyGoal = projSettings.metasMensuales[specificKey];
+            } else if (projSettings.metasMensuales[item.monthIndex] !== undefined) {
+                monthlyGoal = projSettings.metasMensuales[item.monthIndex];
+            } else {
+                monthlyGoal = projSettings.metaMensual;
+            }
 
             // Calcular factor de crecimiento (Escenario)
             const monthAdj = projSettings.variacionesMensuales[item.monthIndex] || 0;
@@ -273,6 +292,10 @@ const AdminProyeccionVentas = () => {
         XLSX.writeFile(wb, `Proyeccion_${startDate}.xlsx`);
     };
 
+    const handlePrint = () => {
+        window.print();
+    };
+
     const totalRealAnnual = monthlyData.reduce((acc, curr) => acc + curr.real, 0);
     const totalProjectedAnnual = monthlyData.reduce((acc, curr) => acc + curr.proyectado, 0);
     const topProduct = productData.length > 0 ? productData[0] : { name: '-', cantidadReal: 0 };
@@ -287,7 +310,6 @@ const AdminProyeccionVentas = () => {
                         Proyección de Ventas
                     </h1>
                     <div className="flex items-center gap-2 mt-2">
-                        <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full font-bold uppercase">{projSettings.nombreEscenario}</span>
                         <p className="text-gris-medio">Analítica avanzada y simulación</p>
                     </div>
                 </div>
@@ -307,6 +329,14 @@ const AdminProyeccionVentas = () => {
                     >
                         <Download size={18} />
                         <span className="hidden md:inline">Exportar</span>
+                    </button>
+
+                    <button
+                        onClick={handlePrint}
+                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-negro-principal hover:bg-gray-50 transition-colors shadow-sm h-[42px]"
+                    >
+                        <Printer size={18} />
+                        <span className="hidden md:inline">Imprimir</span>
                     </button>
 
                     {/* Filtro de Rango de Fechas */}
@@ -355,7 +385,10 @@ const AdminProyeccionVentas = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="bg-white p-6 rounded-xl shadow-card h-[600px] flex flex-col">
                     <h3 className="text-lg font-bold text-negro-principal mb-2">Tendencia de Valor (S/)</h3>
-                    <p className="text-sm text-gris-medio mb-6">Escenario: {projSettings.nombreEscenario}</p>
+                    <div className="flex justify-between items-start mb-6">
+                        <p className="text-sm text-gris-medio">Escenario: <span className="font-medium text-purple-600">{projSettings.nombreEscenario}</span></p>
+                        <p className="text-xs text-gris-medio bg-gray-100 px-2 py-1 rounded">Rango: {startDate} al {endDate}</p>
+                    </div>
                     <div className="flex-1">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={monthlyData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
@@ -428,17 +461,7 @@ const AdminProyeccionVentas = () => {
 
                         <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-                            {/* 6. Administrativas */}
-                            <div className="lg:col-span-3">
-                                <label className="block text-sm font-bold text-gris-oscuro mb-2">🟦 Nombre del Escenario</label>
-                                <input
-                                    type="text"
-                                    value={projSettings.nombreEscenario}
-                                    onChange={(e) => setProjSettings({ ...projSettings, nombreEscenario: e.target.value })}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-verde-principal/20 focus:border-verde-principal outline-none font-medium"
-                                    placeholder="Ej. Proyección Optimista 2025"
-                                />
-                            </div>
+
 
                             {/* 1. Ventas Básicas */}
                             <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
@@ -482,58 +505,113 @@ const AdminProyeccionVentas = () => {
                             <div className="bg-purple-50/50 p-4 rounded-xl border border-purple-100 lg:col-span-3">
                                 <h4 className="font-bold text-purple-800 mb-3 flex items-center gap-2">5. Metas y Objetivos</h4>
                                 <div className="space-y-4">
-                                    <div className="flex gap-4">
-                                        <div className="w-1/3">
-                                            <label className="block text-xs font-bold text-gris-oscuro mb-1">Meta Mensual Base (S/)</label>
-                                            <input
-                                                type="number"
-                                                value={projSettings.metaMensual}
-                                                onChange={(e) => {
-                                                    const val = Number(e.target.value);
-                                                    // Actualizar base y todas las metas individuales por defecto para facilitar edición
-                                                    const newMetas = {};
-                                                    for (let i = 0; i < 12; i++) newMetas[i] = val;
-                                                    setProjSettings({ ...projSettings, metaMensual: val, metasMensuales: newMetas });
-                                                }}
-                                                className="w-full border border-purple-300 bg-white rounded px-2 py-1 focus:ring-2 focus:ring-purple-500/20 outline-none"
-                                            />
-                                        </div>
-                                        <div className="w-1/3">
-                                            <label className="block text-xs font-medium text-gris- medio mb-1">Meta Anual Global (S/)</label>
-                                            <input type="number" value={projSettings.metaAnual} onChange={(e) => setProjSettings({ ...projSettings, metaAnual: Number(e.target.value) })} className="input-field-sm w-full border-gray-300 rounded px-2 py-1" />
-                                        </div>
-                                        <div className="w-1/3">
-                                            <label className="block text-xs font-medium text-gris- medio mb-1">Meta Unidades (Total)</label>
-                                            <input type="number" value={projSettings.metaUnidades} onChange={(e) => setProjSettings({ ...projSettings, metaUnidades: Number(e.target.value) })} className="input-field-sm w-full border-gray-300 rounded px-2 py-1" />
-                                        </div>
-                                    </div>
 
-                                    {/* Grid de Metas Mensuales */}
-                                    <div>
-                                        <label className="block text-xs font-bold text-gris-oscuro mb-2">Metas Específicas por Mes (S/)</label>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                                            {['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'].map((mes, idx) => (
-                                                <div key={idx} className="flex flex-col">
-                                                    <span className="text-[10px] text-gris-medio uppercase font-bold mb-1">{mes}</span>
-                                                    <input
-                                                        type="number"
-                                                        value={projSettings.metasMensuales[idx]}
-                                                        onChange={(e) => {
-                                                            const val = Number(e.target.value);
+                                    <div className="flex flex-col md:flex-row gap-4 items-end mb-4">
+                                        <div className="w-full md:w-auto">
+                                            <label className="block text-xs font-bold text-gris-oscuro mb-1">Seleccionar Mes Objetivo</label>
+                                            <div className="flex gap-2">
+                                                <select
+                                                    value={parseInt(targetMonthStr.split('-')[0])}
+                                                    onChange={(e) => {
+                                                        const newYear = e.target.value;
+                                                        const currentMonth = targetMonthStr.split('-')[1];
+                                                        setTargetMonthStr(`${newYear}-${currentMonth}`);
+                                                    }}
+                                                    className="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500/20 outline-none cursor-pointer bg-white"
+                                                >
+                                                    {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(y => (
+                                                        <option key={y} value={y}>{y}</option>
+                                                    ))}
+                                                </select>
+                                                <select
+                                                    value={parseInt(targetMonthStr.split('-')[1])}
+                                                    onChange={(e) => {
+                                                        const newMonth = String(e.target.value).padStart(2, '0');
+                                                        const currentYear = targetMonthStr.split('-')[0];
+                                                        setTargetMonthStr(`${currentYear}-${newMonth}`);
+                                                    }}
+                                                    className="w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500/20 outline-none cursor-pointer bg-white"
+                                                >
+                                                    {['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'].map((m, idx) => (
+                                                        <option key={idx} value={idx + 1}>{m}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="w-full md:w-1/3">
+                                            <label className="block text-xs font-bold text-gris-oscuro mb-1">Meta para este Mes (S/)</label>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="number"
+                                                    value={(() => {
+                                                        if (!targetMonthStr) return 0;
+                                                        const [y, m] = targetMonthStr.split('-');
+                                                        const monthIndex = parseInt(m) - 1;
+                                                        const year = parseInt(y);
+                                                        const key = `${year}-${monthIndex}`;
+                                                        // Fallback a goal genérico si no existe específico
+                                                        return projSettings.metasMensuales[key] !== undefined
+                                                            ? projSettings.metasMensuales[key]
+                                                            : (projSettings.metasMensuales[monthIndex] || 0);
+                                                    })()}
+                                                    onChange={(e) => {
+                                                        const val = Number(e.target.value);
+                                                        const [y, m] = targetMonthStr.split('-');
+                                                        const monthIndex = parseInt(m) - 1;
+                                                        const year = parseInt(y);
+                                                        const key = `${year}-${monthIndex}`;
+
+                                                        if (monthIndex >= 0 && monthIndex < 12) {
                                                             setProjSettings(prev => ({
                                                                 ...prev,
                                                                 metasMensuales: {
                                                                     ...prev.metasMensuales,
-                                                                    [idx]: val
+                                                                    [key]: val, // Guardar con clave YYYY-MM
+                                                                    // Opcional: Actualizar el genérico también para backward compat? No, mejor separar.
                                                                 }
                                                             }));
-                                                        }}
-                                                        className="w-full border border-gray-300 rounded px-2 py-1 text-xs text-negro-principal focus:border-purple-500 outline-none"
-                                                    />
-                                                </div>
-                                            ))}
+                                                        }
+                                                    }}
+                                                    className="w-full border border-purple-300 bg-white rounded px-3 py-2 focus:ring-2 focus:ring-purple-500/20 outline-none font-bold text-purple-700"
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        const [y, m] = targetMonthStr.split('-');
+                                                        const year = parseInt(y);
+                                                        const monthIndex = parseInt(m) - 1;
+                                                        // Usar el valor actual del input (que puede venir de fallback)
+                                                        const currentKey = `${year}-${monthIndex}`;
+                                                        const val = projSettings.metasMensuales[currentKey] !== undefined
+                                                            ? projSettings.metasMensuales[currentKey]
+                                                            : (projSettings.metasMensuales[monthIndex] || projSettings.metaMensual);
+
+                                                        const newMetas = { ...projSettings.metasMensuales };
+                                                        // Aplicar a los 12 meses de ESTE año seleccionado
+                                                        for (let i = 0; i < 12; i++) {
+                                                            newMetas[`${year}-${i}`] = val;
+                                                        }
+                                                        setProjSettings({ ...projSettings, metasMensuales: newMetas });
+                                                    }}
+                                                    title={`Aplicar S/ ${(() => {
+                                                        if (!targetMonthStr) return 0;
+                                                        const [y, m] = targetMonthStr.split('-');
+                                                        const monthIndex = parseInt(m) - 1;
+                                                        const year = parseInt(y);
+                                                        return projSettings.metasMensuales[`${year}-${monthIndex}`] || projSettings.metasMensuales[monthIndex] || projSettings.metaMensual;
+                                                    })()} a todo el año ${targetMonthStr?.split('-')[0]}`}
+                                                    className="px-3 py-2 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-colors text-xs font-bold whitespace-nowrap"
+                                                >
+                                                    Aplicar al Año
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="w-full md:flex-1">
+                                            <label className="block text-xs font-medium text-gris-medio mb-1">Meta Anual Global (S/)</label>
+                                            <input type="number" value={projSettings.metaAnual} onChange={(e) => setProjSettings({ ...projSettings, metaAnual: Number(e.target.value) })} className="input-field-sm w-full border-gray-300 rounded px-2 py-2 text-sm" />
                                         </div>
                                     </div>
+
+
                                 </div>
                             </div>
 
@@ -613,6 +691,192 @@ const AdminProyeccionVentas = () => {
                     </div>
                 </div>
             )}
+
+            {/* Print Template - Optimized Grid View */}
+            <div id="print-section" className="hidden print:block fixed inset-0 bg-white z-[9999] text-black">
+                <style>{`
+                    @media print {
+                        body * { visibility: hidden; }
+                        #print-section, #print-section * { visibility: visible; }
+                        #print-section { 
+                            position: absolute; 
+                            left: 0; 
+                            top: 0; 
+                            width: 100%; 
+                            height: 100%; 
+                            margin: 0; 
+                            padding: 0; 
+                            background: white; 
+                            display: block;
+                            overflow: hidden;
+                        }
+                        @page { 
+                            size: landscape; 
+                            margin: 10mm; 
+                        }
+                        .print-container { 
+                            width: 100%; 
+                            height: 100%;
+                            padding: 10px; 
+                            box-sizing: border-box;
+                        }
+                        .print-grid {
+                            display: grid;
+                            grid-template-columns: 24% 37% 37%; /* 3 Columns */
+                            gap: 10px;
+                            width: 100%;
+                            height: calc(100vh - 60px);
+                            align-content: start;
+                        }
+                        .print-column {
+                            display: flex;
+                            flex-direction: column;
+                            gap: 10px;
+                        }
+                        .print-table { 
+                            width: 100%; 
+                            border-collapse: collapse; 
+                            font-family: 'Inter', sans-serif; 
+                            font-size: 8px; 
+                        }
+                        .print-table th, .print-table td { 
+                            border: 1px solid #ccc; 
+                            padding: 2px 4px; 
+                            text-align: left; 
+                            height: 14px; 
+                        }
+                        .print-table th { 
+                            background-color: #f3f4f6 !important; 
+                            font-weight: 800; 
+                            color: black;
+                            text-transform: uppercase;
+                            -webkit-print-color-adjust: exact;
+                        }
+                        .font-bold { font-weight: 700; }
+                        .text-right { text-align: right !important; }
+                        .text-center { text-align: center !important; }
+                        .text-green-700 { color: #15803d !important; -webkit-print-color-adjust: exact; }
+                        .text-red-600 { color: #dc2626 !important; -webkit-print-color-adjust: exact; }
+                        .bg-gray-100 { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; }
+                        
+                        tr { page-break-inside: avoid; }
+                    }
+                `}</style>
+
+                <div className="print-container">
+                    {/* Header */}
+                    <div className="flex justify-between items-end border-b-2 border-black pb-2 mb-2 h-[40px]">
+                        <div>
+                            <h1 className="text-xl font-black text-verde-principal leading-none">ECOFLEXPLAST</h1>
+                            <p className="text-[10px] text-gray-600 font-bold uppercase tracking-wide">Reporte de Proyección de Ventas</p>
+                        </div>
+                        <div className="text-right text-[8px] leading-tight flex flex-col items-end">
+                            <span className="font-bold bg-gray-100 px-2 py-0.5 rounded mb-0.5">ESCENARIO: {projSettings.nombreEscenario}</span>
+                            <span>RANGO: {startDate} al {endDate}</span>
+                            <span className="text-gray-400">{new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}</span>
+                        </div>
+                    </div>
+
+                    <div className="print-grid">
+                        {/* COLUMNA 1: TENDENCIA */}
+                        <div className="print-column">
+                            <div>
+                                <h3 className="text-[10px] font-bold uppercase border-b border-black mb-1">1. Tendencia Mensual (S/)</h3>
+                                <table className="print-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Mes</th>
+                                            <th className="text-right">Real</th>
+                                            <th className="text-right">Meta</th>
+                                            <th className="text-center">%</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {monthlyData.map((item, idx) => (
+                                            <tr key={idx}>
+                                                <td className="font-bold">{item.name}</td>
+                                                <td className="text-right">{item.real.toLocaleString('es-PE', { maximumFractionDigits: 0 })}</td>
+                                                <td className="text-right text-gray-500">{item.proyectado.toLocaleString('es-PE', { maximumFractionDigits: 0 })}</td>
+                                                <td className={`text-center font-bold ${item.real >= item.proyectado ? 'text-green-700' : 'text-red-600'}`}>
+                                                    {item.proyectado > 0 ? ((item.real / item.proyectado) * 100).toFixed(0) : 0}%
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr className="bg-gray-100 font-bold">
+                                            <td>TOTAL</td>
+                                            <td className="text-right">{totalRealAnnual.toLocaleString('es-PE', { maximumFractionDigits: 0 })}</td>
+                                            <td className="text-right">{totalProjectedAnnual.toLocaleString('es-PE', { maximumFractionDigits: 0 })}</td>
+                                            <td className="text-center">
+                                                {totalProjectedAnnual > 0 ? ((totalRealAnnual / totalProjectedAnnual) * 100).toFixed(0) : 0}%
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* COLUMNA 2: PRODUCTOS (1-40) */}
+                        <div className="print-column">
+                            <h3 className="text-[10px] font-bold uppercase border-b border-black mb-1">2. Detalle Productos (Top 40)</h3>
+                            <table className="print-table">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th className="text-right w-10">Real</th>
+                                        <th className="text-right w-10">Meta</th>
+                                        <th className="text-right w-8">Dif</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {productData.slice(0, 40).map((prod, idx) => (
+                                        <tr key={idx}>
+                                            <td className="truncate max-w-[120px]">{prod.name.substring(0, 30)}</td>
+                                            <td className="text-right font-medium">{prod.cantidadReal}</td>
+                                            <td className="text-right text-gray-500">{prod.proyeccion}</td>
+                                            <td className={`text-right font-bold ${parseFloat(prod.crecimiento) >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                                                {prod.crecimiento}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* COLUMNA 3: PRODUCTOS (41-80) */}
+                        <div className="print-column">
+                            <h3 className="text-[10px] font-bold uppercase border-b border-black mb-1">(Cont. 41-80)</h3>
+                            <table className="print-table">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th className="text-right w-10">Real</th>
+                                        <th className="text-right w-10">Meta</th>
+                                        <th className="text-right w-8">Dif</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {productData.slice(40, 80).map((prod, idx) => (
+                                        <tr key={idx + 40}>
+                                            <td className="truncate max-w-[120px]">{prod.name.substring(0, 30)}</td>
+                                            <td className="text-right font-medium">{prod.cantidadReal}</td>
+                                            <td className="text-right text-gray-500">{prod.proyeccion}</td>
+                                            <td className={`text-right font-bold ${parseFloat(prod.crecimiento) >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                                                {prod.crecimiento}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {productData.length === 0 && (
+                                        <tr><td colSpan="4" className="text-center italic text-gray-400 py-4">Sin datos</td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     );
 };

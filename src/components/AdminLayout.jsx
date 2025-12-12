@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import {
@@ -42,6 +42,28 @@ const AdminLayout = ({ children }) => {
       [title]: !prev[title]
     }))
   }
+
+  // Sidebar scroll persistence
+  const sidebarRef = useRef(null)
+
+  useEffect(() => {
+    const sidebar = sidebarRef.current
+    if (sidebar) {
+      const savedPosition = sessionStorage.getItem('adminSidebarScroll')
+      if (savedPosition) {
+        requestAnimationFrame(() => {
+          sidebar.scrollTop = Number(savedPosition)
+        })
+      }
+
+      const handleScroll = () => {
+        sessionStorage.setItem('adminSidebarScroll', sidebar.scrollTop)
+      }
+
+      sidebar.addEventListener('scroll', handleScroll)
+      return () => sidebar.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
 
   // State for notifications
   const [showNotifications, setShowNotifications] = useState(false)
@@ -194,6 +216,21 @@ const AdminLayout = ({ children }) => {
     }
   ]
 
+  // Auto-expand menu based on current path
+  useEffect(() => {
+    // Buscar si la ruta actual pertenece a algún item con submenú
+    const activeItem = menuItems.find(item =>
+      item.subItems && item.subItems.some(sub => location.pathname.startsWith(sub.path))
+    )
+
+    if (activeItem) {
+      setExpandedMenus(prev => ({
+        ...prev,
+        [activeItem.title]: true
+      }))
+    }
+  }, [location.pathname])
+
   // Sidebar classes calculation
   const getSidebarClasses = () => {
     const baseClasses = "bg-negro-principal text-white transition-all duration-300 flex flex-col fixed h-full z-50"
@@ -249,7 +286,7 @@ const AdminLayout = ({ children }) => {
         </div>
 
         {/* Menu Items */}
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto no-scrollbar">
+        <nav ref={sidebarRef} className="flex-1 p-4 space-y-2 overflow-y-auto no-scrollbar">
           {menuItems.map((item) => {
             const Icon = item.icon
             // Check if active (modified for parent items)
