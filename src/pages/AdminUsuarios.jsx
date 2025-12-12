@@ -212,7 +212,7 @@ const AdminUsuarios = () => {
       <div className="min-h-screen bg-fondo-claro p-4 md:p-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
             <div>
               <h1 className="text-3xl font-bold text-negro-principal flex items-center gap-3">
                 <Users className="text-verde-principal" size={32} />
@@ -222,20 +222,22 @@ const AdminUsuarios = () => {
                 {usuarios.length} usuarios en total
               </p>
             </div>
-            <Link
-              to="/admin/usuarios/nuevo"
-              className="btn-primary flex items-center gap-2"
-            >
-              <Plus size={20} />
-              Nuevo Usuario
-            </Link>
-            <button
-              onClick={handleExport}
-              className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
-            >
-              <Download size={18} />
-              Exportar
-            </button>
+            <div className="flex gap-3 w-full md:w-auto justify-end">
+              <Link
+                to="/admin/usuarios/nuevo"
+                className="btn-primary flex items-center justify-center gap-2 w-full md:w-auto"
+              >
+                <Plus size={20} />
+                Nuevo Usuario
+              </Link>
+              <button
+                onClick={handleExport}
+                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
+              >
+                <Download size={18} />
+                Exportar
+              </button>
+            </div>
           </div>
 
           {/* Filters */}

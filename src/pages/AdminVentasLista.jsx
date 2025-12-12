@@ -197,20 +197,22 @@ const AdminVentasLista = () => {
               </h1>
               <p className="text-gris-medio mt-1">Historial completo de ventas</p>
             </div>
-            <button
-              onClick={() => window.location.href = '/admin/venta'}
-              className="bg-verde-principal hover:bg-verde-oscuro text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 w-full md:w-auto justify-center"
-            >
-              <Plus size={20} />
-              Nueva Venta
-            </button>
-            <button
-              onClick={handleExport}
-              className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 w-full md:w-auto justify-center"
-            >
-              <Download size={20} />
-              Exportar
-            </button>
+            <div className="flex gap-3 w-full md:w-auto justify-end">
+              <button
+                onClick={() => window.location.href = '/admin/venta'}
+                className="bg-verde-principal hover:bg-verde-oscuro text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 w-full md:w-auto justify-center"
+              >
+                <Plus size={20} />
+                Nueva Venta
+              </button>
+              <button
+                onClick={handleExport}
+                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 w-full md:w-auto justify-center"
+              >
+                <Download size={20} />
+                Exportar
+              </button>
+            </div>
           </div>
         </div>
 

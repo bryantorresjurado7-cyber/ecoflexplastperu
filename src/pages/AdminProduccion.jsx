@@ -203,7 +203,7 @@ const AdminProduccion = () => {
       <div className="min-h-screen bg-fondo-claro p-4 md:p-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
             <div>
               <h1 className="text-3xl font-bold text-negro-principal flex items-center gap-3">
                 <Factory className="text-verde-principal" size={32} />
@@ -213,20 +213,22 @@ const AdminProduccion = () => {
                 {producciones.length} órdenes de producción en total
               </p>
             </div>
-            <Link
-              to="/admin/produccion/nuevo"
-              className="btn-primary flex items-center gap-2"
-            >
-              <Plus size={20} />
-              Nueva Orden de Producción
-            </Link>
-            <button
-              onClick={handleExport}
-              className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
-            >
-              <Download size={18} />
-              Exportar
-            </button>
+            <div className="flex gap-3 w-full md:w-auto justify-end">
+              <Link
+                to="/admin/produccion/nuevo"
+                className="btn-primary flex items-center justify-center gap-2 w-full md:w-auto"
+              >
+                <Plus size={20} />
+                Nueva Orden de Producción
+              </Link>
+              <button
+                onClick={handleExport}
+                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
+              >
+                <Download size={18} />
+                Exportar
+              </button>
+            </div>
           </div>
 
           {/* Filters */}
@@ -467,8 +469,8 @@ const AdminProduccion = () => {
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
                   className={`p-2 rounded-lg transition-colors ${currentPage === 1
-                      ? 'text-gris-claro cursor-not-allowed'
-                      : 'text-negro-principal hover:bg-fondo-claro'
+                    ? 'text-gris-claro cursor-not-allowed'
+                    : 'text-negro-principal hover:bg-fondo-claro'
                     }`}
                 >
                   <ChevronLeft size={20} />
@@ -492,8 +494,8 @@ const AdminProduccion = () => {
                         key={pageNum}
                         onClick={() => setCurrentPage(pageNum)}
                         className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${currentPage === pageNum
-                            ? 'bg-verde-principal text-white'
-                            : 'text-negro-principal hover:bg-fondo-claro'
+                          ? 'bg-verde-principal text-white'
+                          : 'text-negro-principal hover:bg-fondo-claro'
                           }`}
                       >
                         {pageNum}
@@ -506,8 +508,8 @@ const AdminProduccion = () => {
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
                   className={`p-2 rounded-lg transition-colors ${currentPage === totalPages
-                      ? 'text-gris-claro cursor-not-allowed'
-                      : 'text-negro-principal hover:bg-fondo-claro'
+                    ? 'text-gris-claro cursor-not-allowed'
+                    : 'text-negro-principal hover:bg-fondo-claro'
                     }`}
                 >
                   <ChevronRight size={20} />
