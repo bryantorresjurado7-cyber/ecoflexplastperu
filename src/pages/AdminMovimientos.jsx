@@ -153,6 +153,30 @@ const AdminMovimientos = () => {
     }
 
     // Filter Logic
+    const filteredMovements = movements.filter(mov => {
+        // 🔍 Búsqueda
+        const searchMatch =
+            mov.producto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            mov.referencia?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            mov.solicitante?.toLowerCase().includes(searchTerm.toLowerCase())
+
+        // 🔄 Tipo de movimiento
+        const typeMatch =
+            filterType === 'all' ||
+            mov.tipo?.toLowerCase() === filterType.toLowerCase()
+
+        // 🗂️ Categoría
+        let categoriaMatch = true
+        if (filterCategoria !== 'all') {
+            const producto = products.find(p => p.id === mov.productoId)
+            categoriaMatch =
+                producto?.categoria === filterCategoria ||
+                producto?.slug === filterCategoria
+        }
+
+        return searchMatch && typeMatch && categoriaMatch
+    })
+
     // Pagination Logic
     const totalPages = Math.ceil(filteredMovements.length / itemsPerPage)
     const startIndex = (currentPage - 1) * itemsPerPage
