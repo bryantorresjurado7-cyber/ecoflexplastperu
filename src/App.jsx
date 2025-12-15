@@ -26,6 +26,7 @@ import LibroReclamaciones from './pages/LibroReclamaciones';
 // Admin Pages
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminContabilidad from './pages/AdminContabilidad';
 import AdminProductos from './pages/AdminProductos';
 import AdminProductoForm from './pages/AdminProductoForm';
 import AdminVenta from './pages/AdminVenta';
@@ -225,6 +226,12 @@ function App() {
             <Route path="/admin/dashboard" element={
               <ProtectedRoute>
                 <AdminDashboard />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/contabilidad" element={
+              <ProtectedRoute>
+                <AdminContabilidad />
               </ProtectedRoute>
             } />
 
