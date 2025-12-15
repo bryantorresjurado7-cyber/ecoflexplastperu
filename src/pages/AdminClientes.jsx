@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { User, Search, Plus, Mail, Phone, Edit, Trash2, ChevronLeft, ChevronRight, Download } from 'lucide-react';
-import { exportToCsv } from '../lib/exportToCsv'
+import { exportToXlsx } from '../lib/exportToXlsx'
 import AdminLayout from '../components/AdminLayout';
 import { clientesService } from '../services/clientesService'
 import ClienteFormModal from '../components/ClienteFormModal'
@@ -21,6 +21,7 @@ const AdminClientes = () => {
   const [editingCliente, setEditingCliente] = useState(null);
 
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [exporting, setExporting] = useState(false)
 
   // Cargar clientes cuando cambia la página
   useEffect(() => {
@@ -130,29 +131,39 @@ const AdminClientes = () => {
     }
   };
 
-  // Exportar a CSV
+  // Exportar a Excel
   const handleExport = () => {
-    const columns = [
-      'Nombre',
-      'Email',
-      'Teléfono',
-      'Tipo Doc.',
-      'Núm. Doc.',
-      'Dirección',
-      'Estado'
-    ]
+    try {
+      setExporting(true)
+      const rows = clientes.map(c => [
+        c.nombre || '',
+        c.email || '',
+        c.telefono || '',
+        c.tipo_documento || '',
+        c.numero_documento || '',
+        c.direccion || '',
+        c.estado ? 'Activo' : 'Inactivo'
+      ])
 
-    const rows = clientes.map(c => [
-      c.nombre || '',
-      c.email || '',
-      c.telefono || '',
-      c.tipo_documento || '',
-      c.numero_documento || '',
-      c.direccion || '',
-      c.estado ? 'Activo' : 'Inactivo'
-    ])
+      const columns = [
+        'Nombre',
+        'Email',
+        'Teléfono',
+        'Tipo Doc.',
+        'Núm. Doc.',
+        'Dirección',
+        'Estado'
+      ]
 
-    exportToCsv('clientes', columns, rows)
+      const dateStr = new Date().toISOString().split('T')[0]
+      const filename = `clientes_${dateStr}`
+
+      exportToXlsx(filename, rows, columns)
+    } catch (error) {
+      console.error('Error exportando:', error)
+    } finally {
+      setExporting(false)
+    }
   }
 
   return (
@@ -172,9 +183,13 @@ const AdminClientes = () => {
                 <Plus size={20} />
                 Nuevo Cliente
               </button>
-              <button className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 w-full md:w-auto" onClick={handleExport}>
+              <button
+                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 w-full md:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={handleExport}
+                disabled={exporting}
+              >
                 <Download size={20} />
-                Exportar
+                {exporting ? 'Exportando...' : 'Exportar'}
               </button>
             </div>
           </div>

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import AdminLayout from '../components/AdminLayout'
 import NotificationToast from '../components/NotificationToast'
-import { exportToCsv } from '../lib/exportToCsv'
+import { exportToXlsx } from '../lib/exportToXlsx'
 import {
   FlaskConical,
   Plus,
@@ -27,6 +27,7 @@ const AdminInsumos = () => {
   const [filterCategoria, setFilterCategoria] = useState('all')
   const [filterEstado, setFilterEstado] = useState('all')
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [exporting, setExporting] = useState(false)
 
   // Estado para notificaciones
   const [notification, setNotification] = useState({
@@ -188,31 +189,41 @@ const AdminInsumos = () => {
     return matchSearch && matchCategoria && matchEstado
   })
 
-  // Exportar a CSV
+  // Exportar a Excel
   const handleExport = () => {
-    const columns = [
-      'Insumo',
-      'Código',
-      'Categoría',
-      'Unidad',
-      'Stock',
-      'Stock Mínimo',
-      'Costo Unit.',
-      'Estado'
-    ]
+    try {
+      setExporting(true)
+      const rows = filteredInsumos.map(i => [
+        i.nombre || '',
+        i.codigo_insumo || '',
+        i.categoria || '',
+        i.unidad_medida || '',
+        i.stock_disponible || 0,
+        i.stock_minimo || 0,
+        Number(i.costo_unitario || 0).toFixed(2),
+        i.activo ? 'Activo' : 'Inactivo'
+      ])
 
-    const rows = filteredInsumos.map(i => [
-      i.nombre || '',
-      i.codigo_insumo || '',
-      i.categoria || '',
-      i.unidad_medida || '',
-      i.stock_disponible || 0,
-      i.stock_minimo || 0,
-      Number(i.costo_unitario || 0).toFixed(2),
-      i.activo ? 'Activo' : 'Inactivo'
-    ])
+      const columns = [
+        'Insumo',
+        'Código',
+        'Categoría',
+        'Unidad',
+        'Stock',
+        'Stock Mínimo',
+        'Costo Unit.',
+        'Estado'
+      ]
 
-    exportToCsv('insumos', columns, rows)
+      const dateStr = new Date().toISOString().split('T')[0]
+      const filename = `insumos_${dateStr}`
+
+      exportToXlsx(filename, rows, columns)
+    } catch (error) {
+      console.error('Error exportando:', error)
+    } finally {
+      setExporting(false)
+    }
   }
 
   // Paginación
@@ -261,10 +272,11 @@ const AdminInsumos = () => {
               </Link>
               <button
                 onClick={handleExport}
-                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
+                disabled={exporting}
+                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download size={18} />
-                Exportar
+                {exporting ? 'Exportando...' : 'Exportar'}
               </button>
             </div>
           </div>

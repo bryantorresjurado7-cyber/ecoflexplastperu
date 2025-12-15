@@ -28,6 +28,7 @@ import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminProductos from './pages/AdminProductos';
 import AdminProductoForm from './pages/AdminProductoForm';
+import AdminMovimientoForm from './pages/AdminMovimientoForm';
 import AdminVenta from './pages/AdminVenta';
 import AdminVentasLista from './pages/AdminVentasLista';
 import AdminDashboardVentas from './pages/AdminDashboardVentas';
@@ -244,6 +245,12 @@ function App() {
             <Route path="/admin/movimientos" element={
               <ProtectedRoute>
                 <AdminMovimientos />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/movimientos/nuevo" element={
+              <ProtectedRoute>
+                <AdminMovimientoForm />
               </ProtectedRoute>
             } />
 

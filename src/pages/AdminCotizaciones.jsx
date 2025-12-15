@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AdminLayout from '../components/AdminLayout'
 import { supabase } from '../lib/supabase'
-import { FileText, Search, Eye, Trash2, Filter, Download, Mail, Phone, Package, User, X, Calendar, DollarSign, Edit } from 'lucide-react'
+import { FileText, Search, Eye, Trash2, Filter, Mail, Phone, Package, User, X, Calendar, DollarSign, Edit, Download } from 'lucide-react'
+import { exportToXlsx } from '../lib/exportToXlsx'
 
 const SUPABASE_URL = 'https://uecolzuwhgfhicacodqj.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlY29senV3aGdmaGljYWNvZHFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4NjQwMTksImV4cCI6MjA3MjQ0MDAxOX0.EuCWuFr6W-pv8_QBgjbEWzDmnI-iA5L4rFr5CMWpNl4'
@@ -19,8 +20,8 @@ const AdminCotizaciones = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
   const [deleteConfirm, setDeleteConfirm] = useState(null)
-  const [showExportModal, setShowExportModal] = useState(false)
-  const [exportFormat, setExportFormat] = useState('csv')
+  const [exporting, setExporting] = useState(false)
+
 
   useEffect(() => {
     loadCotizaciones()
@@ -303,13 +304,53 @@ const AdminCotizaciones = () => {
     }
   }
 
-  const handleExportConfirm = () => {
-    console.log('Exporting as', exportFormat)
-    // Aquí iría la lógica real de exportación
-    setShowExportModal(false)
-    // Simulación de feedback al usuario
-    alert(`Iniciando exportación en formato ${exportFormat.toUpperCase()}...`)
+  const handleExport = () => {
+    try {
+      setExporting(true)
+      const data = filteredCotizaciones.map(c => {
+        // Formato de fecha
+        const fechaEmision = new Date(c.fecha_emision || c.created_at).toLocaleDateString('es-PE', {
+          day: '2-digit', month: '2-digit', year: 'numeric'
+        })
+
+        // Estado legible
+        const estadoLabel = c.estado ? (c.estado.charAt(0).toUpperCase() + c.estado.slice(1)) : 'Pendiente'
+
+        // Contacto (Email + Teléfono)
+        let contacto = c.cliente?.email || ''
+        if (c.cliente?.telefono) {
+          contacto = contacto ? `${contacto}\n${c.cliente.telefono}` : c.cliente.telefono
+        }
+
+        return [
+          c.cliente?.nombre || 'Sin nombre', // Cliente
+          contacto, // Contacto
+          `S/ ${Number(c.total || 0).toFixed(2)}`, // Total
+          estadoLabel, // Estado
+          fechaEmision // Fecha
+        ]
+      })
+
+      const columns = [
+        'Cliente',
+        'Contacto',
+        'Total',
+        'Estado',
+        'Fecha'
+      ]
+
+      const dateStr = new Date().toISOString().split('T')[0]
+      const filename = `cotizaciones_${dateStr}`
+
+      exportToXlsx(filename, data, columns)
+    } catch (error) {
+      console.error('Error exportando:', error)
+    } finally {
+      setExporting(false)
+    }
   }
+
+
 
   return (
     <AdminLayout>
@@ -322,13 +363,23 @@ const AdminCotizaciones = () => {
             </h2>
             <p className="text-gris-medio mt-1">{cotizaciones.length} cotizaciones en total</p>
           </div>
-          <button
-            onClick={() => navigate('/admin/cotizaciones/nueva')}
-            className="btn-primary flex items-center gap-2"
-          >
-            <FileText size={20} />
-            Nueva Cotización
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => navigate('/admin/cotizaciones/nueva')}
+              className="btn-primary flex items-center gap-2"
+            >
+              <FileText size={20} />
+              Nueva Cotización
+            </button>
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download size={18} />
+              {exporting ? 'Exportando...' : 'Exportar'}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -359,13 +410,7 @@ const AdminCotizaciones = () => {
                 <option value="cancelada">Cancelada</option>
               </select>
             </div>
-            <button
-              onClick={() => setShowExportModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-verde-principal hover:bg-verde-hover text-white rounded-lg transition-colors"
-            >
-              <Download size={20} />
-              Exportar
-            </button>
+
           </div>
         </div>
 
@@ -739,49 +784,7 @@ const AdminCotizaciones = () => {
         </div>
       )}
 
-      {/* Modal de Exportación */}
-      {showExportModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold text-negro-principal mb-2">
-              Exportar Cotizaciones
-            </h3>
-            <p className="text-gris-medio mb-6">
-              Selecciona el formato de exportación para descargar los datos.
-            </p>
 
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-negro-principal mb-2">
-                Formato
-              </label>
-              <select
-                value={exportFormat}
-                onChange={(e) => setExportFormat(e.target.value)}
-                className="w-full px-4 py-2 border border-gris-claro rounded-lg focus:outline-none focus:ring-2 focus:ring-verde-principal"
-              >
-                <option value="csv">CSV (Valores separados por comas)</option>
-                <option value="excel">Excel (.xlsx)</option>
-              </select>
-            </div>
-
-            <div className="flex items-center justify-end gap-4">
-              <button
-                onClick={() => setShowExportModal(false)}
-                className="px-4 py-2 border border-gris-claro rounded-lg hover:bg-fondo-claro transition-colors font-medium text-negro-principal"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleExportConfirm}
-                className="bg-verde-principal hover:bg-verde-hover text-white font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-              >
-                <Download size={18} />
-                Exportar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </AdminLayout>
   )
 }

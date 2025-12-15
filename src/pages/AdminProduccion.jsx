@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import AdminLayout from '../components/AdminLayout'
 import produccionService from '../services/produccionService'
-import { exportToCsv } from '../lib/exportToCsv'
+import { exportToXlsx } from '../lib/exportToXlsx'
 import {
   Factory,
   Plus,
@@ -27,6 +27,7 @@ const AdminProduccion = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterEstado, setFilterEstado] = useState('all')
   const [productos, setProductos] = useState([])
+  const [exporting, setExporting] = useState(false)
 
   // Paginación
   const [currentPage, setCurrentPage] = useState(1)
@@ -144,34 +145,44 @@ const AdminProduccion = () => {
     return matchSearch && matchEstado
   })
 
-  // Exportar a CSV
+  // Exportar a Excel
   const handleExport = () => {
-    const columns = [
-      'Código',
-      'Nombre Orden',
-      'Producto',
-      'Planificada',
-      'Producida',
-      'Costo Total',
-      'Fecha',
-      'Estado'
-    ]
+    try {
+      setExporting(true)
+      const rows = filteredProducciones.map(p => {
+        const producto = Array.isArray(p.producto) ? p.producto[0] : p.producto
+        return [
+          p.codigo_produccion || '',
+          p.nombre || '',
+          producto?.nombre || '',
+          p.cantidad_planificada || 0,
+          p.cantidad_producida || 0,
+          Number(p.costo_total || 0).toFixed(2),
+          p.fecha_produccion ? new Date(p.fecha_produccion).toLocaleDateString('es-PE') : '',
+          p.estado || ''
+        ]
+      })
 
-    const rows = filteredProducciones.map(p => {
-      const producto = Array.isArray(p.producto) ? p.producto[0] : p.producto
-      return [
-        p.codigo_produccion || '',
-        p.nombre || '',
-        producto?.nombre || '',
-        p.cantidad_planificada || 0,
-        p.cantidad_producida || 0,
-        Number(p.costo_total || 0).toFixed(2),
-        p.fecha_produccion ? new Date(p.fecha_produccion).toLocaleDateString('es-PE') : '',
-        p.estado || ''
+      const columns = [
+        'Código',
+        'Nombre Orden',
+        'Producto',
+        'Planificada',
+        'Producida',
+        'Costo Total',
+        'Fecha',
+        'Estado'
       ]
-    })
 
-    exportToCsv('produccion', columns, rows)
+      const dateStr = new Date().toISOString().split('T')[0]
+      const filename = `produccion_${dateStr}`
+
+      exportToXlsx(filename, rows, columns)
+    } catch (error) {
+      console.error('Error exportando:', error)
+    } finally {
+      setExporting(false)
+    }
   }
 
   // Paginación
@@ -223,10 +234,11 @@ const AdminProduccion = () => {
               </Link>
               <button
                 onClick={handleExport}
-                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
+                disabled={exporting}
+                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download size={18} />
-                Exportar
+                {exporting ? 'Exportando...' : 'Exportar'}
               </button>
             </div>
           </div>

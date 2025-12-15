@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import AdminLayout from '../components/AdminLayout'
-import { exportToCsv } from '../lib/exportToCsv'
+import { exportToXlsx } from '../lib/exportToXlsx'
 import {
   Package,
   Plus,
@@ -31,6 +31,7 @@ const AdminProductos = () => {
   const [selectedProducto, setSelectedProducto] = useState(null)
   const [isInsumosModalOpen, setIsInsumosModalOpen] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [exporting, setExporting] = useState(false)
 
   // Paginación
   const [currentPage, setCurrentPage] = useState(1)
@@ -184,31 +185,41 @@ const AdminProductos = () => {
     return matchSearch && matchCategoria && matchStock && matchDate
   })
 
-  // Exportar a CSV
+  // Exportar a Excel
   const handleExport = () => {
-    const columns = [
-      'Nombre',
-      'Código',
-      'Categoría',
-      'Stock Total',
-      'Stock Mínimo',
-      'Precio Venta',
-      'Costo',
-      'Estado'
-    ]
+    try {
+      setExporting(true)
+      const rows = filteredProductos.map(p => [
+        p.nombre || '',
+        p.codigo || '',
+        p.categoria || '',
+        p.stock_disponible || 0,
+        p.stock_minimo || 0,
+        Number(p.precio_venta || 0).toFixed(2),
+        Number(p.costo_unitario || 0).toFixed(2),
+        p.activo ? 'Activo' : 'Inactivo'
+      ])
 
-    const rows = filteredProductos.map(p => [
-      p.nombre || '',
-      p.codigo || '',
-      p.categoria || '',
-      p.stock_disponible || 0,
-      p.stock_minimo || 0,
-      Number(p.precio_venta || 0).toFixed(2),
-      Number(p.costo_unitario || 0).toFixed(2),
-      p.activo ? 'Activo' : 'Inactivo'
-    ])
+      const columns = [
+        'Nombre',
+        'Código',
+        'Categoría',
+        'Stock Total',
+        'Stock Mínimo',
+        'Precio Venta',
+        'Costo',
+        'Estado'
+      ]
 
-    exportToCsv('productos', columns, rows)
+      const dateStr = new Date().toISOString().split('T')[0]
+      const filename = `productos_${dateStr}`
+
+      exportToXlsx(filename, rows, columns)
+    } catch (error) {
+      console.error('Error exportando:', error)
+    } finally {
+      setExporting(false)
+    }
   }
 
   // Paginación
@@ -259,10 +270,11 @@ const AdminProductos = () => {
               </Link>
               <button
                 onClick={handleExport}
-                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
+                disabled={exporting}
+                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download size={18} />
-                Exportar
+                {exporting ? 'Exportando...' : 'Exportar'}
               </button>
             </div>
           </div>

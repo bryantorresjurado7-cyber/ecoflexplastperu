@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import AdminLayout from '../components/AdminLayout'
 import NotificationToast from '../components/NotificationToast'
-import { exportToCsv } from '../lib/exportToCsv'
+import { exportToXlsx } from '../lib/exportToXlsx'
 import {
   Settings,
   Plus,
@@ -27,6 +27,7 @@ const AdminMaquinarias = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterEstado, setFilterEstado] = useState('all')
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [exporting, setExporting] = useState(false)
 
   // Estado para notificaciones
   const [notification, setNotification] = useState({
@@ -184,29 +185,39 @@ const AdminMaquinarias = () => {
     return matchSearch && matchEstado
   })
 
-  // Exportar a CSV
+  // Exportar a Excel
   const handleExport = () => {
-    const columns = [
-      'Nombre',
-      'Código',
-      'Marca',
-      'Modelo',
-      'Serie',
-      'Ubicación',
-      'Estado'
-    ]
+    try {
+      setExporting(true)
+      const rows = filteredMaquinarias.map(m => [
+        m.nombre || '',
+        m.codigo_maquinaria || '',
+        m.marca || '',
+        m.modelo || '',
+        m.numero_serie || '',
+        m.ubicacion || '',
+        getEstadoLabel(m.estado)
+      ])
 
-    const rows = filteredMaquinarias.map(m => [
-      m.nombre || '',
-      m.codigo_maquinaria || '',
-      m.marca || '',
-      m.modelo || '',
-      m.numero_serie || '',
-      m.ubicacion || '',
-      getEstadoLabel(m.estado)
-    ])
+      const columns = [
+        'Nombre',
+        'Código',
+        'Marca',
+        'Modelo',
+        'Serie',
+        'Ubicación',
+        'Estado'
+      ]
 
-    exportToCsv('maquinarias', columns, rows)
+      const dateStr = new Date().toISOString().split('T')[0]
+      const filename = `maquinarias_${dateStr}`
+
+      exportToXlsx(filename, rows, columns)
+    } catch (error) {
+      console.error('Error exportando:', error)
+    } finally {
+      setExporting(false)
+    }
   }
 
   // Paginación
@@ -278,10 +289,11 @@ const AdminMaquinarias = () => {
               </Link>
               <button
                 onClick={handleExport}
-                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
+                disabled={exporting}
+                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download size={18} />
-                Exportar
+                {exporting ? 'Exportando...' : 'Exportar'}
               </button>
             </div>
           </div>

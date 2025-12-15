@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import AdminLayout from '../components/AdminLayout'
 import usuariosService from '../services/usuariosService'
 import NotificationToast from '../components/NotificationToast'
-import { exportToCsv } from '../lib/exportToCsv'
+import { exportToXlsx } from '../lib/exportToXlsx'
 import {
   Users,
   Plus,
@@ -26,6 +26,7 @@ const AdminUsuarios = () => {
   const [filterRol, setFilterRol] = useState('all')
   const [filterActivo, setFilterActivo] = useState('all')
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [exporting, setExporting] = useState(false)
 
   // Estado para notificaciones
   const [notification, setNotification] = useState({
@@ -163,29 +164,39 @@ const AdminUsuarios = () => {
     return matchSearch && matchRol && matchActivo
   })
 
-  // Exportar a CSV
+  // Exportar a Excel
   const handleExport = () => {
-    const columns = [
-      'Nombre',
-      'Apellido',
-      'Email',
-      'Rol',
-      'Estado',
-      'Último Acceso'
-    ]
+    try {
+      setExporting(true)
+      const rows = filteredUsuarios.map(u => [
+        u.nombre || '',
+        u.apellido || '',
+        u.email || '',
+        getRolLabel(u.rol),
+        u.activo ? 'Activo' : 'Inactivo',
+        u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleDateString('es-PE', {
+          year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        }) : 'Nunca'
+      ])
 
-    const rows = filteredUsuarios.map(u => [
-      u.nombre || '',
-      u.apellido || '',
-      u.email || '',
-      getRolLabel(u.rol),
-      u.activo ? 'Activo' : 'Inactivo',
-      u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleDateString('es-PE', {
-        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-      }) : 'Nunca'
-    ])
+      const columns = [
+        'Nombre',
+        'Apellido',
+        'Email',
+        'Rol',
+        'Estado',
+        'Último Acceso'
+      ]
 
-    exportToCsv('usuarios', columns, rows)
+      const dateStr = new Date().toISOString().split('T')[0]
+      const filename = `usuarios_${dateStr}`
+
+      exportToXlsx(filename, rows, columns)
+    } catch (error) {
+      console.error('Error exportando:', error)
+    } finally {
+      setExporting(false)
+    }
   }
 
   // Paginación
@@ -232,10 +243,11 @@ const AdminUsuarios = () => {
               </Link>
               <button
                 onClick={handleExport}
-                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
+                disabled={exporting}
+                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download size={18} />
-                Exportar
+                {exporting ? 'Exportando...' : 'Exportar'}
               </button>
             </div>
           </div>

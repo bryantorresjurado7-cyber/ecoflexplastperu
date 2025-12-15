@@ -16,7 +16,7 @@ import {
   ChevronRight,
   Download
 } from 'lucide-react'
-import { exportToCsv } from '../lib/exportToCsv'
+import { exportToXlsx } from '../lib/exportToXlsx'
 
 const AdminProveedores = () => {
   const [proveedores, setProveedores] = useState([])
@@ -24,6 +24,7 @@ const AdminProveedores = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterEstado, setFilterEstado] = useState('all')
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [exporting, setExporting] = useState(false)
 
   // Estado para notificaciones
   const [notification, setNotification] = useState({
@@ -152,29 +153,39 @@ const AdminProveedores = () => {
     return matchSearch && matchEstado
   })
 
-  // Exportar a CSV
+  // Exportar a Excel
   const handleExport = () => {
-    const columns = [
-      'Nombre',
-      'Email',
-      'Teléfono',
-      'Tipo Documento',
-      'Número Documento',
-      'Dirección',
-      'Estado'
-    ]
+    try {
+      setExporting(true)
+      const rows = filteredProveedores.map(p => [
+        p.nombre || '',
+        p.email || '',
+        p.telefono || '',
+        p.tipo_documento || '',
+        p.numero_documento || '',
+        p.direccion || '',
+        p.estado ? 'Activo' : 'Inactivo'
+      ])
 
-    const rows = filteredProveedores.map(p => [
-      p.nombre || '',
-      p.email || '',
-      p.telefono || '',
-      p.tipo_documento || '',
-      p.numero_documento || '',
-      p.direccion || '',
-      p.estado ? 'Activo' : 'Inactivo'
-    ])
+      const columns = [
+        'Nombre',
+        'Email',
+        'Teléfono',
+        'Tipo Documento',
+        'Número Documento',
+        'Dirección',
+        'Estado'
+      ]
 
-    exportToCsv('proveedores', columns, rows)
+      const dateStr = new Date().toISOString().split('T')[0]
+      const filename = `proveedores_${dateStr}`
+
+      exportToXlsx(filename, rows, columns)
+    } catch (error) {
+      console.error('Error exportando:', error)
+    } finally {
+      setExporting(false)
+    }
   }
 
   // Paginación
@@ -221,10 +232,11 @@ const AdminProveedores = () => {
               </Link>
               <button
                 onClick={handleExport}
-                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2"
+                disabled={exporting}
+                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download size={18} />
-                Exportar
+                {exporting ? 'Exportando...' : 'Exportar'}
               </button>
             </div>
           </div>

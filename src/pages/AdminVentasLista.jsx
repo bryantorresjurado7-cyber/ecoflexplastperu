@@ -20,7 +20,7 @@ import {
   Edit,
   Trash2
 } from 'lucide-react'
-import { exportToCsv } from '../lib/exportToCsv'
+import { exportToXlsx } from '../lib/exportToXlsx'
 import AdminLayout from '../components/AdminLayout'
 
 const SUPABASE_URL = 'https://uecolzuwhgfhicacodqj.supabase.co'
@@ -39,6 +39,7 @@ const AdminVentasLista = () => {
   const [ventaSeleccionada, setVentaSeleccionada] = useState(null)
   const [loadingDetalle, setLoadingDetalle] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
     loadVentas()
@@ -161,27 +162,57 @@ const AdminVentasLista = () => {
     venta.direccion_entrega?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  // Exportar a CSV
+  // Exportar a Excel
   const handleExport = () => {
-    const columns = [
-      'ID Pedido',
-      'Cliente',
-      'Fecha',
-      'Total',
-      'Estado',
-      'Dirección Entrega'
-    ]
+    try {
+      setExporting(true)
+      const rows = filteredVentas.map(v => {
+        // Formato de fecha
+        const fechaPedido = new Date(v.fecha_pedido || v.created_at).toLocaleDateString('es-PE', {
+          day: '2-digit', month: '2-digit', year: 'numeric'
+        })
 
-    const rows = filteredVentas.map(v => [
-      v.id_pedido || '',
-      v.cliente?.nombre || 'Cliente Eliminado',
-      new Date(v.fecha_pedido).toLocaleDateString('es-PE'),
-      Number(v.total || 0).toFixed(2),
-      v.estado || 'Pendiente',
-      v.direccion_entrega || ''
-    ])
+        let fechaCelda = fechaPedido
+        if (v.fecha_entrega) {
+          const fechaEntrega = new Date(v.fecha_entrega).toLocaleDateString('es-PE', {
+            day: '2-digit', month: '2-digit', year: 'numeric'
+          })
+          fechaCelda += `\nEntrega: ${fechaEntrega}`
+        }
 
-    exportToCsv('ventas', columns, rows)
+        // Estado legible
+        const estadoLabel = v.estado_pedido ? (v.estado_pedido.charAt(0).toUpperCase() + v.estado_pedido.slice(1)) : 'Pendiente'
+
+        return [
+          v.cliente?.nombre || 'Cliente Eliminado', // Cliente
+          fechaCelda, // Fecha
+          v.direccion_entrega || '', // Dirección
+          v.cliente?.email || '', // Correo
+          v.metodo_pago || '', // Método de pago
+          estadoLabel, // Estado
+          `S/ ${Number(v.total || 0).toFixed(2)}` // Total
+        ]
+      })
+
+      const columns = [
+        'Cliente',
+        'Fecha',
+        'Dirección',
+        'Correo',
+        'Método de pago',
+        'Estado',
+        'Total'
+      ]
+
+      const dateStr = new Date().toISOString().split('T')[0]
+      const filename = `ventas_${dateStr}`
+
+      exportToXlsx(filename, rows, columns)
+    } catch (error) {
+      console.error('Error exportando:', error)
+    } finally {
+      setExporting(false)
+    }
   }
 
   return (
@@ -207,10 +238,11 @@ const AdminVentasLista = () => {
               </button>
               <button
                 onClick={handleExport}
-                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 w-full md:w-auto justify-center"
+                disabled={exporting}
+                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 w-full md:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download size={20} />
-                Exportar
+                {exporting ? 'Exportando...' : 'Exportar'}
               </button>
             </div>
           </div>
