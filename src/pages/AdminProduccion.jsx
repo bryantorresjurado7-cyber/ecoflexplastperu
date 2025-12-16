@@ -18,8 +18,10 @@ import {
   ChevronRight,
   Eye,
   ClipboardCheck,
-  Download
+  Download,
+  Printer
 } from 'lucide-react'
+import OrdenProduccionPrint from '../components/OrdenProduccionPrint'
 
 const AdminProduccion = () => {
   const [producciones, setProducciones] = useState([])
@@ -28,6 +30,7 @@ const AdminProduccion = () => {
   const [filterEstado, setFilterEstado] = useState('all')
   const [productos, setProductos] = useState([])
   const [exporting, setExporting] = useState(false)
+  const [selectedProduccion, setSelectedProduccion] = useState(null)
 
   // Paginación
   const [currentPage, setCurrentPage] = useState(1)
@@ -435,6 +438,16 @@ const AdminProduccion = () => {
                               <Edit size={18} />
                             </Link>
                             <button
+                              onClick={() => {
+                                setSelectedProduccion(null) // Reset first to force re-render if same item
+                                setTimeout(() => setSelectedProduccion(produccion), 0)
+                              }}
+                              className="text-verde-principal hover:text-green-700 p-2 hover:bg-green-50 rounded-lg transition-colors"
+                              title="Imprimir"
+                            >
+                              <Printer size={18} />
+                            </button>
+                            <button
                               onClick={() => handleDeleteProduccion(produccion.id_produccion)}
                               className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
                               title="Eliminar"
@@ -530,6 +543,9 @@ const AdminProduccion = () => {
             </div>
           )}
         </div>
+
+        {/* Componente de Impresión Directa (Oculto en pantalla) */}
+        <OrdenProduccionPrint data={selectedProduccion} />
       </div>
     </AdminLayout>
   )
