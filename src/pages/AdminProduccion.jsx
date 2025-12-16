@@ -442,14 +442,14 @@ const AdminProduccion = () => {
                                 setSelectedProduccion(null) // Reset first to force re-render if same item
                                 setTimeout(() => setSelectedProduccion(produccion), 0)
                               }}
-                              className="text-verde-principal hover:text-green-700 p-2 hover:bg-green-50 rounded-lg transition-colors"
+                              className="text-verde-principal hover:text-green-700 p-2 hover:bg-green-50 rounded-lg transition-colors cursor-pointer"
                               title="Imprimir"
                             >
                               <Printer size={18} />
                             </button>
                             <button
                               onClick={() => handleDeleteProduccion(produccion.id_produccion)}
-                              className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                              className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                               title="Eliminar"
                             >
                               <Trash2 size={18} />
