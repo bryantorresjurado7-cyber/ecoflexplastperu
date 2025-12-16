@@ -29,11 +29,8 @@ const AdminOrdenMantenimiento = () => {
         repuestos: [],
         equipoApoyo: '',
         metodosSeguridad: '',
-        equipoApoyo: '',
-        metodosSeguridad: '',
         actividadesProcedimiento: '',
         solicitanteNombre: '',
-        solicitanteCargo: '',
         solicitanteCargo: '',
         solicitanteContacto: '',
         turno: ''

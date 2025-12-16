@@ -27,6 +27,10 @@ import LibroReclamaciones from './pages/LibroReclamaciones';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminContabilidad from './pages/AdminContabilidad';
+import AdminContabilidadGastos from './pages/AdminContabilidadGastos';
+import AdminContabilidadGastosFijo from './pages/AdminContabilidadGastosFijo';
+import AdminContabilidadGastosVariable from './pages/AdminContabilidadGastosVariable';
+import AdminContabilidadIngresos from './pages/AdminContabilidadIngresos';
 import AdminProductos from './pages/AdminProductos';
 import AdminProductoForm from './pages/AdminProductoForm';
 import AdminVenta from './pages/AdminVenta';
@@ -232,6 +236,30 @@ function App() {
             <Route path="/admin/contabilidad" element={
               <ProtectedRoute>
                 <AdminContabilidad />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/contabilidad/gastos" element={
+              <ProtectedRoute>
+                <AdminContabilidadGastos />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/contabilidad/gastos/fijo" element={
+              <ProtectedRoute>
+                <AdminContabilidadGastosFijo />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/contabilidad/gastos/variable" element={
+              <ProtectedRoute>
+                <AdminContabilidadGastosVariable />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/contabilidad/ingresos" element={
+              <ProtectedRoute>
+                <AdminContabilidadIngresos />
               </ProtectedRoute>
             } />
 

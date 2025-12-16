@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import AdminLayout from '../components/AdminLayout'
 import usuariosService from '../services/usuariosService'
+import { getParametrica } from '../services/parametricaService'
 import NotificationToast from '../components/NotificationToast'
-import { ArrowLeft, Save, Users, Mail, Lock, Shield, UserCheck, ChevronDown, Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, Save, Users, Mail, Lock, Shield, UserCheck, ChevronDown, Eye, EyeOff, Loader2 } from 'lucide-react'
 
 const AdminUsuarioForm = () => {
   const navigate = useNavigate()
@@ -25,13 +26,21 @@ const AdminUsuarioForm = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
-  const predefinedRoles = [
+  // Estado para roles dinámicos desde parametrica
+  const [rolesFromDB, setRolesFromDB] = useState([])
+  const [loadingRoles, setLoadingRoles] = useState(true)
+
+  // Roles por defecto (fallback si falla la carga desde BD)
+  const defaultRoles = [
     { value: 'operario', label: 'Operario' },
     { value: 'supervisor', label: 'Supervisor' },
     { value: 'control_calidad', label: 'Control de Calidad' },
     { value: 'admin', label: 'Administrador' },
     { value: 'super_admin', label: 'Super Administrador' }
   ]
+
+  // Usar roles de BD o fallback
+  const predefinedRoles = rolesFromDB.length > 0 ? rolesFromDB : defaultRoles
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -45,11 +54,40 @@ const AdminUsuarioForm = () => {
 
   const [errors, setErrors] = useState({})
 
+  // Cargar roles desde parametrica al montar el componente
+  useEffect(() => {
+    loadRoles()
+  }, [])
+
   useEffect(() => {
     if (isEditing) {
       loadUsuario()
     }
   }, [id])
+
+  // Función para cargar roles desde el servicio parametrica
+  const loadRoles = async () => {
+    try {
+      setLoadingRoles(true)
+      const result = await getParametrica('rol_usuario', 'true')
+      
+      if (result.data && result.data.length > 0) {
+        // Mapear datos de parametrica al formato esperado
+        const roles = result.data
+          .sort((a, b) => (a.orden || 0) - (b.orden || 0))
+          .map(item => ({
+            value: item.valor || item.codigo_parametro,
+            label: item.descripcion || item.codigo_parametro
+          }))
+        setRolesFromDB(roles)
+      }
+    } catch (error) {
+      console.error('Error cargando roles:', error)
+      // Si falla, usará los roles por defecto (fallback)
+    } finally {
+      setLoadingRoles(false)
+    }
+  }
 
   const loadUsuario = async () => {
     try {
@@ -436,37 +474,57 @@ const AdminUsuarioForm = () => {
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gris-medio hover:text-negro-principal transition-colors"
                         onClick={() => setShowRoleSuggestions(!showRoleSuggestions)}
                       >
-                        <ChevronDown size={20} />
+                        {loadingRoles ? (
+                          <Loader2 size={20} className="animate-spin" />
+                        ) : (
+                          <ChevronDown size={20} className={`transition-transform ${showRoleSuggestions ? 'rotate-180' : ''}`} />
+                        )}
                       </button>
 
                       {showRoleSuggestions && (
                         <ul className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-auto">
-                          {predefinedRoles
-                            .filter(r =>
-                              r.label.toLowerCase().includes(formData.rol.toLowerCase()) ||
-                              r.value.toLowerCase().includes(formData.rol.toLowerCase())
-                            )
-                            .map(role => (
-                              <li
-                                key={role.value}
-                                className="px-4 py-2 hover:bg-fondo-claro cursor-pointer text-sm text-negro-principal flex items-center justify-between group"
-                                onMouseDown={() => {
-                                  setFormData(prev => ({ ...prev, rol: role.value }))
-                                  setErrors(prev => ({ ...prev, rol: '' }))
-                                  setShowRoleSuggestions(false)
-                                }}
-                              >
-                                <span>{role.label}</span>
-                                <span className="text-gris-medio text-xs group-hover:text-negro-principal transition-colors">
-                                  {role.value}
-                                </span>
-                              </li>
-                            ))
-                          }
-                          {formData.rol && !predefinedRoles.some(r => r.value === formData.rol) && (
-                            <li className="px-4 py-2 text-sm text-gris-medio italic bg-gray-50 border-t border-gray-100">
-                              Nuevo rol personalizado: <span className="font-medium text-negro-principal">{formData.rol}</span>
+                          {loadingRoles ? (
+                            <li className="px-4 py-3 text-sm text-gris-medio flex items-center gap-2">
+                              <Loader2 size={16} className="animate-spin" />
+                              Cargando roles...
                             </li>
+                          ) : predefinedRoles.length === 0 ? (
+                            <li className="px-4 py-3 text-sm text-gris-medio">
+                              No hay roles disponibles
+                            </li>
+                          ) : (
+                            <>
+                              {predefinedRoles
+                                .filter(r =>
+                                  r.label.toLowerCase().includes(formData.rol.toLowerCase()) ||
+                                  r.value.toLowerCase().includes(formData.rol.toLowerCase())
+                                )
+                                .map(role => (
+                                  <li
+                                    key={role.value}
+                                    className={`px-4 py-3 hover:bg-verde-claro/10 cursor-pointer text-sm flex items-center justify-between group transition-colors ${
+                                      formData.rol === role.value ? 'bg-verde-claro/20 border-l-4 border-verde-principal' : ''
+                                    }`}
+                                    onMouseDown={() => {
+                                      setFormData(prev => ({ ...prev, rol: role.value }))
+                                      setErrors(prev => ({ ...prev, rol: '' }))
+                                      setShowRoleSuggestions(false)
+                                    }}
+                                  >
+                                    <span className="font-medium text-negro-principal">{role.label}</span>
+                                    <span className="text-gris-medio text-xs group-hover:text-verde-principal transition-colors bg-gray-100 px-2 py-0.5 rounded">
+                                      {role.value}
+                                    </span>
+                                  </li>
+                                ))
+                              }
+                              {formData.rol && !predefinedRoles.some(r => r.value === formData.rol) && (
+                                <li className="px-4 py-3 text-sm text-gris-medio italic bg-amber-50 border-t border-gray-100 flex items-center gap-2">
+                                  <span className="text-amber-600">✨</span>
+                                  Nuevo rol: <span className="font-medium text-negro-principal">{formData.rol}</span>
+                                </li>
+                              )}
+                            </>
                           )}
                         </ul>
                       )}
@@ -474,8 +532,19 @@ const AdminUsuarioForm = () => {
                     {errors.rol && (
                       <p className="text-xs text-red-600 mt-1">{errors.rol}</p>
                     )}
-                    <p className="text-xs text-gris-medio mt-1">
-                      Seleccione un rol existente o escriba uno nuevo
+                    <p className="text-xs text-gris-medio mt-1 flex items-center gap-1">
+                      {loadingRoles ? (
+                        <>
+                          <Loader2 size={12} className="animate-spin" />
+                          Cargando roles desde base de datos...
+                        </>
+                      ) : rolesFromDB.length > 0 ? (
+                        <>
+                          ✓ {rolesFromDB.length} roles cargados desde base de datos
+                        </>
+                      ) : (
+                        'Seleccione un rol existente o escriba uno nuevo'
+                      )}
                     </p>
                   </div>
 
