@@ -17,7 +17,8 @@ import {
   Truck,
   Cog,
   ArrowLeftRight,
-  Wallet
+  Wallet,
+  Bell
 } from 'lucide-react'
 
 const AdminLayout = ({ children }) => {
@@ -28,6 +29,55 @@ const AdminLayout = ({ children }) => {
   // State for sidebar
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+
+  // State for notifications
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [notifications, setNotifications] = useState([])
+
+  // Mock Notifications Data based on Path
+  const getNotificationsForPath = (path) => {
+    if (path.includes('/transacciones') || path.includes('/caja-chica')) {
+      return [
+        { id: 1, text: 'Gasto pendiente de aprobación', time: '5 min', type: 'warning' },
+        { id: 2, text: 'Arqueo de caja realizado', time: '2 horas', type: 'info' }
+      ]
+    }
+    if (path.includes('/cotizaciones')) {
+      return [
+        { id: 1, text: 'Cotización #405 aprobada', time: '10 min', type: 'success' },
+        { id: 2, text: 'Nueva solicitud de cotización', time: '30 min', type: 'info' }
+      ]
+    }
+    if (path.includes('/ventas')) {
+      return [
+        { id: 1, text: 'Venta #1205 registrada', time: '2 min', type: 'success' },
+        { id: 2, text: 'Devolución solicitada', time: '1 hora', type: 'alert' }
+      ]
+    }
+    if (path.includes('/productos') || path.includes('/inventario')) {
+      return [
+        { id: 1, text: 'Stock bajo: Botella 500ml', time: '15 min', type: 'alert' },
+        { id: 2, text: 'Nuevo producto agregado', time: '1 día', type: 'info' }
+      ]
+    }
+    if (path.includes('/clientes')) {
+      return [
+        { id: 1, text: 'Nuevo cliente registrado', time: '20 min', type: 'info' },
+        { id: 2, text: 'Datos de cliente actualizados', time: '3 horas', type: 'info' }
+      ]
+    }
+    if (path === '/admin/dashboard') {
+      return [
+        { id: 1, text: 'Resumen diario generado', time: '1 hora', type: 'info' },
+        { id: 2, text: 'Actualización del sistema', time: '1 día', type: 'info' }
+      ]
+    }
+    return []
+  }
+
+  useEffect(() => {
+    setNotifications(getNotificationsForPath(location.pathname))
+  }, [location.pathname])
 
   // Handle resize to detect mobile
   useEffect(() => {
@@ -113,8 +163,9 @@ const AdminLayout = ({ children }) => {
     {
       title: 'Caja Chica',
       icon: Wallet,
-      path: '/admin/caja-chica'
+      path: '/admin/transacciones/movimientos'
     },
+
     {
       title: 'Configuración',
       icon: Settings,
@@ -243,8 +294,15 @@ const AdminLayout = ({ children }) => {
           </div>
         )}
 
+
+
         {children}
       </main>
+
+      {/* Notification Panel Global Overlay */}
+      {/* Implementation detail: doing this cleanly requires changing the component state structure. 
+        I'll modify the top of the file to add state first.
+     */}
     </div>
   )
 }
