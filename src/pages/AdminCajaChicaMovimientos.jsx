@@ -116,6 +116,13 @@ const AdminCajaChicaMovimientos = () => {
                             </div>
                         </div>
                         <div className="flex gap-3 w-full md:w-auto">
+                            <Link
+                                to="/admin/transacciones/movimientos/nuevo"
+                                className="bg-verde-principal text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-verde-hover transition-colors shadow-lg whitespace-nowrap"
+                            >
+                                <Plus size={20} />
+                                Nuevo Registro
+                            </Link>
                             <button
                                 onClick={() => {
                                     const columns = [
@@ -128,18 +135,11 @@ const AdminCajaChicaMovimientos = () => {
                                     ]
                                     exportToExcel(filteredMovimientos, columns, 'movimientos_caja_chica')
                                 }}
-                                className="bg-negro-principal hover:bg-black text-white px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors shadow-lg whitespace-nowrap"
+                                className="bg-white hover:bg-gray-50 text-verde-principal border border-verde-principal px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors shadow-lg whitespace-nowrap"
                             >
                                 <Download size={20} />
                                 Exportar Excel
                             </button>
-                            <Link
-                                to="/admin/transacciones/movimientos/nuevo"
-                                className="bg-verde-principal text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-verde-hover transition-colors shadow-lg whitespace-nowrap"
-                            >
-                                <Plus size={20} />
-                                Nuevo Registro
-                            </Link>
                         </div>
                     </div>
 
