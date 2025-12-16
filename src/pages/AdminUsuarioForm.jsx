@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import AdminLayout from '../components/AdminLayout'
 import usuariosService from '../services/usuariosService'
+import { getParametrica } from '../services/parametricaService'
 import NotificationToast from '../components/NotificationToast'
-import { ArrowLeft, Save, Users, Mail, Lock, Shield, UserCheck, Printer } from 'lucide-react'
-import PrintPreviewModal from '../components/PrintPreviewModal'
+import { ArrowLeft, Save, Users, Mail, Lock, Shield, UserCheck, ChevronDown, Eye, EyeOff, Loader2 } from 'lucide-react'
 
 const AdminUsuarioForm = () => {
   const navigate = useNavigate()
@@ -19,6 +19,29 @@ const AdminUsuarioForm = () => {
     message: ''
   })
 
+  // Estado para sugerencias de rol
+  const [showRoleSuggestions, setShowRoleSuggestions] = useState(false)
+
+  // Estado para mostrar/ocultar contraseñas
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+  // Estado para roles dinámicos desde parametrica
+  const [rolesFromDB, setRolesFromDB] = useState([])
+  const [loadingRoles, setLoadingRoles] = useState(true)
+
+  // Roles por defecto (fallback si falla la carga desde BD)
+  const defaultRoles = [
+    { value: 'operario', label: 'Operario' },
+    { value: 'supervisor', label: 'Supervisor' },
+    { value: 'control_calidad', label: 'Control de Calidad' },
+    { value: 'admin', label: 'Administrador' },
+    { value: 'super_admin', label: 'Super Administrador' }
+  ]
+
+  // Usar roles de BD o fallback
+  const predefinedRoles = rolesFromDB.length > 0 ? rolesFromDB : defaultRoles
+
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
@@ -31,15 +54,40 @@ const AdminUsuarioForm = () => {
 
   const [errors, setErrors] = useState({})
 
-  // Estado para el modal de impresión
-  const [showPrintModal, setShowPrintModal] = useState(false)
-  const [printData, setPrintData] = useState(null)
+  // Cargar roles desde parametrica al montar el componente
+  useEffect(() => {
+    loadRoles()
+  }, [])
 
   useEffect(() => {
     if (isEditing) {
       loadUsuario()
     }
   }, [id])
+
+  // Función para cargar roles desde el servicio parametrica
+  const loadRoles = async () => {
+    try {
+      setLoadingRoles(true)
+      const result = await getParametrica('rol_usuario', 'true')
+      
+      if (result.data && result.data.length > 0) {
+        // Mapear datos de parametrica al formato esperado
+        const roles = result.data
+          .sort((a, b) => (a.orden || 0) - (b.orden || 0))
+          .map(item => ({
+            value: item.valor || item.codigo_parametro,
+            label: item.descripcion || item.codigo_parametro
+          }))
+        setRolesFromDB(roles)
+      }
+    } catch (error) {
+      console.error('Error cargando roles:', error)
+      // Si falla, usará los roles por defecto (fallback)
+    } finally {
+      setLoadingRoles(false)
+    }
+  }
 
   const loadUsuario = async () => {
     try {
@@ -141,8 +189,8 @@ const AdminUsuarioForm = () => {
     try {
       const usuarioData = {
         nombre: formData.nombre.trim(),
-        apellido: formData.apellido.trim() || null,
-        email: formData.email.trim().toLowerCase(),
+        apellido: (formData.apellido || '').trim() || null,
+        email: (formData.email || '').trim().toLowerCase(),
         rol: formData.rol,
         activo: formData.activo
       }
@@ -164,8 +212,8 @@ const AdminUsuarioForm = () => {
       setNotification({
         open: true,
         type: 'success',
-        title: isEditing ? 'Usuario actualizado' : 'Usuario creado',
-        message: `El usuario ha sido ${isEditing ? 'actualizado' : 'creado'} correctamente.`
+        title: isEditing ? 'Actualización Completada' : 'Creación Exito',
+        message: 'El cambio se realizó de manera exitosa.'
       })
 
       setTimeout(() => {
@@ -173,11 +221,39 @@ const AdminUsuarioForm = () => {
       }, 2000)
     } catch (error) {
       console.error('Error guardando usuario:', error)
+
+      let errorMessage = error.message || `No se pudo ${isEditing ? 'actualizar' : 'crear'} el usuario.`
+
+      const newErrors = {}
+      const msgLower = errorMessage.toLowerCase()
+
+      // Mapeo de errores de API a campos específicos
+      if (msgLower.includes('email') || msgLower.includes('correo')) {
+        newErrors.email = errorMessage
+      }
+
+      if (msgLower.includes('password') || msgLower.includes('contraseña')) {
+        newErrors.password = errorMessage
+      }
+
+      if (msgLower.includes('name') || msgLower.includes('nombre')) {
+        newErrors.nombre = errorMessage
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(prev => ({ ...prev, ...newErrors }))
+      }
+
+      if (errorMessage.toLowerCase().includes('constraint') || errorMessage.toLowerCase().includes('violates check constraint')) {
+        errorMessage = 'Error de base de datos: El rol ingresado no está permitido actualmente.'
+        setErrors(prev => ({ ...prev, rol: errorMessage }))
+      }
+
       setNotification({
         open: true,
         type: 'error',
         title: 'Error',
-        message: error.message || `No se pudo ${isEditing ? 'actualizar' : 'crear'} el usuario.`
+        message: 'No se pudo guardar. Revise los campos marcados en rojo.'
       })
     } finally {
       setLoading(false)
@@ -217,7 +293,11 @@ const AdminUsuarioForm = () => {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} autoComplete="off">
+            {/* Hack para evitar autocompletado en algunos navegadores */}
+            <input type="password" style={{ display: 'none' }} />
+            <input type="email" style={{ display: 'none' }} />
+
             <div className="bg-white rounded-xl shadow-card p-6 space-y-6">
               {/* Información Personal */}
               <div>
@@ -237,6 +317,7 @@ const AdminUsuarioForm = () => {
                       onChange={handleChange}
                       className={`input-field ${errors.nombre ? 'border-red-500' : ''}`}
                       placeholder="Ingrese el nombre"
+                      autoComplete="off"
                       required
                     />
                     {errors.nombre && (
@@ -258,7 +339,7 @@ const AdminUsuarioForm = () => {
                     />
                   </div>
 
-                  <div>
+                  <div className="relative">
                     <label className="block text-sm font-medium text-negro-principal mb-2 flex items-center gap-2">
                       <Mail size={16} />
                       Email *
@@ -266,19 +347,19 @@ const AdminUsuarioForm = () => {
                     <input
                       type="email"
                       name="email"
-                      value={formData.email}
+                      value={formData.email || ''}
                       onChange={handleChange}
-                      disabled={isEditing}
-                      className={`input-field ${errors.email ? 'border-red-500' : ''} ${isEditing ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                      className={`input-field ${errors.email ? 'border-red-500' : ''}`}
                       placeholder="usuario@ejemplo.com"
+                      autoComplete="off"
                       required
                     />
                     {errors.email && (
                       <p className="text-xs text-red-600 mt-1">{errors.email}</p>
                     )}
                     {isEditing && (
-                      <p className="text-xs text-gris-medio mt-1">
-                        El email no se puede modificar
+                      <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                        Nota: Si cambia el email, deberá usar el nuevo para iniciar sesión.
                       </p>
                     )}
                   </div>
@@ -292,19 +373,34 @@ const AdminUsuarioForm = () => {
                   {isEditing ? 'Cambiar Contraseña' : 'Contraseña'}
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
+                  <div className="relative">
                     <label className="block text-sm font-medium text-negro-principal mb-2">
                       {isEditing ? 'Nueva Contraseña' : 'Contraseña *'}
                     </label>
-                    <input
-                      type="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      className={`input-field ${errors.password ? 'border-red-500' : ''}`}
-                      placeholder={isEditing ? 'Deje vacío para no cambiar' : 'Mínimo 6 caracteres'}
-                      required={!isEditing}
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        className={`input-field pr-10 ${errors.password ? 'border-red-500' : ''}`}
+                        placeholder={isEditing ? 'Deje vacío para no cambiar' : 'Mínimo 6 caracteres'}
+                        autoComplete="new-password"
+                        required={!isEditing}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gris-medio hover:text-negro-principal transition-colors p-1"
+                        onMouseDown={() => setShowPassword(true)}
+                        onMouseUp={() => setShowPassword(false)}
+                        onMouseLeave={() => setShowPassword(false)}
+                        onTouchStart={() => setShowPassword(true)}
+                        onTouchEnd={() => setShowPassword(false)}
+                        title="Mantener presionado para ver"
+                      >
+                        {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
+                      </button>
+                    </div>
                     {errors.password && (
                       <p className="text-xs text-red-600 mt-1">{errors.password}</p>
                     )}
@@ -319,15 +415,29 @@ const AdminUsuarioForm = () => {
                     <label className="block text-sm font-medium text-negro-principal mb-2">
                       Confirmar Contraseña {!isEditing && '*'}
                     </label>
-                    <input
-                      type="password"
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      className={`input-field ${errors.confirmPassword ? 'border-red-500' : ''}`}
-                      placeholder="Confirme la contraseña"
-                      required={!isEditing}
-                    />
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        className={`input-field pr-10 ${errors.confirmPassword ? 'border-red-500' : ''}`}
+                        placeholder="Confirme la contraseña"
+                        required={!isEditing}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gris-medio hover:text-negro-principal transition-colors p-1"
+                        onMouseDown={() => setShowConfirmPassword(true)}
+                        onMouseUp={() => setShowConfirmPassword(false)}
+                        onMouseLeave={() => setShowConfirmPassword(false)}
+                        onTouchStart={() => setShowConfirmPassword(true)}
+                        onTouchEnd={() => setShowConfirmPassword(false)}
+                        title="Mantener presionado para ver"
+                      >
+                        {showConfirmPassword ? <Eye size={20} /> : <EyeOff size={20} />}
+                      </button>
+                    </div>
                     {errors.confirmPassword && (
                       <p className="text-xs text-red-600 mt-1">{errors.confirmPassword}</p>
                     )}
@@ -346,24 +456,95 @@ const AdminUsuarioForm = () => {
                     <label className="block text-sm font-medium text-negro-principal mb-2">
                       Rol *
                     </label>
-                    <select
-                      name="rol"
-                      value={formData.rol}
-                      onChange={handleChange}
-                      className={`input-field ${errors.rol ? 'border-red-500' : ''}`}
-                      required
-                    >
-                      <option value="operario">Operario</option>
-                      <option value="supervisor">Supervisor</option>
-                      <option value="control_calidad">Control de Calidad</option>
-                      <option value="admin">Administrador</option>
-                      <option value="super_admin">Super Administrador</option>
-                    </select>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="rol"
+                        value={formData.rol}
+                        onChange={handleChange}
+                        onFocus={() => setShowRoleSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowRoleSuggestions(false), 200)}
+                        className={`input-field pr-10 ${errors.rol ? 'border-red-500' : ''}`}
+                        placeholder="Seleccione o escriba un rol"
+                        autoComplete="off"
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gris-medio hover:text-negro-principal transition-colors"
+                        onClick={() => setShowRoleSuggestions(!showRoleSuggestions)}
+                      >
+                        {loadingRoles ? (
+                          <Loader2 size={20} className="animate-spin" />
+                        ) : (
+                          <ChevronDown size={20} className={`transition-transform ${showRoleSuggestions ? 'rotate-180' : ''}`} />
+                        )}
+                      </button>
+
+                      {showRoleSuggestions && (
+                        <ul className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-auto">
+                          {loadingRoles ? (
+                            <li className="px-4 py-3 text-sm text-gris-medio flex items-center gap-2">
+                              <Loader2 size={16} className="animate-spin" />
+                              Cargando roles...
+                            </li>
+                          ) : predefinedRoles.length === 0 ? (
+                            <li className="px-4 py-3 text-sm text-gris-medio">
+                              No hay roles disponibles
+                            </li>
+                          ) : (
+                            <>
+                              {predefinedRoles
+                                .filter(r =>
+                                  r.label.toLowerCase().includes(formData.rol.toLowerCase()) ||
+                                  r.value.toLowerCase().includes(formData.rol.toLowerCase())
+                                )
+                                .map(role => (
+                                  <li
+                                    key={role.value}
+                                    className={`px-4 py-3 hover:bg-verde-claro/10 cursor-pointer text-sm flex items-center justify-between group transition-colors ${
+                                      formData.rol === role.value ? 'bg-verde-claro/20 border-l-4 border-verde-principal' : ''
+                                    }`}
+                                    onMouseDown={() => {
+                                      setFormData(prev => ({ ...prev, rol: role.value }))
+                                      setErrors(prev => ({ ...prev, rol: '' }))
+                                      setShowRoleSuggestions(false)
+                                    }}
+                                  >
+                                    <span className="font-medium text-negro-principal">{role.label}</span>
+                                    <span className="text-gris-medio text-xs group-hover:text-verde-principal transition-colors bg-gray-100 px-2 py-0.5 rounded">
+                                      {role.value}
+                                    </span>
+                                  </li>
+                                ))
+                              }
+                              {formData.rol && !predefinedRoles.some(r => r.value === formData.rol) && (
+                                <li className="px-4 py-3 text-sm text-gris-medio italic bg-amber-50 border-t border-gray-100 flex items-center gap-2">
+                                  <span className="text-amber-600">✨</span>
+                                  Nuevo rol: <span className="font-medium text-negro-principal">{formData.rol}</span>
+                                </li>
+                              )}
+                            </>
+                          )}
+                        </ul>
+                      )}
+                    </div>
                     {errors.rol && (
                       <p className="text-xs text-red-600 mt-1">{errors.rol}</p>
                     )}
-                    <p className="text-xs text-gris-medio mt-1">
-                      El rol determina los permisos del usuario en el sistema
+                    <p className="text-xs text-gris-medio mt-1 flex items-center gap-1">
+                      {loadingRoles ? (
+                        <>
+                          <Loader2 size={12} className="animate-spin" />
+                          Cargando roles desde base de datos...
+                        </>
+                      ) : rolesFromDB.length > 0 ? (
+                        <>
+                          ✓ {rolesFromDB.length} roles cargados desde base de datos
+                        </>
+                      ) : (
+                        'Seleccione un rol existente o escriba uno nuevo'
+                      )}
                     </p>
                   </div>
 
@@ -400,38 +581,6 @@ const AdminUsuarioForm = () => {
                   Cancelar
                 </button>
                 <button
-                  type="button"
-                  onClick={() => {
-                    setPrintData({
-                      type: 'USUARIO',
-                      titulo: 'FICHA DE USUARIO',
-                      fecha: new Date().toLocaleDateString(),
-                      cliente: {
-                        nombre: `${formData.nombre} ${formData.apellido || ''}`.trim(),
-                        empresa: 'ECO FLEX PLAST',
-                        email: formData.email,
-                        documento: 'INTERNO'
-                      },
-                      detalles: [],
-                      resumen: {
-                        subtotal: 'N/A',
-                        total: 'N/A'
-                      },
-                      extra: {
-                        rol: formData.rol,
-                        estado: formData.activo ? 'Activo' : 'Inactivo',
-                        id: id || 'Nuevo'
-                      },
-                      observaciones: 'Usuario del sistema administrativo'
-                    })
-                    setShowPrintModal(true)
-                  }}
-                  className="px-6 py-2 border border-gris-medio text-gris-medio rounded-lg hover:bg-gris-muy-claro transition-colors flex items-center gap-2"
-                >
-                  <Printer size={20} />
-                  Imprimir
-                </button>
-                <button
                   type="submit"
                   disabled={loading}
                   className="btn-primary flex items-center gap-2"
@@ -446,20 +595,14 @@ const AdminUsuarioForm = () => {
       </div>
 
       {/* Notificación */}
-      <NotificationToast
-        open={notification.open}
-        type={notification.type}
-        title={notification.title}
-        message={notification.message}
-        onClose={() => setNotification({ ...notification, open: false })}
-        duration={notification.type === 'success' ? 3000 : 5000}
-      />
-
-      <PrintPreviewModal
-        isOpen={showPrintModal}
-        onClose={() => setShowPrintModal(false)}
-        data={printData}
-      />
+      {notification.open && (
+        <NotificationToast
+          type={notification.type}
+          title={notification.title}
+          message={notification.message}
+          onClose={() => setNotification({ ...notification, open: false })}
+        />
+      )}
     </AdminLayout>
   )
 }
