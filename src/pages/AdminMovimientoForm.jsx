@@ -174,11 +174,11 @@ const AdminMovimientoForm = () => {
     }
 
     const handlePrint = () => {
-        // Validar datos mínimos
-        if (!formData.id_producto || !formData.cantidad) {
-            alert('Por favor seleccione un producto y cantidad para generar la vista previa')
-            return
-        }
+        // Validar datos mínimos (Validation removed as per user request)
+        // if (!formData.id_producto || !formData.cantidad) {
+        //     alert('Por favor seleccione un producto y cantidad para generar la vista previa')
+        //     return
+        // }
 
         const selectedProduct = products.find(p => p.id === formData.id_producto)
         const tipoMovimiento = tiposMovimiento.find(t => t.id_tipo_movimiento === formData.id_tipo_movimiento)
@@ -261,13 +261,7 @@ const AdminMovimientoForm = () => {
                             <ArrowLeft size={20} />
                             Volver a Movimientos
                         </button>
-                        <button
-                            onClick={handlePrint}
-                            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-                        >
-                            <Printer size={20} />
-                            Imprimir
-                        </button>
+
                     </div>
                     <h1 className="text-3xl font-bold text-negro-principal">
                         Nuevo Movimiento
@@ -469,6 +463,15 @@ const AdminMovimientoForm = () => {
                                 disabled={isSaving}
                             >
                                 Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handlePrint}
+                                disabled={isSaving}
+                                className="px-6 py-3 border border-gris-muy-claro rounded-xl font-medium text-gris-oscuro hover:bg-fondo-claro transition-colors flex items-center gap-2"
+                            >
+                                <Printer size={20} />
+                                Imprimir
                             </button>
                             <button
                                 type="button"

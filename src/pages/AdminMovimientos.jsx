@@ -246,7 +246,7 @@ const AdminMovimientos = () => {
                         <div className="flex gap-3 w-full md:w-auto justify-end">
                             <Link
                                 to="/admin/movimientos/nuevo"
-                                className="bg-negro-principal text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-gray-800 transition-colors shadow-lg"
+                                className="bg-verde-principal text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-700 transition-colors shadow-lg"
                             >
                                 <Plus size={20} />
                                 Nuevo Movimiento

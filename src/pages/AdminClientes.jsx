@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { User, Search, Plus, Mail, Phone, Edit, Trash2, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { exportToXlsx } from '../lib/exportToXlsx'
 import AdminLayout from '../components/AdminLayout';
 import { clientesService } from '../services/clientesService'
-import ClienteFormModal from '../components/ClienteFormModal'
 
 const itemsPerPage = 10;
 
@@ -15,10 +15,6 @@ const AdminClientes = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  const [formOpen, setFormOpen] = useState(false);
-  const [formSubmitting, setFormSubmitting] = useState(false);
-  const [editingCliente, setEditingCliente] = useState(null);
 
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [exporting, setExporting] = useState(false)
@@ -67,48 +63,6 @@ const AdminClientes = () => {
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-
-  const openCreate = () => {
-    setEditingCliente(null);
-    setFormOpen(true);
-  };
-
-  const openEdit = (cliente) => {
-    setEditingCliente(cliente);
-    setFormOpen(true);
-  };
-
-  const handleSubmitForm = async (values) => {
-    try {
-      setFormSubmitting(true);
-      const payload = {
-        nombre: values.nombre?.trim(),
-        email: values.email?.trim() || null,
-        telefono: values.telefono?.trim() || null,
-        tipo_documento: values.tipo_documento || 'DNI',
-        numero_documento: values.numero_documento?.trim() || null,
-        direccion: values.direccion?.trim() || null,
-        descripcion: values.descripcion?.trim() || null,
-        estado: typeof values.estado === 'boolean' ? values.estado : (values.estado === 'true' || values.estado === true)
-      }
-
-      const clienteId = editingCliente?.id_cliente || editingCliente?.id
-
-      if (clienteId) {
-        await clientesService.update(clienteId, payload)
-      } else {
-        await clientesService.create(payload)
-      }
-      setFormOpen(false)
-      setEditingCliente(null)
-      loadClientes(currentPage, search)
-    } catch (err) {
-      console.error('Error guardando cliente:', err)
-      alert(err.message || 'Error guardando cliente')
-    } finally {
-      setFormSubmitting(false)
-    }
-  };
 
   const requestDelete = (cliente) => {
     const clienteId = cliente?.id_cliente || cliente?.id || cliente
@@ -179,10 +133,10 @@ const AdminClientes = () => {
               <p className="text-gris-medio mt-1">{totalItems} clientes en total</p>
             </div>
             <div className="flex gap-3 w-full md:w-auto justify-end">
-              <button className="btn-primary flex items-center justify-center gap-2 w-full md:w-auto" onClick={openCreate}>
+              <Link to="/admin/clientes/nuevo" className="btn-primary flex items-center justify-center gap-2 w-full md:w-auto">
                 <Plus size={20} />
                 Nuevo Cliente
-              </button>
+              </Link>
               <button
                 className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 w-full md:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleExport}
@@ -286,9 +240,9 @@ const AdminClientes = () => {
                             </td>
                             <td className="pl-6 pr-10 py-4 text-center">
                               <div className="flex items-center justify-center gap-2">
-                                <button title="Editar" onClick={() => openEdit(cliente)} className="p-2 hover:bg-blue-50 rounded-lg transition-colors text-blue-600">
+                                <Link to={`/admin/clientes/editar/${cliente.id_cliente || cliente.id}`} title="Editar" className="p-2 hover:bg-blue-50 rounded-lg transition-colors text-blue-600">
                                   <Edit size={18} />
-                                </button>
+                                </Link>
                                 <button title="Eliminar" onClick={() => requestDelete(cliente)} className="p-2 hover:bg-red-50 rounded-lg transition-colors text-red-500">
                                   <Trash2 size={18} />
                                 </button>
@@ -368,13 +322,7 @@ const AdminClientes = () => {
           </div>
         </div>
 
-        <ClienteFormModal
-          open={formOpen}
-          initialData={editingCliente}
-          submitting={formSubmitting}
-          onSubmit={handleSubmitForm}
-          onClose={() => { if (!formSubmitting) { setFormOpen(false); setEditingCliente(null) } }}
-        />
+
 
         {/* Modal de Confirmación de Eliminación */}
         {deleteConfirm && (
@@ -404,7 +352,7 @@ const AdminClientes = () => {
           </div>
         )}
       </div>
-    </AdminLayout>
+    </AdminLayout >
   );
 };
 

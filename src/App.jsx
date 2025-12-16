@@ -40,6 +40,8 @@ import AdminCotizacionesDashboard from './pages/AdminCotizacionesDashboard';
 import AdminCotizacionForm from './pages/AdminCotizacionForm';
 import AdminLayout from './components/AdminLayout';
 import AdminClientes from './pages/AdminClientes';
+import AdminClienteForm from './pages/AdminClienteForm'
+import AdminCajaChicaMovimientoForm from './pages/AdminCajaChicaMovimientoForm';
 import AdminProduccion from './pages/AdminProduccion';
 import AdminProduccionForm from './pages/AdminProduccionForm';
 import AdminProduccionValidacion from './pages/AdminProduccionValidacion';
@@ -395,6 +397,18 @@ function App() {
               </ProtectedRoute>
             } />
 
+            <Route path="/admin/clientes/nuevo" element={
+              <ProtectedRoute>
+                <AdminClienteForm />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/clientes/editar/:id" element={
+              <ProtectedRoute>
+                <AdminClienteForm />
+              </ProtectedRoute>
+            } />
+
             <Route path="/admin/produccion" element={
               <ProtectedRoute>
                 <AdminProduccion />
@@ -448,6 +462,12 @@ function App() {
             <Route path="/admin/transacciones/reportes" element={
               <ProtectedRoute>
                 <AdminCajaChicaReportes />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/transacciones/movimientos/nuevo" element={
+              <ProtectedRoute>
+                <AdminCajaChicaMovimientoForm />
               </ProtectedRoute>
             } />
 
