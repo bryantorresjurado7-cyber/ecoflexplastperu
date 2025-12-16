@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import AdminLayout from '../components/AdminLayout'
 import usuariosService from '../services/usuariosService'
 import NotificationToast from '../components/NotificationToast'
@@ -40,9 +40,11 @@ const AdminUsuarios = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(20)
 
+  const location = useLocation()
+
   useEffect(() => {
     loadUsuarios()
-  }, [])
+  }, [location.key])
 
   useEffect(() => {
     setCurrentPage(1)
@@ -254,7 +256,7 @@ const AdminUsuarios = () => {
 
           {/* Filters */}
           <div className="bg-white rounded-xl shadow-card p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Search */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-negro-principal mb-2">
