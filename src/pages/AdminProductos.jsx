@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import AdminLayout from '../components/AdminLayout'
+import { exportToXlsx } from '../lib/exportToXlsx'
 import {
   Package,
   Plus,
@@ -15,7 +16,6 @@ import {
   FlaskConical,
   Download
 } from 'lucide-react'
-import { exportToExcel } from '../utils/exportToExcel'
 import AdminProductosInsumosModal from '../components/AdminProductosInsumosModal'
 
 const AdminProductos = () => {
@@ -31,6 +31,7 @@ const AdminProductos = () => {
   const [selectedProducto, setSelectedProducto] = useState(null)
   const [isInsumosModalOpen, setIsInsumosModalOpen] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [exporting, setExporting] = useState(false)
 
   // Paginación
   const [currentPage, setCurrentPage] = useState(1)
@@ -184,6 +185,43 @@ const AdminProductos = () => {
     return matchSearch && matchCategoria && matchStock && matchDate
   })
 
+  // Exportar a Excel
+  const handleExport = () => {
+    try {
+      setExporting(true)
+      const rows = filteredProductos.map(p => [
+        p.nombre || '',
+        p.codigo || '',
+        p.categoria || '',
+        p.stock_disponible || 0,
+        p.stock_minimo || 0,
+        Number(p.precio_venta || 0).toFixed(2),
+        Number(p.costo_unitario || 0).toFixed(2),
+        p.activo ? 'Activo' : 'Inactivo'
+      ])
+
+      const columns = [
+        'Nombre',
+        'Código',
+        'Categoría',
+        'Stock Total',
+        'Stock Mínimo',
+        'Precio Venta',
+        'Costo',
+        'Estado'
+      ]
+
+      const dateStr = new Date().toISOString().split('T')[0]
+      const filename = `productos_${dateStr}`
+
+      exportToXlsx(filename, rows, columns)
+    } catch (error) {
+      console.error('Error exportando:', error)
+    } finally {
+      setExporting(false)
+    }
+  }
+
   // Paginación
   const totalPages = Math.ceil(filteredProductos.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -222,27 +260,7 @@ const AdminProductos = () => {
                 {productos.length} productos en total
               </p>
             </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  const columns = [
-                    { key: 'codigo', label: 'Código' },
-                    { key: 'nombre', label: 'Nombre' },
-                    { key: 'categoria', label: 'Categoría' },
-                    { key: 'precio_unitario', label: 'Precio Unitario' },
-                    { key: 'precio_mayorista', label: 'Precio Mayorista' },
-                    { key: 'stock_disponible', label: 'Stock Disponible' },
-                    { key: 'stock_minimo', label: 'Stock Mínimo' },
-                    { key: 'activo', label: 'Activo' },
-                    { key: 'created_at', label: 'Fecha Creación' }
-                  ]
-                  exportToExcel(filteredProductos, columns, 'productos')
-                }}
-                className="bg-negro-principal hover:bg-black text-white px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors shadow-lg"
-              >
-                <Download size={20} />
-                Exportar Excel
-              </button>
+            <div className="flex gap-3 w-full md:w-auto justify-end">
               <Link
                 to="/admin/productos/nuevo"
                 className="btn-primary flex items-center justify-center gap-2 w-full md:w-auto"
@@ -250,6 +268,14 @@ const AdminProductos = () => {
                 <Plus size={20} />
                 Nuevo Producto
               </Link>
+              <button
+                onClick={handleExport}
+                disabled={exporting}
+                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download size={18} />
+                {exporting ? 'Exportando...' : 'Exportar'}
+              </button>
             </div>
           </div>
 

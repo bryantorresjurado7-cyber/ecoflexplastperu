@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
-import { 
-  DollarSign, 
-  Package, 
-  ShoppingCart, 
-  Search, 
-  Plus, 
-  Minus, 
-  Trash2, 
+import {
+  DollarSign,
+  Package,
+  ShoppingCart,
+  Search,
+  Plus,
+  Minus,
+  Trash2,
   Printer,
   Check,
   X,
@@ -16,8 +16,11 @@ import {
   Calendar,
   MapPin,
   CreditCard,
-  CheckCircle
+  CheckCircle,
+  Clock, // Add Clock for status icons if needed, though not strictly required for this task, keeping imports clean
 } from 'lucide-react'
+
+import PrintPreviewModal from '../components/PrintPreviewModal'
 
 const SUPABASE_URL = 'https://uecolzuwhgfhicacodqj.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlY29senV3aGdmaGljYWNvZHFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4NjQwMTksImV4cCI6MjA3MjQ0MDAxOX0.EuCWuFr6W-pv8_QBgjbEWzDmnI-iA5L4rFr5CMWpNl4'
@@ -42,12 +45,17 @@ const AdminVenta = () => {
   const [impuestoPorcentaje, setImpuestoPorcentaje] = useState(18.00)
   const [showSuccess, setShowSuccess] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+
+  // Estado para el modal de impresión
+  const [showPrintModal, setShowPrintModal] = useState(false)
+  const [printData, setPrintData] = useState(null)
+
   const successTimeoutRef = useRef(null)
 
   useEffect(() => {
     loadProductos()
     loadClientes()
-    
+
     // Fecha por defecto: 7 días desde hoy
     const tomorrow = new Date()
     tomorrow.setDate(tomorrow.getDate() + 7)
@@ -82,7 +90,7 @@ const AdminVenta = () => {
         .select('id, codigo, nombre, categoria, precio_unitario, stock_disponible, imagen_principal')
         .eq('activo', true)
         .order('nombre')
-      
+
       if (error) throw error
       setProductos(data || [])
     } catch (error) {
@@ -100,7 +108,7 @@ const AdminVenta = () => {
         .select('id_cliente, nombre, email, telefono, direccion')
         .eq('estado', true)
         .order('nombre')
-      
+
       if (error) throw error
       setClientes(data || [])
     } catch (error) {
@@ -118,10 +126,10 @@ const AdminVenta = () => {
       })
 
       const result = await response.json()
-      
+
       if (result.success && result.data) {
         const venta = result.data
-        
+
         // Cargar cliente
         if (venta.cliente) {
           setSelectedCliente({
@@ -139,7 +147,7 @@ const AdminVenta = () => {
             venta.detalles.map(async (detalle) => {
               // Buscar producto en la lista cargada primero
               let producto = productos.find(p => p.id === detalle.id_producto)
-              
+
               // Si no está en la lista, buscar individualmente
               if (!producto) {
                 try {
@@ -148,7 +156,7 @@ const AdminVenta = () => {
                     .select('id, codigo, nombre, categoria, precio_unitario, stock_disponible, imagen_principal')
                     .eq('id', detalle.id_producto)
                     .single()
-                  
+
                   if (data) {
                     producto = data
                   }
@@ -156,7 +164,7 @@ const AdminVenta = () => {
                   console.error('Error cargando producto:', error)
                 }
               }
-              
+
               if (producto) {
                 return {
                   ...producto,
@@ -164,11 +172,11 @@ const AdminVenta = () => {
                   precio_unitario: parseFloat(detalle.precio_unitario || 0)
                 }
               }
-              
+
               return null
             })
           )
-          
+
           setCarrito(itemsCarrito.filter(item => item !== null))
         }
 
@@ -207,7 +215,7 @@ const AdminVenta = () => {
     }
 
     const existingItem = carrito.find(item => item.id === producto.id)
-    
+
     if (existingItem) {
       if (existingItem.cantidad + 1 > producto.stock_disponible) {
         alert(`Stock disponible: ${producto.stock_disponible}`)
@@ -246,7 +254,7 @@ const AdminVenta = () => {
   }
 
   const getSubtotal = () => {
-    return carrito.reduce((total, item) => 
+    return carrito.reduce((total, item) =>
       total + (parseFloat(item.precio_unitario || 0) * item.cantidad), 0
     )
   }
@@ -263,6 +271,47 @@ const AdminVenta = () => {
     }
     // Si incluye IGV, el total es subtotal + IGV
     return getSubtotal() + getIGV()
+  }
+
+  const handlePrint = () => {
+    // Preparar datos para la impresión
+    setPrintData({
+      type: 'VENTA',
+      titulo: idPedido ? 'FICHA DE VENTA (EDITAR)' : 'FICHA DE VENTA',
+      fecha: new Date().toLocaleDateString(),
+      cliente: selectedCliente ? {
+        nombre: selectedCliente.nombre,
+        email: selectedCliente.email,
+        telefono: selectedCliente.telefono,
+        direccion: selectedCliente.direccion || direccionEntrega,
+        documento: selectedCliente.documento || 'N/A' // Asumiendo que existe el campo documento si aplica
+      } : {
+        nombre: 'Cliente General',
+        email: '-',
+        telefono: '-',
+        direccion: direccionEntrega || '-'
+      },
+      detalles: carrito.map(item => ({
+        codigo: item.codigo || 'N/A',
+        nombre: item.nombre,
+        descripcion: item.categoria || '',
+        cantidad: item.cantidad,
+        precio_unitario: parseFloat(item.precio_unitario || 0),
+        subtotal: parseFloat(item.precio_unitario || 0) * item.cantidad
+      })),
+      resumen: {
+        subtotal: getSubtotal(),
+        impuesto_porcentaje: impuestoPorcentaje,
+        impuestos: getIGV(),
+        total: getTotal()
+      },
+      observaciones: `Fecha de entrega: ${fechaEntrega || 'Por definir'}. Método de pago: ${metodoPago}.`,
+      extra: {
+        estado: idPedido ? 'Existente' : 'Nueva Venta',
+        direccion_entrega: direccionEntrega
+      }
+    })
+    setShowPrintModal(true)
   }
 
   const handleCheckout = async () => {
@@ -317,10 +366,10 @@ const AdminVenta = () => {
       }
 
       // Determinar si es creación o actualización
-      const url = idPedido 
+      const url = idPedido
         ? `${SUPABASE_URL}/functions/v1/crud-pedidos/pedidos/${idPedido}`
         : `${SUPABASE_URL}/functions/v1/crud-pedidos/pedidos`
-      
+
       const method = idPedido ? 'PUT' : 'POST'
 
       // Llamar a la Edge Function
@@ -341,7 +390,7 @@ const AdminVenta = () => {
 
       // Mostrar éxito
       setShowSuccess(true)
-      
+
       // Si es edición, redirigir a la lista de ventas después de un momento
       if (idPedido) {
         setTimeout(() => {
@@ -351,7 +400,7 @@ const AdminVenta = () => {
         // Resetear formulario solo si es nueva venta
         setDireccionEntrega('')
       }
-      
+
     } catch (error) {
       console.error('Error al procesar venta:', error)
       alert('Error al procesar la venta: ' + error.message)
@@ -390,7 +439,7 @@ const AdminVenta = () => {
                 <span className="hidden md:inline">Ver Ventas</span>
               </button>
               <button
-                onClick={() => window.print()}
+                onClick={handlePrint}
                 className="flex items-center gap-2 px-4 py-2 border border-gris-claro rounded-lg hover:bg-fondo-claro transition-colors"
               >
                 <Printer size={20} />
@@ -403,7 +452,7 @@ const AdminVenta = () => {
 
       <div className="px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Lista de Productos */}
+          {/* Lista de Productos */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-xl shadow-sm p-6">
               {loadingVentaExistente && (
@@ -737,11 +786,11 @@ const AdminVenta = () => {
                   cliente.telefono?.includes(searchCliente)
                 )
               }).length === 0 && (
-                <div className="text-center py-8">
-                  <User className="mx-auto text-gris-claro mb-2" size={32} />
-                  <p className="text-gris-medio">No se encontraron clientes</p>
-                </div>
-              )}
+                  <div className="text-center py-8">
+                    <User className="mx-auto text-gris-claro mb-2" size={32} />
+                    <p className="text-gris-medio">No se encontraron clientes</p>
+                  </div>
+                )}
             </div>
           </div>
         </div>
@@ -764,7 +813,7 @@ const AdminVenta = () => {
               <p className="text-gris-medio">
                 ¿Estás seguro de confirmar esta venta?
               </p>
-              
+
               {/* Resumen de la venta */}
               <div className="bg-fondo-claro rounded-lg p-4 space-y-3">
                 <div className="flex justify-between items-center">
@@ -803,7 +852,7 @@ const AdminVenta = () => {
                 ) : (
                   <>
                     <Check size={20} />
-                    Confirmar Venta
+                    Confirmar
                   </>
                 )}
               </button>
@@ -811,6 +860,13 @@ const AdminVenta = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de Previsualización de Impresión */}
+      <PrintPreviewModal
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        data={printData}
+      />
 
       {/* Mensaje de éxito */}
       {showSuccess && (

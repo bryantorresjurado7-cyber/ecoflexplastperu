@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import AdminLayout from '../components/AdminLayout'
+import PrintPreviewModal from '../components/PrintPreviewModal'
 import produccionService from '../services/produccionService'
 import NotificationToast from '../components/NotificationToast'
-import { ArrowLeft, Save, Factory, Package, Calendar, DollarSign, Users, Settings, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Save, Factory, Package, Calendar, DollarSign, Users, Settings, AlertTriangle, CheckCircle2, Printer } from 'lucide-react'
 
 const AdminProduccionForm = () => {
   const navigate = useNavigate()
@@ -24,7 +25,7 @@ const AdminProduccionForm = () => {
     title: '',
     message: ''
   })
-  
+
   const [formData, setFormData] = useState({
     fecha_produccion: new Date().toISOString().split('T')[0],
     fecha_vencimiento: '',
@@ -44,6 +45,10 @@ const AdminProduccionForm = () => {
   const [maquinarias, setMaquinarias] = useState([])
   const [operarios, setOperarios] = useState([])
   const [operariosSeleccionados, setOperariosSeleccionados] = useState([])
+
+  // Estado para el modal de impresión
+  const [showPrintModal, setShowPrintModal] = useState(false)
+  const [printData, setPrintData] = useState(null)
 
   // Función para validar stock - debe estar definida antes del useEffect que la usa
   const validateStock = useCallback(async (idProducto, cantidadPlanificada) => {
@@ -100,15 +105,15 @@ const AdminProduccionForm = () => {
         .eq('activo', true)
         .order('categoria')
         .order('nombre')
-      
+
       if (error) throw error
-      
+
       setProductos(data || [])
-      
+
       // Extraer categorías únicas de los productos
       const categoriasUnicas = [...new Set((data || []).map(p => p.categoria).filter(Boolean))]
       setCategorias(categoriasUnicas.sort())
-      
+
       // Inicializar productos filtrados
       setProductosFiltrados(data || [])
     } catch (error) {
@@ -124,7 +129,7 @@ const AdminProduccionForm = () => {
       setProductosFiltrados(productos.filter(p => p.categoria === categoriaFiltro))
     }
   }, [categoriaFiltro, productos])
-  
+
   // Limpiar producto seleccionado si no pertenece a la categoría filtrada
   useEffect(() => {
     if (categoriaFiltro !== 'all' && formData.id_producto && productos.length > 0) {
@@ -136,7 +141,7 @@ const AdminProduccionForm = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoriaFiltro])
-  
+
   // Cuando se carga una producción en modo edición, ajustar el filtro de categoría al producto seleccionado
   useEffect(() => {
     if (isEditing && formData.id_producto && productos.length > 0 && categoriaFiltro === 'all') {
@@ -154,7 +159,7 @@ const AdminProduccionForm = () => {
         .select('id_maquinaria, nombre, codigo_maquinaria, estado')
         .eq('estado', 'activa')
         .order('nombre')
-      
+
       if (error) throw error
       setMaquinarias(data || [])
     } catch (error) {
@@ -169,7 +174,7 @@ const AdminProduccionForm = () => {
         .select('id, nombre, email, rol')
         .eq('activo', true)
         .order('nombre')
-      
+
       if (error) throw error
       setOperarios(data || [])
     } catch (error) {
@@ -181,9 +186,9 @@ const AdminProduccionForm = () => {
     try {
       setLoading(true)
       const result = await produccionService.loadProduccion(id)
-      
+
       if (result.error) throw new Error(result.error)
-      
+
       const data = result.data
       setFormData({
         fecha_produccion: data.fecha_produccion || new Date().toISOString().split('T')[0],
@@ -207,7 +212,7 @@ const AdminProduccionForm = () => {
           .from('produccion_operarios')
           .select('id_operario')
           .eq('id_produccion', data.id_produccion)
-        
+
         if (!operariosError && operariosAsign) {
           setOperariosSeleccionados(operariosAsign.map(o => o.id_operario))
         }
@@ -232,18 +237,18 @@ const AdminProduccionForm = () => {
         ...prev,
         [name]: type === 'checkbox' ? checked : value
       }
-      
+
       // Calcular costo total automáticamente
       if (name === 'cantidad_planificada' || name === 'costo_unitario') {
-        const cantidad = name === 'cantidad_planificada' 
-          ? parseFloat(value) || 0 
+        const cantidad = name === 'cantidad_planificada'
+          ? parseFloat(value) || 0
           : prev.cantidad_planificada
-        const costoUnit = name === 'costo_unitario' 
-          ? parseFloat(value) || 0 
+        const costoUnit = name === 'costo_unitario'
+          ? parseFloat(value) || 0
           : prev.costo_unitario
         newData.costo_total = cantidad * costoUnit
       }
-      
+
       return newData
     })
   }
@@ -262,12 +267,12 @@ const AdminProduccionForm = () => {
 
         if (!stockError && stockValidation) {
           const insumosFaltantes = stockValidation.filter(item => !item.stock_suficiente)
-          
+
           if (insumosFaltantes.length > 0) {
-            const mensajeFaltantes = insumosFaltantes.map(item => 
+            const mensajeFaltantes = insumosFaltantes.map(item =>
               `${item.insumo_nombre}: Faltan ${item.faltante} ${item.unidad_medida} (disponible: ${item.stock_disponible} ${item.unidad_medida})`
             ).join(', ')
-            
+
             setNotification({
               open: true,
               type: 'error',
@@ -305,7 +310,7 @@ const AdminProduccionForm = () => {
         // Crear nuevo
         result = await produccionService.createProduccion(produccionData)
       }
-      
+
       if (result.error) throw new Error(result.error)
 
       const produccionId = result.data?.id_produccion || id
@@ -340,14 +345,14 @@ const AdminProduccionForm = () => {
           .delete()
           .eq('id_produccion', produccionId)
       }
-      
+
       setNotification({
         open: true,
         type: 'success',
         title: isEditing ? 'Orden actualizada' : 'Orden creada',
         message: `La orden de producción ha sido ${isEditing ? 'actualizada' : 'creada'} correctamente.`
       })
-      
+
       setTimeout(() => {
         navigate('/admin/produccion')
       }, 2000)
@@ -362,6 +367,53 @@ const AdminProduccionForm = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handlePrint = () => {
+    // Buscar datos relacionados
+    const producto = productos.find(p => p.id === formData.id_producto)
+    const maquinaria = maquinarias.find(m => m.id_maquinaria === formData.id_maquinaria)
+    const operariosNombres = operarios
+      .filter(o => operariosSeleccionados.includes(o.id))
+      .map(o => o.nombre)
+      .join(', ')
+
+    const modalData = {
+      type: 'PRODUCCION',
+      titulo: 'ORDEN DE PRODUCCIÓN',
+      numero: isEditing ? `OP-${id.slice(0, 8)}` : 'BORRADOR',
+      fecha: new Date(formData.fecha_produccion).toLocaleDateString(),
+      valido_hasta: formData.fecha_vencimiento ? new Date(formData.fecha_vencimiento).toLocaleDateString() : 'Por definir',
+      cliente: {
+        nombre: 'Producción Interna',
+        empresa: 'ECO FLEX PLAST',
+        documento: 'RUC: 20602432321', // Asumiendo RUC de la empresa
+        email: 'produccion@ecoflexplast.com',
+        direccion: 'Planta Principal'
+      },
+      detalles: [{
+        codigo: producto?.codigo || 'N/A',
+        nombre: producto?.nombre || 'Producto no seleccionado',
+        descripcion: `Lote: ${formData.lote || 'N/A'}`,
+        cantidad: formData.cantidad_planificada || 0,
+        precio_unitario: formData.costo_unitario || 0,
+        subtotal: formData.costo_total || 0
+      }],
+      resumen: {
+        subtotal: formData.costo_total || 0,
+        total: formData.costo_total || 0
+      },
+      extra: {
+        turno: formData.turno,
+        maquinaria: maquinaria ? `${maquinaria.codigo_maquinaria} - ${maquinaria.nombre}` : 'No asignada',
+        operarios: operariosNombres || 'No asignados',
+        estado: formData.estado
+      },
+      observaciones: formData.observaciones
+    }
+
+    setPrintData(modalData)
+    setShowPrintModal(true)
   }
 
   if (loading && isEditing) {
@@ -509,7 +561,7 @@ const AdminProduccionForm = () => {
                   <div className="md:col-span-2">
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                       <p className="text-sm text-blue-800">
-                        <strong>Estado inicial:</strong> La orden se creará con estado "Planificada". 
+                        <strong>Estado inicial:</strong> La orden se creará con estado "Planificada".
                         Una vez completada la producción, un supervisor deberá validar la cantidad producida real.
                       </p>
                     </div>
@@ -558,7 +610,7 @@ const AdminProduccionForm = () => {
                   <p className="text-xs text-gris-medio mt-1">
                     Cantidad que se planea producir en esta orden
                   </p>
-                  
+
                   {/* Validación de Stock en tiempo real */}
                   {formData.id_producto && formData.cantidad_planificada > 0 && (
                     <div className="mt-3">
@@ -586,9 +638,9 @@ const AdminProduccionForm = () => {
                                   .filter(item => !item.stock_suficiente)
                                   .map((item, idx) => (
                                     <li key={idx}>
-                                      <strong>{item.insumo_nombre}</strong> ({item.insumo_codigo}): 
-                                      Requiere {item.cantidad_requerida} {item.unidad_medida}, 
-                                      disponible {item.stock_disponible} {item.unidad_medida}. 
+                                      <strong>{item.insumo_nombre}</strong> ({item.insumo_codigo}):
+                                      Requiere {item.cantidad_requerida} {item.unidad_medida},
+                                      disponible {item.stock_disponible} {item.unidad_medida}.
                                       <span className="font-bold"> Faltan {item.faltante} {item.unidad_medida}</span>
                                     </li>
                                   ))
@@ -607,7 +659,7 @@ const AdminProduccionForm = () => {
                                   .filter(item => item.stock_suficiente)
                                   .map((item, idx) => (
                                     <li key={idx}>
-                                      {item.insumo_nombre}: {item.stock_disponible} {item.unidad_medida} disponible 
+                                      {item.insumo_nombre}: {item.stock_disponible} {item.unidad_medida} disponible
                                       (requiere {item.cantidad_requerida} {item.unidad_medida})
                                     </li>
                                   ))
@@ -677,7 +729,7 @@ const AdminProduccionForm = () => {
                   <div className="md:col-span-2">
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                       <p className="text-sm text-yellow-800">
-                        <strong>Nota:</strong> La cantidad producida real se registrará después de completar la producción. 
+                        <strong>Nota:</strong> La cantidad producida real se registrará después de completar la producción.
                         Un supervisor validará las cantidades finales y los lotes generados.
                       </p>
                     </div>
@@ -845,6 +897,14 @@ const AdminProduccionForm = () => {
                 Cancelar
               </button>
               <button
+                type="button"
+                onClick={handlePrint}
+                className="px-6 py-3 border border-gris-muy-claro rounded-xl font-medium text-gris-oscuro hover:bg-fondo-claro transition-colors flex items-center gap-2"
+              >
+                <Printer size={20} />
+                Imprimir
+              </button>
+              <button
                 type="submit"
                 disabled={loading || (stockValidation && stockValidation.some(item => !item.stock_suficiente) && !isEditing)}
                 className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -878,6 +938,12 @@ const AdminProduccionForm = () => {
           message={notification.message}
           onClose={() => setNotification({ ...notification, open: false })}
           duration={notification.type === 'success' ? 3000 : 5000}
+        />
+
+        <PrintPreviewModal
+          isOpen={showPrintModal}
+          onClose={() => setShowPrintModal(false)}
+          data={printData}
         />
       </div>
     </AdminLayout>

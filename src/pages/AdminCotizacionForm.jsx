@@ -3,12 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import AdminLayout from '../components/AdminLayout'
 import NotificationToast from '../components/NotificationToast'
-import { 
+import {
   ArrowLeft,
-  Package, 
-  Search, 
-  Plus, 
-  Minus, 
+  Package,
+  Search,
+  Plus,
+  Minus,
   Trash2,
   Check,
   User,
@@ -16,8 +16,10 @@ import {
   Phone,
   Building,
   MapPin,
-  FileText
+  FileText,
+  Printer
 } from 'lucide-react'
+import PrintPreviewModal from '../components/PrintPreviewModal'
 
 const SUPABASE_URL = 'https://uecolzuwhgfhicacodqj.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlY29senV3aGdmaGljYWNvZHFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4NjQwMTksImV4cCI6MjA3MjQ0MDAxOX0.EuCWuFr6W-pv8_QBgjbEWzDmnI-iA5L4rFr5CMWpNl4'
@@ -33,7 +35,11 @@ const AdminCotizacionForm = () => {
   const [loadingCotizacion, setLoadingCotizacion] = useState(false)
   const [loadingCotizacionExistente, setLoadingCotizacionExistente] = useState(false)
   const [cotizacionCargada, setCotizacionCargada] = useState(false)
-  
+
+  // Estado para el modal de impresión
+  const [showPrintModal, setShowPrintModal] = useState(false)
+  const [printData, setPrintData] = useState(null)
+
   // Estado para notificaciones
   const [notification, setNotification] = useState({
     open: false,
@@ -41,7 +47,7 @@ const AdminCotizacionForm = () => {
     title: '',
     message: ''
   })
-  
+
   // Datos del cliente
   const [clienteNombre, setClienteNombre] = useState('')
   const [clienteEmail, setClienteEmail] = useState('')
@@ -54,7 +60,8 @@ const AdminCotizacionForm = () => {
   const [buscandoCliente, setBuscandoCliente] = useState(false)
   const [clienteEncontrado, setClienteEncontrado] = useState(false)
   const [impuestoPorcentaje, setImpuestoPorcentaje] = useState(18.00)
-  
+  const [cotizacionNumero, setCotizacionNumero] = useState('')
+
   const [showConfirmModal, setShowConfirmModal] = useState(false)
 
   useEffect(() => {
@@ -77,7 +84,7 @@ const AdminCotizacionForm = () => {
         .select('id, codigo, nombre, categoria, precio_unitario, stock_disponible, imagen_principal')
         .eq('activo', true)
         .order('nombre')
-      
+
       if (error) throw error
       setProductos(data || [])
     } catch (error) {
@@ -101,7 +108,7 @@ const AdminCotizacionForm = () => {
       const token = session?.access_token
 
       const url = `${SUPABASE_URL}/functions/v1/crud-cotizaciones/cotizaciones/${cotizacionId}`
-      
+
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -116,15 +123,16 @@ const AdminCotizacionForm = () => {
       }
 
       const result = await response.json()
-      
+
       if (result.success && result.data) {
         const cotizacion = result.data
-        
+        setCotizacionNumero(cotizacion.numero_cotizacion || '')
+
         // Cargar datos del cliente
-        const cliente = Array.isArray(cotizacion.cliente) 
-          ? cotizacion.cliente[0] 
+        const cliente = Array.isArray(cotizacion.cliente)
+          ? cotizacion.cliente[0]
           : cotizacion.cliente
-        
+
         if (cliente) {
           setClienteNombre(cliente.nombre || '')
           setClienteEmail(cliente.email || '')
@@ -160,7 +168,7 @@ const AdminCotizacionForm = () => {
             cotizacion.detalles.map(async (detalle) => {
               // Buscar producto en la lista cargada
               let producto = productos.find(p => p.id === detalle.id_producto)
-              
+
               // Si no está en la lista, buscar individualmente
               if (!producto) {
                 try {
@@ -169,7 +177,7 @@ const AdminCotizacionForm = () => {
                     .select('id, codigo, nombre, categoria, precio_unitario, stock_disponible, imagen_principal')
                     .eq('id', detalle.id_producto)
                     .single()
-                  
+
                   if (data) {
                     producto = data
                   }
@@ -177,7 +185,7 @@ const AdminCotizacionForm = () => {
                   console.error('Error cargando producto:', error)
                 }
               }
-              
+
               if (producto) {
                 return {
                   ...producto,
@@ -185,11 +193,11 @@ const AdminCotizacionForm = () => {
                   precio_unitario: parseFloat(detalle.precio_unitario || producto.precio_unitario || 0)
                 }
               }
-              
+
               return null
             })
           )
-          
+
           setCarrito(itemsCarrito.filter(item => item !== null))
         }
       } else {
@@ -211,7 +219,7 @@ const AdminCotizacionForm = () => {
   // Buscar cliente por número de documento (sin restricción de tipo para mayor flexibilidad)
   const buscarClientePorDocumento = async () => {
     const numeroDoc = clienteNumeroDocumento?.trim()
-    
+
     if (!numeroDoc || numeroDoc.length < 8) {
       setClienteEncontrado(false)
       return
@@ -219,7 +227,7 @@ const AdminCotizacionForm = () => {
 
     try {
       setBuscandoCliente(true)
-      
+
       // Buscar cliente solo por numero_documento (más flexible)
       // Esto permite encontrar al cliente independientemente del tipo seleccionado
       const { data, error } = await supabase
@@ -228,16 +236,16 @@ const AdminCotizacionForm = () => {
         .eq('numero_documento', numeroDoc)
         .eq('estado', true)
         .maybeSingle()
-      
+
       if (error) {
         throw error
       }
-      
+
       if (data) {
         // Cliente encontrado - autocompletar campos incluyendo tipo de documento
         // Actualizar tipo de documento al que tiene en la BD
         setClienteTipoDocumento(data.tipo_documento || 'DNI')
-        
+
         // Autocompletar el resto de campos
         setClienteNombre(data.nombre || '')
         setClienteEmail(data.email || '')
@@ -260,24 +268,24 @@ const AdminCotizacionForm = () => {
   // Buscar automáticamente cuando se complete el número de documento
   useEffect(() => {
     const numeroDoc = clienteNumeroDocumento?.trim()
-    
+
     if (!numeroDoc) {
       setClienteEncontrado(false)
       return
     }
-    
+
     if (numeroDoc.length < 8) {
       // Si es muy corto, resetear estado pero no buscar aún
       setClienteEncontrado(false)
       return
     }
-    
+
     // Buscar solo si tiene al menos 8 caracteres y no está buscando actualmente
     if (!buscandoCliente) {
       const timeoutId = setTimeout(() => {
         buscarClientePorDocumento()
       }, 800) // Debounce de 800ms para dar tiempo a terminar de escribir
-      
+
       return () => clearTimeout(timeoutId)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -287,8 +295,8 @@ const AdminCotizacionForm = () => {
     setCarrito(prev => {
       const existe = prev.find(p => p.id === producto.id)
       if (existe) {
-        return prev.map(p => 
-          p.id === producto.id 
+        return prev.map(p =>
+          p.id === producto.id
             ? { ...p, cantidad: p.cantidad + 1 }
             : p
         )
@@ -306,9 +314,9 @@ const AdminCotizacionForm = () => {
       removeFromCart(productoId)
       return
     }
-    setCarrito(prev => 
-      prev.map(p => 
-        p.id === productoId 
+    setCarrito(prev =>
+      prev.map(p =>
+        p.id === productoId
           ? { ...p, cantidad }
           : p
       )
@@ -333,7 +341,7 @@ const AdminCotizacionForm = () => {
     return getSubtotal() + getIGV()
   }
 
-  const filteredProductos = productos.filter(p => 
+  const filteredProductos = productos.filter(p =>
     p.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.codigo?.toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -420,14 +428,14 @@ const AdminCotizacionForm = () => {
       }
 
       console.log('📋 Datos de cotización a enviar:', JSON.stringify(cotizacionData, null, 2))
-      
+
       // Obtener token de autenticación
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-      
+
       if (sessionError) {
         console.error('❌ Error obteniendo sesión:', sessionError)
       }
-      
+
       const token = session?.access_token
       console.log('🔑 Token obtenido:', token ? 'Sí' : 'No')
 
@@ -435,9 +443,9 @@ const AdminCotizacionForm = () => {
       const url = isEditing
         ? `${SUPABASE_URL}/functions/v1/crud-cotizaciones/cotizaciones/${id}`
         : `${SUPABASE_URL}/functions/v1/crud-cotizaciones/cotizaciones`
-      
+
       const method = isEditing ? 'PUT' : 'POST'
-      
+
       console.log('🌐 URL de la Edge Function:', url)
       console.log('📡 Método:', method)
 
@@ -454,10 +462,10 @@ const AdminCotizacionForm = () => {
       })
 
       console.log('📥 Respuesta recibida, status:', response.status, response.statusText)
-      
+
       const responseText = await response.text()
       console.log('📄 Respuesta completa (texto):', responseText)
-      
+
       let result
       try {
         result = JSON.parse(responseText)
@@ -474,17 +482,17 @@ const AdminCotizacionForm = () => {
       }
 
       console.log(isEditing ? '✅ Cotización actualizada exitosamente:' : '✅ Cotización creada exitosamente:', result.data)
-      
+
       // Mostrar notificación de éxito
       setNotification({
         open: true,
         type: 'success',
         title: isEditing ? '¡Cotización actualizada exitosamente!' : '¡Cotización creada exitosamente!',
-        message: isEditing 
+        message: isEditing
           ? `La cotización ha sido actualizada correctamente.`
           : `La cotización ha sido guardada correctamente.`
       })
-      
+
       // Navegar después de 2 segundos
       setTimeout(() => {
         navigate('/admin/cotizaciones')
@@ -492,7 +500,7 @@ const AdminCotizacionForm = () => {
     } catch (error) {
       console.error('❌ Error completo creando cotización:', error)
       console.error('Stack:', error.stack)
-      
+
       // Mostrar notificación de error
       setNotification({
         open: true,
@@ -503,6 +511,42 @@ const AdminCotizacionForm = () => {
     } finally {
       setLoadingCotizacion(false)
     }
+  }
+
+  const handlePrint = () => {
+    const modalData = {
+      type: 'COTIZACION',
+      titulo: 'COTIZACIÓN',
+      numero: cotizacionNumero || 'BORRADOR',
+      fecha: new Date().toLocaleDateString(),
+      valido_hasta: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+      cliente: {
+        nombre: clienteNombre,
+        documento: `${clienteTipoDocumento}: ${clienteNumeroDocumento}`,
+        email: clienteEmail,
+        telefono: clienteTelefono,
+        direccion: clienteDireccion,
+        empresa: clienteEmpresa
+      },
+      detalles: carrito.map(item => ({
+        codigo: item.codigo,
+        nombre: item.nombre,
+        descripcion: item.descripcion || '',
+        cantidad: item.cantidad,
+        precio_unitario: item.precio_unitario,
+        subtotal: item.precio_unitario * item.cantidad
+      })),
+      resumen: {
+        subtotal: getSubtotal(),
+        impuestos: getIGV(),
+        impuesto_porcentaje: impuestoPorcentaje,
+        total: getTotal()
+      },
+      observaciones: observaciones
+    }
+
+    setPrintData(modalData)
+    setShowPrintModal(true)
   }
 
   return (
@@ -519,13 +563,22 @@ const AdminCotizacionForm = () => {
               {isEditing ? 'Modifica los datos de la cotización' : 'Complete el formulario para crear una cotización'}
             </p>
           </div>
-          <button
-            onClick={() => navigate('/admin/cotizaciones')}
-            className="btn-secondary flex items-center gap-2"
-          >
-            <ArrowLeft size={20} />
-            Volver
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePrint}
+              className="btn-secondary flex items-center gap-2"
+            >
+              <Printer size={20} />
+              Imprimir
+            </button>
+            <button
+              onClick={() => navigate('/admin/cotizaciones')}
+              className="btn-secondary flex items-center gap-2"
+            >
+              <ArrowLeft size={20} />
+              Volver
+            </button>
+          </div>
         </div>
       </header>
 
@@ -608,13 +661,12 @@ const AdminCotizacionForm = () => {
                           buscarClientePorDocumento()
                         }
                       }}
-                      className={`flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-verde-principal ${
-                        clienteEncontrado 
-                          ? 'border-green-500 bg-green-50' 
-                          : buscandoCliente
+                      className={`flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-verde-principal ${clienteEncontrado
+                        ? 'border-green-500 bg-green-50'
+                        : buscandoCliente
                           ? 'border-blue-300 bg-blue-50'
                           : 'border-gris-claro'
-                      }`}
+                        }`}
                       placeholder={clienteTipoDocumento === 'RUC' ? 'Ej: 12345678901' : 'Ej: 12345678'}
                     />
                     <button
@@ -628,7 +680,7 @@ const AdminCotizacionForm = () => {
                     </button>
                   </div>
                 </div>
-                
+
                 <div className="col-span-2">
                   <label className="text-sm font-medium text-gris-medio block mb-2">
                     Nombre * <User className="inline ml-1" size={14} />
@@ -637,9 +689,8 @@ const AdminCotizacionForm = () => {
                     type="text"
                     value={clienteNombre}
                     onChange={(e) => setClienteNombre(e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-verde-principal ${
-                      clienteEncontrado ? 'bg-green-50 border-green-200' : 'border-gris-claro'
-                    }`}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-verde-principal ${clienteEncontrado ? 'bg-green-50 border-green-200' : 'border-gris-claro'
+                      }`}
                     placeholder="Nombre completo"
                   />
                 </div>
@@ -651,9 +702,8 @@ const AdminCotizacionForm = () => {
                     type="email"
                     value={clienteEmail}
                     onChange={(e) => setClienteEmail(e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-verde-principal ${
-                      clienteEncontrado ? 'bg-green-50 border-green-200' : 'border-gris-claro'
-                    }`}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-verde-principal ${clienteEncontrado ? 'bg-green-50 border-green-200' : 'border-gris-claro'
+                      }`}
                     placeholder="correo@ejemplo.com"
                   />
                 </div>
@@ -665,9 +715,8 @@ const AdminCotizacionForm = () => {
                     type="text"
                     value={clienteTelefono}
                     onChange={(e) => setClienteTelefono(e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-verde-principal ${
-                      clienteEncontrado ? 'bg-green-50 border-green-200' : 'border-gris-claro'
-                    }`}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-verde-principal ${clienteEncontrado ? 'bg-green-50 border-green-200' : 'border-gris-claro'
+                      }`}
                     placeholder="+51 999 999 999"
                   />
                 </div>
@@ -679,9 +728,8 @@ const AdminCotizacionForm = () => {
                     type="text"
                     value={clienteEmpresa}
                     onChange={(e) => setClienteEmpresa(e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-verde-principal ${
-                      clienteEncontrado ? 'bg-green-50 border-green-200' : 'border-gris-claro'
-                    }`}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-verde-principal ${clienteEncontrado ? 'bg-green-50 border-green-200' : 'border-gris-claro'
+                      }`}
                     placeholder="Nombre de la empresa"
                   />
                 </div>
@@ -693,9 +741,8 @@ const AdminCotizacionForm = () => {
                     type="text"
                     value={clienteDireccion}
                     onChange={(e) => setClienteDireccion(e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-verde-principal ${
-                      clienteEncontrado ? 'bg-green-50 border-green-200' : 'border-gris-claro'
-                    }`}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-verde-principal ${clienteEncontrado ? 'bg-green-50 border-green-200' : 'border-gris-claro'
+                      }`}
                     placeholder="Dirección de entrega"
                   />
                 </div>
@@ -708,7 +755,7 @@ const AdminCotizacionForm = () => {
                 <Package className="text-verde-principal" size={20} />
                 Agregar Productos
               </h3>
-              
+
               {/* Búsqueda */}
               <div className="relative mb-4">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gris-medio" size={20} />
@@ -773,7 +820,7 @@ const AdminCotizacionForm = () => {
               <h3 className="text-lg font-semibold text-negro-principal mb-4">
                 Resumen de Cotización
               </h3>
-              
+
               {carrito.length === 0 ? (
                 <p className="text-gris-medio text-center py-8">El carrito está vacío</p>
               ) : (
@@ -849,24 +896,34 @@ const AdminCotizacionForm = () => {
                         </span>
                       </div>
                     </div>
-                    
-                    <button
-                      onClick={handleCrearCotizacion}
-                      disabled={loadingCotizacion}
-                      className="w-full btn-primary flex items-center justify-center gap-2"
-                    >
-                      {loadingCotizacion ? (
-                        <>
-                          <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-                          Guardando...
-                        </>
-                      ) : (
-                        <>
-                          <Check size={20} />
-                          {isEditing ? 'Actualizar Cotización' : 'Crear Cotización'}
-                        </>
-                      )}
-                    </button>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handlePrint}
+                        type="button"
+                        className="flex-1 btn-secondary flex items-center justify-center gap-2"
+                      >
+                        <Printer size={20} />
+                        Imprimir
+                      </button>
+                      <button
+                        onClick={handleCrearCotizacion}
+                        disabled={loadingCotizacion}
+                        className="flex-1 btn-primary flex items-center justify-center gap-2"
+                      >
+                        {loadingCotizacion ? (
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
+                            Guardando...
+                          </>
+                        ) : (
+                          <>
+                            <Check size={20} />
+                            {isEditing ? 'Actualizar Cotización' : 'Crear Cotización'}
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </>
               )}
@@ -919,6 +976,12 @@ const AdminCotizacionForm = () => {
         message={notification.message}
         onClose={() => setNotification({ ...notification, open: false })}
         duration={notification.type === 'success' ? 3000 : 5000}
+      />
+
+      <PrintPreviewModal
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        data={printData}
       />
     </AdminLayout>
   )

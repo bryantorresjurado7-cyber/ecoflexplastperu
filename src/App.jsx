@@ -33,6 +33,7 @@ import AdminContabilidadGastosVariable from './pages/AdminContabilidadGastosVari
 import AdminContabilidadIngresos from './pages/AdminContabilidadIngresos';
 import AdminProductos from './pages/AdminProductos';
 import AdminProductoForm from './pages/AdminProductoForm';
+import AdminMovimientoForm from './pages/AdminMovimientoForm';
 import AdminVenta from './pages/AdminVenta';
 import AdminVentasLista from './pages/AdminVentasLista';
 import AdminDashboardVentas from './pages/AdminDashboardVentas';
@@ -44,6 +45,8 @@ import AdminCotizacionesDashboard from './pages/AdminCotizacionesDashboard';
 import AdminCotizacionForm from './pages/AdminCotizacionForm';
 import AdminLayout from './components/AdminLayout';
 import AdminClientes from './pages/AdminClientes';
+import AdminClienteForm from './pages/AdminClienteForm'
+import AdminCajaChicaMovimientoForm from './pages/AdminCajaChicaMovimientoForm';
 import AdminProduccion from './pages/AdminProduccion';
 import AdminProduccionForm from './pages/AdminProduccionForm';
 import AdminProduccionValidacion from './pages/AdminProduccionValidacion';
@@ -64,9 +67,7 @@ import AdminCajaChicaConfig from './pages/AdminCajaChicaConfig';
 import AdminCajaChicaReportes from './pages/AdminCajaChicaReportes'
 
 import AdminClientesNuevosDashboard from './pages/AdminClientesNuevosDashboard';
-import AdminProyeccionVentas from './pages/AdminProyeccionVentas';
-import AdminOrdenMantenimiento from './pages/AdminOrdenMantenimiento';
-import AdminListaOrdenesMantenimiento from './pages/AdminListaOrdenesMantenimiento';
+import PrintView from './pages/PrintView';
 
 function App() {
   return (
@@ -293,6 +294,12 @@ function App() {
               </ProtectedRoute>
             } />
 
+            <Route path="/admin/movimientos/nuevo" element={
+              <ProtectedRoute>
+                <AdminMovimientoForm />
+              </ProtectedRoute>
+            } />
+
             <Route path="/admin/venta" element={
               <ProtectedRoute>
                 <AdminLayout>
@@ -309,17 +316,7 @@ function App() {
 
             <Route path="/admin/ventas" element={
               <ProtectedRoute>
-                <AdminLayout>
-                  <AdminVentasLista />
-                </AdminLayout>
-              </ProtectedRoute>
-            } />
-
-            <Route path="/admin/ventas/proyeccion" element={
-              <ProtectedRoute>
-                <AdminLayout>
-                  <AdminProyeccionVentas />
-                </AdminLayout>
+                <AdminVentasLista />
               </ProtectedRoute>
             } />
 
@@ -388,35 +385,6 @@ function App() {
                 <AdminMaquinariaForm />
               </ProtectedRoute>
             } />
-
-            <Route path="/admin/maquinarias/orden-mantenimiento" element={
-              <ProtectedRoute>
-                <AdminLayout>
-                  <AdminOrdenMantenimiento />
-                </AdminLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/maquinarias/ordenes/editar/:id" element={
-              <ProtectedRoute>
-                <AdminLayout>
-                  <AdminOrdenMantenimiento />
-                </AdminLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/maquinarias/ordenes/ver/:id" element={
-              <ProtectedRoute>
-                <AdminLayout>
-                  <AdminOrdenMantenimiento />
-                </AdminLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/maquinarias/lista-ordenes" element={
-              <ProtectedRoute>
-                <AdminLayout>
-                  <AdminListaOrdenesMantenimiento />
-                </AdminLayout>
-              </ProtectedRoute>
-            } />
             {/* Usuarios routes */}
             <Route path="/admin/usuarios" element={
               <ProtectedRoute>
@@ -460,9 +428,19 @@ function App() {
 
             <Route path="/admin/clientes" element={
               <ProtectedRoute>
-                <AdminLayout>
-                  <AdminClientes />
-                </AdminLayout>
+                <AdminClientes />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/clientes/nuevo" element={
+              <ProtectedRoute>
+                <AdminClienteForm />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/clientes/editar/:id" element={
+              <ProtectedRoute>
+                <AdminClienteForm />
               </ProtectedRoute>
             } />
 
@@ -522,10 +500,22 @@ function App() {
               </ProtectedRoute>
             } />
 
+            <Route path="/admin/transacciones/movimientos/nuevo" element={
+              <ProtectedRoute>
+                <AdminCajaChicaMovimientoForm />
+              </ProtectedRoute>
+            } />
+
 
             <Route path="/admin/configuracion" element={
               <ProtectedRoute>
                 <AdminConfiguracion />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/print" element={
+              <ProtectedRoute>
+                <PrintView />
               </ProtectedRoute>
             } />
 

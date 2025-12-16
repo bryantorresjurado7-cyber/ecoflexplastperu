@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import AdminLayout from '../components/AdminLayout'
 import NotificationToast from '../components/NotificationToast'
+import { exportToXlsx } from '../lib/exportToXlsx'
 import {
   Settings,
   Plus,
@@ -16,7 +17,6 @@ import {
   AlertCircle,
   Download
 } from 'lucide-react'
-import { exportToExcel } from '../utils/exportToExcel'
 
 const SUPABASE_URL = 'https://uecolzuwhgfhicacodqj.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlY29senV3aGdmaGljYWNvZHFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4NjQwMTksImV4cCI6MjA3MjQ0MDAxOX0.EuCWuFr6W-pv8_QBgjbEWzDmnI-iA5L4rFr5CMWpNl4'
@@ -27,6 +27,7 @@ const AdminMaquinarias = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterEstado, setFilterEstado] = useState('all')
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [exporting, setExporting] = useState(false)
 
   // Estado para notificaciones
   const [notification, setNotification] = useState({
@@ -184,6 +185,41 @@ const AdminMaquinarias = () => {
     return matchSearch && matchEstado
   })
 
+  // Exportar a Excel
+  const handleExport = () => {
+    try {
+      setExporting(true)
+      const rows = filteredMaquinarias.map(m => [
+        m.nombre || '',
+        m.codigo_maquinaria || '',
+        m.marca || '',
+        m.modelo || '',
+        m.numero_serie || '',
+        m.ubicacion || '',
+        getEstadoLabel(m.estado)
+      ])
+
+      const columns = [
+        'Nombre',
+        'Código',
+        'Marca',
+        'Modelo',
+        'Serie',
+        'Ubicación',
+        'Estado'
+      ]
+
+      const dateStr = new Date().toISOString().split('T')[0]
+      const filename = `maquinarias_${dateStr}`
+
+      exportToXlsx(filename, rows, columns)
+    } catch (error) {
+      console.error('Error exportando:', error)
+    } finally {
+      setExporting(false)
+    }
+  }
+
   // Paginación
   const totalPages = Math.ceil(filteredMaquinarias.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -233,7 +269,7 @@ const AdminMaquinarias = () => {
       <div className="min-h-screen bg-fondo-claro p-4 md:p-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
             <div>
               <h1 className="text-3xl font-bold text-negro-principal flex items-center gap-3">
                 <Settings className="text-verde-principal" size={32} />
@@ -243,35 +279,22 @@ const AdminMaquinarias = () => {
                 {maquinarias.length} maquinarias en total
               </p>
             </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  const columns = [
-                    { key: 'codigo_maquinaria', label: 'Código' },
-                    { key: 'nombre', label: 'Nombre' },
-                    { key: 'marca', label: 'Marca' },
-                    { key: 'modelo', label: 'Modelo' },
-                    { key: 'numero_serie', label: 'Número de Serie' },
-                    { key: 'fecha_adquisicion', label: 'Fecha Adquisición' },
-                    { key: 'costo', label: 'Costo' },
-                    { key: 'estado', label: 'Estado' },
-                    { key: 'ubicacion', label: 'Ubicación' },
-                    { key: 'descripcion', label: 'Descripción' }
-                  ]
-                  exportToExcel(filteredMaquinarias, columns, 'maquinarias')
-                }}
-                className="bg-negro-principal hover:bg-black text-white px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors shadow-lg"
-              >
-                <Download size={20} />
-                Exportar Excel
-              </button>
+            <div className="flex gap-3 w-full md:w-auto justify-end">
               <Link
                 to="/admin/maquinarias/nuevo"
-                className="btn-primary flex items-center gap-2"
+                className="btn-primary flex items-center justify-center gap-2 w-full md:w-auto"
               >
                 <Plus size={20} />
                 Nueva Maquinaria
               </Link>
+              <button
+                onClick={handleExport}
+                disabled={exporting}
+                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download size={18} />
+                {exporting ? 'Exportando...' : 'Exportar'}
+              </button>
             </div>
           </div>
 
@@ -481,8 +504,8 @@ const AdminMaquinarias = () => {
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
                   className={`p-2 rounded-lg transition-colors ${currentPage === 1
-                      ? 'text-gris-claro cursor-not-allowed'
-                      : 'text-negro-principal hover:bg-fondo-claro'
+                    ? 'text-gris-claro cursor-not-allowed'
+                    : 'text-negro-principal hover:bg-fondo-claro'
                     }`}
                 >
                   <ChevronLeft size={20} />
@@ -506,8 +529,8 @@ const AdminMaquinarias = () => {
                         key={pageNum}
                         onClick={() => setCurrentPage(pageNum)}
                         className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${currentPage === pageNum
-                            ? 'bg-verde-principal text-white'
-                            : 'text-negro-principal hover:bg-fondo-claro'
+                          ? 'bg-verde-principal text-white'
+                          : 'text-negro-principal hover:bg-fondo-claro'
                           }`}
                       >
                         {pageNum}
@@ -520,8 +543,8 @@ const AdminMaquinarias = () => {
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
                   className={`p-2 rounded-lg transition-colors ${currentPage === totalPages
-                      ? 'text-gris-claro cursor-not-allowed'
-                      : 'text-negro-principal hover:bg-fondo-claro'
+                    ? 'text-gris-claro cursor-not-allowed'
+                    : 'text-negro-principal hover:bg-fondo-claro'
                     }`}
                 >
                   <ChevronRight size={20} />

@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AdminLayout from '../components/AdminLayout'
 import { supabase } from '../lib/supabase'
-import { FileText, Search, Eye, Trash2, Filter, Download, Mail, Phone, Package, User, X, Calendar, DollarSign, Edit, Plus } from 'lucide-react'
-import { exportToExcel } from '../utils/exportToExcel'
+import { FileText, Search, Eye, Trash2, Filter, Mail, Phone, Package, User, X, Calendar, DollarSign, Edit, Download } from 'lucide-react'
+import { exportToXlsx } from '../lib/exportToXlsx'
 
 const SUPABASE_URL = 'https://uecolzuwhgfhicacodqj.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlY29senV3aGdmaGljYWNvZHFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4NjQwMTksImV4cCI6MjA3MjQ0MDAxOX0.EuCWuFr6W-pv8_QBgjbEWzDmnI-iA5L4rFr5CMWpNl4'
@@ -20,6 +20,8 @@ const AdminCotizaciones = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [exporting, setExporting] = useState(false)
+
 
   useEffect(() => {
     loadCotizaciones()
@@ -302,6 +304,54 @@ const AdminCotizaciones = () => {
     }
   }
 
+  const handleExport = () => {
+    try {
+      setExporting(true)
+      const data = filteredCotizaciones.map(c => {
+        // Formato de fecha
+        const fechaEmision = new Date(c.fecha_emision || c.created_at).toLocaleDateString('es-PE', {
+          day: '2-digit', month: '2-digit', year: 'numeric'
+        })
+
+        // Estado legible
+        const estadoLabel = c.estado ? (c.estado.charAt(0).toUpperCase() + c.estado.slice(1)) : 'Pendiente'
+
+        // Contacto (Email + Teléfono)
+        let contacto = c.cliente?.email || ''
+        if (c.cliente?.telefono) {
+          contacto = contacto ? `${contacto}\n${c.cliente.telefono}` : c.cliente.telefono
+        }
+
+        return [
+          c.cliente?.nombre || 'Sin nombre', // Cliente
+          contacto, // Contacto
+          `S/ ${Number(c.total || 0).toFixed(2)}`, // Total
+          estadoLabel, // Estado
+          fechaEmision // Fecha
+        ]
+      })
+
+      const columns = [
+        'Cliente',
+        'Contacto',
+        'Total',
+        'Estado',
+        'Fecha'
+      ]
+
+      const dateStr = new Date().toISOString().split('T')[0]
+      const filename = `cotizaciones_${dateStr}`
+
+      exportToXlsx(filename, data, columns)
+    } catch (error) {
+      console.error('Error exportando:', error)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+
+
   return (
     <AdminLayout>
       <header className="bg-white border-b border-gray-200 px-8 py-6">
@@ -315,40 +365,19 @@ const AdminCotizaciones = () => {
           </div>
           <div className="flex gap-3">
             <button
-              onClick={() => {
-                const filtered = cotizaciones.filter(cotizacion => {
-                  const matchSearch = !searchTerm ||
-                    cotizacion.cliente?.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    cotizacion.id_cotizacion?.toString().includes(searchTerm)
-                  const matchEstado = filterEstado === 'all' || cotizacion.estado === filterEstado
-                  return matchSearch && matchEstado
-                })
-                const columns = [
-                  { key: 'id_cotizacion', label: 'ID Cotización' },
-                  { key: 'cliente.nombre', label: 'Cliente' },
-                  { key: 'cliente.email', label: 'Email Cliente' },
-                  { key: 'cliente.telefono', label: 'Teléfono Cliente' },
-                  { key: 'fecha_cotizacion', label: 'Fecha Cotización' },
-                  { key: 'fecha_vencimiento', label: 'Fecha Vencimiento' },
-                  { key: 'estado', label: 'Estado' },
-                  { key: 'subtotal', label: 'Subtotal' },
-                  { key: 'impuesto', label: 'Impuesto' },
-                  { key: 'total', label: 'Total' },
-                  { key: 'observaciones', label: 'Observaciones' }
-                ]
-                exportToExcel(filtered, columns, 'cotizaciones')
-              }}
-              className="bg-negro-principal hover:bg-black text-white px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors shadow-lg"
-            >
-              <Download size={20} />
-              Exportar Excel
-            </button>
-            <button
               onClick={() => navigate('/admin/cotizaciones/nueva')}
               className="btn-primary flex items-center gap-2"
             >
               <FileText size={20} />
               Nueva Cotización
+            </button>
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download size={18} />
+              {exporting ? 'Exportando...' : 'Exportar'}
             </button>
           </div>
         </div>
@@ -381,10 +410,7 @@ const AdminCotizaciones = () => {
                 <option value="cancelada">Cancelada</option>
               </select>
             </div>
-            <button className="flex items-center gap-2 px-3 py-1.5 bg-negro-principal hover:bg-black text-white rounded-lg transition-colors">
-              <Download size={20} />
-              Exportar
-            </button>
+
           </div>
         </div>
 
@@ -757,6 +783,8 @@ const AdminCotizaciones = () => {
           </div>
         </div>
       )}
+
+
     </AdminLayout>
   )
 }

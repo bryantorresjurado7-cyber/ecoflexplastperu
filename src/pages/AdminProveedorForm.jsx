@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import AdminLayout from '../components/AdminLayout'
+import PrintPreviewModal from '../components/PrintPreviewModal'
 import NotificationToast from '../components/NotificationToast'
-import { ArrowLeft, Save, Truck } from 'lucide-react'
+import { ArrowLeft, Save, Truck, Printer } from 'lucide-react'
 
 const AdminProveedorForm = () => {
   const navigate = useNavigate()
@@ -31,6 +32,10 @@ const AdminProveedorForm = () => {
     message: ''
   })
 
+  // Estado para el modal de impresión
+  const [showPrintModal, setShowPrintModal] = useState(false)
+  const [printData, setPrintData] = useState(null)
+
   useEffect(() => {
     if (isEditing) {
       loadProveedor()
@@ -44,9 +49,9 @@ const AdminProveedorForm = () => {
         .select('*')
         .eq('id_proveedor', id)
         .single()
-      
+
       if (error) throw error
-      
+
       setFormData({
         nombre: data.nombre || '',
         tipo_documento: data.tipo_documento || 'RUC',
@@ -97,7 +102,7 @@ const AdminProveedorForm = () => {
           .eq('id_proveedor', id)
           .select()
           .single()
-        
+
         if (error) throw error
         result = data
       } else {
@@ -106,9 +111,9 @@ const AdminProveedorForm = () => {
           .insert([proveedorData])
           .select()
           .single()
-        
-      if (error) throw error
-      result = data
+
+        if (error) throw error
+        result = data
       }
 
       // Mostrar notificación de éxito
@@ -116,11 +121,11 @@ const AdminProveedorForm = () => {
         open: true,
         type: 'success',
         title: isEditing ? '¡Proveedor actualizado exitosamente!' : '¡Proveedor creado exitosamente!',
-        message: isEditing 
+        message: isEditing
           ? 'El proveedor ha sido actualizado correctamente.'
           : 'El proveedor ha sido guardado correctamente.'
       })
-      
+
       // Navegar después de 2 segundos
       setTimeout(() => {
         navigate('/admin/proveedores')
@@ -300,6 +305,41 @@ const AdminProveedorForm = () => {
                 Cancelar
               </button>
               <button
+                type="button"
+                onClick={() => {
+                  setPrintData({
+                    type: 'PROVEEDOR',
+                    titulo: 'FICHA DE PROVEEDOR',
+                    fecha: new Date().toLocaleDateString(),
+                    cliente: {
+                      nombre: formData.nombre,
+                      empresa: formData.tipo_documento,
+                      documento: formData.numero_documento,
+                      email: formData.email,
+                      telefono: formData.telefono,
+                      direccion: formData.direccion
+                    },
+                    detalles: [],
+                    resumen: {
+                      subtotal: 'N/A',
+                      total: 'N/A'
+                    },
+                    extra: {
+                      contacto: formData.contacto_nombre,
+                      web: formData.web,
+                      estado: formData.estado ? 'Activo' : 'Inactivo',
+                      categoria: formData.categoria
+                    },
+                    observaciones: formData.observaciones
+                  })
+                  setShowPrintModal(true)
+                }}
+                className="px-6 py-3 border border-verde-principal text-verde-principal rounded-xl font-semibold hover:bg-verde-principal hover:text-white transition-colors flex items-center gap-2"
+              >
+                <Printer size={18} />
+                Imprimir
+              </button>
+              <button
                 type="submit"
                 disabled={loading}
                 className="btn-primary flex items-center gap-2"
@@ -324,6 +364,12 @@ const AdminProveedorForm = () => {
         message={notification.message}
         onClose={() => setNotification({ ...notification, open: false })}
         duration={notification.type === 'success' ? 3000 : 5000}
+      />
+
+      <PrintPreviewModal
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        data={printData}
       />
     </AdminLayout>
   )

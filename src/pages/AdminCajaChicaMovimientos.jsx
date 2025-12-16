@@ -27,17 +27,7 @@ const AdminCajaChicaMovimientos = () => {
     const [filterFechaFin, setFilterFechaFin] = useState('')
     const [searchTerm, setSearchTerm] = useState('')
 
-    // Modal State
-    const [showModal, setShowModal] = useState(false)
-    const [modalType, setModalType] = useState('ingreso') // ingreso, egreso
-    const [formData, setFormData] = useState({
-        monto: '',
-        motivo: '',
-        categoria: '',
-        responsable: '',
-        fecha: new Date().toISOString().split('T')[0],
-        comprobante: null
-    })
+
 
     // View Modal State
     const [showViewModal, setShowViewModal] = useState(false)
@@ -82,37 +72,11 @@ const AdminCajaChicaMovimientos = () => {
         }, 1000)
     }, [])
 
-    const handleOpenModal = (type) => {
-        setModalType(type)
-        setFormData({
-            monto: '',
-            motivo: '',
-            categoria: type === 'ingreso' ? 'Reposición' : '',
-            responsable: '',
-            fecha: new Date().toISOString().split('T')[0],
-            comprobante: null
-        })
-        setShowModal(true)
-    }
+
 
     const handleView = (mov) => {
         setSelectedMovimiento(mov)
         setShowViewModal(true)
-    }
-
-    const handleSubmit = (e) => {
-        e.preventDefault()
-        // Aquí iría la lógica de guardado
-        const newMov = {
-            id: Date.now(),
-            tipo: modalType,
-            ...formData,
-            monto: parseFloat(formData.monto),
-            estado: modalType === 'ingreso' ? 'aprobado' : 'pendiente'
-        }
-        setMovimientos([newMov, ...movimientos])
-        setShowModal(false)
-        alert(modalType === 'ingreso' ? 'Ingreso registrado correctamente' : 'Gasto registrado correctamente')
     }
 
     // Obtener responsables únicos
@@ -152,6 +116,13 @@ const AdminCajaChicaMovimientos = () => {
                             </div>
                         </div>
                         <div className="flex gap-3 w-full md:w-auto">
+                            <Link
+                                to="/admin/transacciones/movimientos/nuevo"
+                                className="bg-verde-principal text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-verde-hover transition-colors shadow-lg whitespace-nowrap"
+                            >
+                                <Plus size={20} />
+                                Nuevo Registro
+                            </Link>
                             <button
                                 onClick={() => {
                                     const columns = [
@@ -164,17 +135,10 @@ const AdminCajaChicaMovimientos = () => {
                                     ]
                                     exportToExcel(filteredMovimientos, columns, 'movimientos_caja_chica')
                                 }}
-                                className="bg-negro-principal hover:bg-black text-white px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors shadow-lg whitespace-nowrap"
+                                className="bg-white hover:bg-gray-50 text-verde-principal border border-verde-principal px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors shadow-lg whitespace-nowrap"
                             >
                                 <Download size={20} />
                                 Exportar Excel
-                            </button>
-                            <button
-                                onClick={() => handleOpenModal('egreso')}
-                                className="bg-verde-principal text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-verde-hover transition-colors shadow-lg whitespace-nowrap"
-                            >
-                                <Plus size={20} />
-                                Nuevo Registro
                             </button>
                         </div>
                     </div>
@@ -383,168 +347,7 @@ const AdminCajaChicaMovimientos = () => {
                     </div>
                 </div>
 
-                {/* Modal */}
-                {showModal && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-xl shadow-xl w-full max-w-lg">
-                            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                                <h3 className="text-xl font-bold text-negro-principal">
-                                    {modalType === 'ingreso' ? 'Registrar Ingreso' : 'Registrar Gasto'}
-                                </h3>
-                                <button onClick={() => setShowModal(false)} className="text-gris-medio hover:text-negro-principal">
-                                    <X size={24} />
-                                </button>
-                            </div>
 
-                            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                                <div className="p-4 bg-gray-50 rounded-lg border border-gray-100 mb-4">
-                                    <label className="block text-sm font-semibold text-negro-principal mb-2">
-                                        Tipo de Movimiento
-                                    </label>
-                                    <div className="flex gap-4">
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                name="tipo"
-                                                value="ingreso"
-                                                checked={modalType === 'ingreso'}
-                                                onChange={() => {
-                                                    setModalType('ingreso')
-                                                    setFormData(prev => ({ ...prev, categoria: 'Reposición' }))
-                                                }}
-                                                className="text-verde-principal focus:ring-verde-principal"
-                                            />
-                                            <span className="text-sm text-gray-700">Ingreso (Reposición)</span>
-                                        </label>
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                name="tipo"
-                                                value="egreso"
-                                                checked={modalType === 'egreso'}
-                                                onChange={() => {
-                                                    setModalType('egreso')
-                                                    setFormData(prev => ({ ...prev, categoria: '' }))
-                                                }}
-                                                className="text-red-600 focus:ring-red-600"
-                                            />
-                                            <span className="text-sm text-gray-700">Gasto / Egreso</span>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-negro-principal mb-1">
-                                        Monto (S/) *
-                                    </label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        required
-                                        value={formData.monto}
-                                        onChange={(e) => setFormData({ ...formData, monto: e.target.value })}
-                                        className="input-field w-full"
-                                        placeholder="0.00"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-negro-principal mb-1">
-                                        Motivo / Descripción *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={formData.motivo}
-                                        onChange={(e) => setFormData({ ...formData, motivo: e.target.value })}
-                                        className="input-field w-full"
-                                        placeholder={modalType === 'ingreso' ? 'Ej: Reposición semanal' : 'Ej: Taxi a cliente'}
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-negro-principal mb-1">
-                                            Categoría
-                                        </label>
-                                        <select
-                                            value={formData.categoria}
-                                            onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
-                                            className="input-field w-full"
-                                        >
-                                            {modalType === 'ingreso' ? (
-                                                <option value="Reposición">Reposición</option>
-                                            ) : (
-                                                <>
-                                                    <option value="">Seleccionar...</option>
-                                                    <option value="Transporte">Transporte</option>
-                                                    <option value="Alimentación">Alimentación</option>
-                                                    <option value="Materiales">Materiales</option>
-                                                    <option value="Limpieza">Limpieza</option>
-                                                    <option value="Otros">Otros</option>
-                                                </>
-                                            )}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-negro-principal mb-1">
-                                            Fecha
-                                        </label>
-                                        <input
-                                            type="date"
-                                            required
-                                            value={formData.fecha}
-                                            onChange={(e) => setFormData({ ...formData, fecha: e.target.value })}
-                                            className="input-field w-full"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-negro-principal mb-1">
-                                        Responsable
-                                    </label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={formData.responsable}
-                                        onChange={(e) => setFormData({ ...formData, responsable: e.target.value })}
-                                        className="input-field w-full"
-                                        placeholder="Nombre del responsable"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-negro-principal mb-1">
-                                        Comprobante (Opcional)
-                                    </label>
-                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50 transition-colors">
-                                        <Upload className="mx-auto text-gris-medio mb-2" size={24} />
-                                        <span className="text-sm text-gris-medio">Click para subir foto o PDF</span>
-                                    </div>
-                                </div>
-
-                                <div className="pt-4 flex gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowModal(false)}
-                                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className={`flex-1 px-4 py-2 rounded-lg text-white font-medium flex items-center justify-center gap-2 ${modalType === 'ingreso' ? 'bg-verde-principal hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
-                                            }`}
-                                    >
-                                        <Save size={20} />
-                                        Guardar {modalType === 'ingreso' ? 'Ingreso' : 'Gasto'}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )}
 
                 {/* View Modal */}
                 {showViewModal && selectedMovimiento && (

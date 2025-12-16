@@ -16,7 +16,7 @@ import {
   ChevronRight,
   Download
 } from 'lucide-react'
-import { exportToExcel } from '../utils/exportToExcel'
+import { exportToXlsx } from '../lib/exportToXlsx'
 
 const AdminProveedores = () => {
   const [proveedores, setProveedores] = useState([])
@@ -24,6 +24,7 @@ const AdminProveedores = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterEstado, setFilterEstado] = useState('all')
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [exporting, setExporting] = useState(false)
 
   // Estado para notificaciones
   const [notification, setNotification] = useState({
@@ -152,6 +153,41 @@ const AdminProveedores = () => {
     return matchSearch && matchEstado
   })
 
+  // Exportar a Excel
+  const handleExport = () => {
+    try {
+      setExporting(true)
+      const rows = filteredProveedores.map(p => [
+        p.nombre || '',
+        p.email || '',
+        p.telefono || '',
+        p.tipo_documento || '',
+        p.numero_documento || '',
+        p.direccion || '',
+        p.estado ? 'Activo' : 'Inactivo'
+      ])
+
+      const columns = [
+        'Nombre',
+        'Email',
+        'Teléfono',
+        'Tipo Documento',
+        'Número Documento',
+        'Dirección',
+        'Estado'
+      ]
+
+      const dateStr = new Date().toISOString().split('T')[0]
+      const filename = `proveedores_${dateStr}`
+
+      exportToXlsx(filename, rows, columns)
+    } catch (error) {
+      console.error('Error exportando:', error)
+    } finally {
+      setExporting(false)
+    }
+  }
+
   // Paginación
   const totalPages = Math.ceil(filteredProveedores.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -176,7 +212,7 @@ const AdminProveedores = () => {
       <div className="min-h-screen bg-fondo-claro p-4 md:p-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
             <div>
               <h1 className="text-3xl font-bold text-negro-principal flex items-center gap-3">
                 <Truck className="text-verde-principal" size={32} />
@@ -186,33 +222,22 @@ const AdminProveedores = () => {
                 {proveedores.length} proveedores en total
               </p>
             </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  const columns = [
-                    { key: 'nombre', label: 'Nombre' },
-                    { key: 'tipo_documento', label: 'Tipo Documento' },
-                    { key: 'numero_documento', label: 'Número Documento' },
-                    { key: 'email', label: 'Email' },
-                    { key: 'telefono', label: 'Teléfono' },
-                    { key: 'direccion', label: 'Dirección' },
-                    { key: 'descripcion', label: 'Descripción' },
-                    { key: 'estado', label: 'Estado' }
-                  ]
-                  exportToExcel(filteredProveedores, columns, 'proveedores')
-                }}
-                className="bg-negro-principal hover:bg-black text-white px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors shadow-lg"
-              >
-                <Download size={20} />
-                Exportar Excel
-              </button>
+            <div className="flex gap-3 w-full md:w-auto justify-end">
               <Link
                 to="/admin/proveedores/nuevo"
-                className="btn-primary flex items-center gap-2"
+                className="btn-primary flex items-center justify-center gap-2 w-full md:w-auto"
               >
                 <Plus size={20} />
                 Nuevo Proveedor
               </Link>
+              <button
+                onClick={handleExport}
+                disabled={exporting}
+                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download size={18} />
+                {exporting ? 'Exportando...' : 'Exportar'}
+              </button>
             </div>
           </div>
 
@@ -347,8 +372,8 @@ const AdminProveedores = () => {
                         <button
                           onClick={() => handleToggleEstado(proveedor.id_proveedor, proveedor.estado)}
                           className={`px-2 py-1 text-xs font-semibold rounded-full ${proveedor.estado
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-800'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
                             }`}
                         >
                           {proveedor.estado ? 'Activo' : 'Inactivo'}
@@ -409,8 +434,8 @@ const AdminProveedores = () => {
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
                   className={`p-2 rounded-lg transition-colors ${currentPage === 1
-                      ? 'text-gris-claro cursor-not-allowed'
-                      : 'text-negro-principal hover:bg-fondo-claro'
+                    ? 'text-gris-claro cursor-not-allowed'
+                    : 'text-negro-principal hover:bg-fondo-claro'
                     }`}
                 >
                   <ChevronLeft size={20} />
@@ -434,8 +459,8 @@ const AdminProveedores = () => {
                         key={pageNum}
                         onClick={() => setCurrentPage(pageNum)}
                         className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${currentPage === pageNum
-                            ? 'bg-verde-principal text-white'
-                            : 'text-negro-principal hover:bg-fondo-claro'
+                          ? 'bg-verde-principal text-white'
+                          : 'text-negro-principal hover:bg-fondo-claro'
                           }`}
                       >
                         {pageNum}
@@ -448,8 +473,8 @@ const AdminProveedores = () => {
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
                   className={`p-2 rounded-lg transition-colors ${currentPage === totalPages
-                      ? 'text-gris-claro cursor-not-allowed'
-                      : 'text-negro-principal hover:bg-fondo-claro'
+                    ? 'text-gris-claro cursor-not-allowed'
+                    : 'text-negro-principal hover:bg-fondo-claro'
                     }`}
                 >
                   <ChevronRight size={20} />

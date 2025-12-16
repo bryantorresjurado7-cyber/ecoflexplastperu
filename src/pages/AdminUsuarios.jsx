@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import AdminLayout from '../components/AdminLayout'
 import usuariosService from '../services/usuariosService'
 import NotificationToast from '../components/NotificationToast'
+import { exportToXlsx } from '../lib/exportToXlsx'
 import {
   Users,
   Plus,
@@ -17,7 +18,6 @@ import {
   ChevronRight,
   Download
 } from 'lucide-react'
-import { exportToExcel } from '../utils/exportToExcel'
 
 const AdminUsuarios = () => {
   const [usuarios, setUsuarios] = useState([])
@@ -26,6 +26,7 @@ const AdminUsuarios = () => {
   const [filterRol, setFilterRol] = useState('all')
   const [filterActivo, setFilterActivo] = useState('all')
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [exporting, setExporting] = useState(false)
 
   // Estado para notificaciones
   const [notification, setNotification] = useState({
@@ -165,6 +166,41 @@ const AdminUsuarios = () => {
     return matchSearch && matchRol && matchActivo
   })
 
+  // Exportar a Excel
+  const handleExport = () => {
+    try {
+      setExporting(true)
+      const rows = filteredUsuarios.map(u => [
+        u.nombre || '',
+        u.apellido || '',
+        u.email || '',
+        getRolLabel(u.rol),
+        u.activo ? 'Activo' : 'Inactivo',
+        u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleDateString('es-PE', {
+          year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        }) : 'Nunca'
+      ])
+
+      const columns = [
+        'Nombre',
+        'Apellido',
+        'Email',
+        'Rol',
+        'Estado',
+        'Último Acceso'
+      ]
+
+      const dateStr = new Date().toISOString().split('T')[0]
+      const filename = `usuarios_${dateStr}`
+
+      exportToXlsx(filename, rows, columns)
+    } catch (error) {
+      console.error('Error exportando:', error)
+    } finally {
+      setExporting(false)
+    }
+  }
+
   // Paginación
   const totalPages = Math.ceil(filteredUsuarios.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -189,7 +225,7 @@ const AdminUsuarios = () => {
       <div className="min-h-screen bg-fondo-claro p-4 md:p-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
             <div>
               <h1 className="text-3xl font-bold text-negro-principal flex items-center gap-3">
                 <Users className="text-verde-principal" size={32} />
@@ -199,31 +235,22 @@ const AdminUsuarios = () => {
                 {usuarios.length} usuarios en total
               </p>
             </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  const columns = [
-                    { key: 'nombre', label: 'Nombre' },
-                    { key: 'apellido', label: 'Apellido' },
-                    { key: 'email', label: 'Email' },
-                    { key: 'rol', label: 'Rol' },
-                    { key: 'activo', label: 'Activo' },
-                    { key: 'created_at', label: 'Fecha Creación' }
-                  ]
-                  exportToExcel(filteredUsuarios, columns, 'usuarios')
-                }}
-                className="bg-negro-principal hover:bg-black text-white px-3 py-1.5 rounded-lg flex items-center gap-2 transition-colors shadow-lg"
-              >
-                <Download size={20} />
-                Exportar Excel
-              </button>
+            <div className="flex gap-3 w-full md:w-auto justify-end">
               <Link
                 to="/admin/usuarios/nuevo"
-                className="btn-primary flex items-center gap-2"
+                className="btn-primary flex items-center justify-center gap-2 w-full md:w-auto"
               >
                 <Plus size={20} />
                 Nuevo Usuario
               </Link>
+              <button
+                onClick={handleExport}
+                disabled={exporting}
+                className="bg-white border border-verde-principal text-verde-principal hover:bg-verde-light px-4 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download size={18} />
+                {exporting ? 'Exportando...' : 'Exportar'}
+              </button>
             </div>
           </div>
 
