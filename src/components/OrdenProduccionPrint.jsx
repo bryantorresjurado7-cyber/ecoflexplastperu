@@ -116,9 +116,9 @@ const OrdenProduccionPrint = ({ data }) => {
                         </thead>
                         <tbody>
                             <tr>
-                                <td className="border border-gray-800 p-2">Ing. Producción</td>
+                                <td className="border border-gray-800 p-2">Bryan Torres</td>
                                 <td className="border border-gray-800 p-2">Producción</td>
-                                <td className="border border-gray-800 p-2">Operario</td>
+                                <td className="border border-gray-800 p-2">Ing. Producción</td>
                                 <td className="border border-gray-800 p-2 text-left">{producto?.nombre || 'N/A'}</td>
                                 <td className="border border-gray-800 p-2">{producto?.codigo || 'N/A'}</td>
                                 <td className="border border-gray-800 p-2">{data.cantidad_planificada || 0}</td>
@@ -137,9 +137,7 @@ const OrdenProduccionPrint = ({ data }) => {
                         <thead className="bg-gray-100 print:bg-gray-200">
                             <tr>
                                 <th className="border border-gray-800 p-1 font-semibold w-1/4">Producto</th>
-                                <th className="border border-gray-800 p-1 font-semibold">Aprovechable</th>
                                 <th className="border border-gray-800 p-1 font-semibold">Unidad</th>
-                                <th className="border border-gray-800 p-1 font-semibold">Peso (Kg)</th>
                                 <th className="border border-gray-800 p-1 font-semibold">Total</th>
                             </tr>
                         </thead>
@@ -147,14 +145,7 @@ const OrdenProduccionPrint = ({ data }) => {
                             {/* Fila de ejemplo */}
                             <tr>
                                 <td className="border border-gray-800 p-2 text-left">{producto?.nombre || 'Producto Final'}</td>
-                                <td className="border border-gray-800 p-2">
-                                    <div className="flex justify-center items-center gap-4">
-                                        <span className="flex items-center gap-1"><Square size={14} /> SI</span>
-                                        <span className="flex items-center gap-1"><Square size={14} /> NO</span>
-                                    </div>
-                                </td>
                                 <td className="border border-gray-800 p-2">UND</td>
-                                <td className="border border-gray-800 p-2">   </td>
                                 <td className="border border-gray-800 p-2">{data.cantidad_producida || 0}</td>
                             </tr>
                         </tbody>
