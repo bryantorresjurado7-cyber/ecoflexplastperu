@@ -202,14 +202,14 @@ const AdminClientes = () => {
                 <table className="w-full min-w-full">
                   <thead className="bg-fondo-claro border-b border-gris-claro">
                     <tr>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">NOMBRE</th>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">EMAIL</th>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">TELÉFONO</th>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">TIPO DOC.</th>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">NÚM. DOC.</th>
-                      <th className="text-left py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">DIRECCIÓN</th>
-                      <th className="text-center py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">ESTADO</th>
-                      <th className="text-center py-4 px-6 text-sm font-semibold text-gris-medio whitespace-nowrap">ACCIONES</th>
+                      <th className="text-left py-2 px-2 text-xs font-semibold text-gris-medio">NOMBRE</th>
+                      <th className="text-left py-2 px-2 text-xs font-semibold text-gris-medio">EMAIL</th>
+                      <th className="text-left py-2 px-2 text-xs font-semibold text-gris-medio">TELÉFONO</th>
+                      <th className="text-left py-2 px-2 text-xs font-semibold text-gris-medio">TIPO DOC.</th>
+                      <th className="text-left py-2 px-2 text-xs font-semibold text-gris-medio">NÚM. DOC.</th>
+                      <th className="text-left py-2 px-2 text-xs font-semibold text-gris-medio">DIRECCIÓN</th>
+                      <th className="text-center py-2 px-2 text-xs font-semibold text-gris-medio">ESTADO</th>
+                      <th className="text-center py-2 px-2 text-xs font-semibold text-gris-medio">ACCIONES</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -222,23 +222,23 @@ const AdminClientes = () => {
                     ) : (
                       clientes.map((cliente) => (
                         <tr key={cliente.id} className="border-b border-gris-claro hover:bg-fondo-claro transition-colors">
-                          <td className="py-4 px-6">
+                          <td className="py-2 px-2">
                             <div className="flex items-center gap-2">
-                              <User size={18} className="text-gris-oscuro flex-shrink-0" />
-                              <span className="font-medium text-sm text-negro-principal">{cliente.nombre || 'N/A'}</span>
+                              <User size={16} className="text-gris-oscuro flex-shrink-0" />
+                              <span className="font-medium text-xs text-negro-principal">{cliente.nombre || 'N/A'}</span>
                             </div>
                           </td>
-                          <td className="py-4 px-6 text-sm text-gris-oscuro">
+                          <td className="py-2 px-2 text-xs text-gris-oscuro break-words max-w-[150px]">
                             {cliente.email ? (
                               <div className="flex items-center gap-1">
                                 <Mail size={14} className="flex-shrink-0" />
-                                <span>{cliente.email}</span>
+                                <span className="truncate">{cliente.email}</span>
                               </div>
                             ) : (
                               <span className="text-gris-medio">N/A</span>
                             )}
                           </td>
-                          <td className="py-4 px-6 text-sm text-gris-oscuro">
+                          <td className="py-2 px-2 text-xs text-gris-oscuro">
                             {cliente.telefono ? (
                               <div className="flex items-center gap-1">
                                 <Phone size={14} className="flex-shrink-0" />
@@ -248,29 +248,29 @@ const AdminClientes = () => {
                               <span className="text-gris-medio">N/A</span>
                             )}
                           </td>
-                          <td className="py-4 px-6 text-sm text-gris-oscuro">
+                          <td className="py-2 px-2 text-xs text-gris-oscuro">
                             {cliente.tipo_documento || 'DNI'}
                           </td>
-                          <td className="py-4 px-6 text-sm text-gris-oscuro font-mono">
+                          <td className="py-2 px-2 text-xs text-gris-oscuro font-mono">
                             {cliente.numero_documento || <span className="text-gris-medio">N/A</span>}
                           </td>
-                          <td className="py-4 px-6 text-sm text-gris-oscuro max-w-xs">
-                            <span className="truncate block" title={cliente.direccion || ''}>
+                          <td className="py-2 px-2 text-xs text-gris-oscuro max-w-[200px]">
+                            <span className="block truncate" title={cliente.direccion || ''}>
                               {cliente.direccion || 'N/A'}
                             </span>
                           </td>
-                          <td className="py-4 px-6 text-center">
-                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${cliente.estado ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          <td className="py-2 px-2 text-center">
+                            <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${cliente.estado ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                               {cliente.estado ? 'Activo' : 'Inactivo'}
                             </span>
                           </td>
-                          <td className="py-4 px-6 text-center">
-                            <div className="flex items-center justify-center gap-2">
-                              <button title="Editar" onClick={() => openEdit(cliente)} className="p-2 hover:bg-blue-50 rounded-lg transition-colors text-blue-600">
-                                <Edit size={18} />
+                          <td className="py-2 px-2 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <button title="Editar" onClick={() => openEdit(cliente)} className="p-1 hover:bg-blue-50 rounded-lg transition-colors text-blue-600">
+                                <Edit size={16} />
                               </button>
-                              <button title="Eliminar" onClick={() => requestDelete(cliente)} className="p-2 hover:bg-red-50 rounded-lg transition-colors text-red-500">
-                                <Trash2 size={18} />
+                              <button title="Eliminar" onClick={() => requestDelete(cliente)} className="p-1 hover:bg-red-50 rounded-lg transition-colors text-red-500">
+                                <Trash2 size={16} />
                               </button>
                             </div>
                           </td>

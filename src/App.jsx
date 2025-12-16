@@ -67,6 +67,7 @@ import AdminClientesNuevosDashboard from './pages/AdminClientesNuevosDashboard';
 import AdminProyeccionVentas from './pages/AdminProyeccionVentas';
 import AdminOrdenMantenimiento from './pages/AdminOrdenMantenimiento';
 import AdminListaOrdenesMantenimiento from './pages/AdminListaOrdenesMantenimiento';
+import AdminMantenimientoTablas from './pages/AdminMantenimientoTablas';
 
 function App() {
   return (
@@ -526,6 +527,12 @@ function App() {
             <Route path="/admin/configuracion" element={
               <ProtectedRoute>
                 <AdminConfiguracion />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/mantenimiento-tablas/:table?" element={
+              <ProtectedRoute>
+                <AdminMantenimientoTablas />
               </ProtectedRoute>
             } />
 

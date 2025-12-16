@@ -20,7 +20,8 @@ import {
   Wallet,
   Bell,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Database
 } from 'lucide-react'
 
 const AdminLayout = ({ children }) => {
@@ -227,6 +228,39 @@ const AdminLayout = ({ children }) => {
     },
 
     {
+      title: 'Mantenimiento Tablas',
+      icon: Database,
+      path: '/admin/mantenimiento-tablas',
+      subItems: [
+        { title: 'Admin Profiles', path: '/admin/mantenimiento-tablas/admin_profiles' },
+        { title: 'Audit Log', path: '/admin/mantenimiento-tablas/audit_log' },
+        { title: 'Categorías Productos', path: '/admin/mantenimiento-tablas/categorias_productos' },
+        { title: 'Clientes', path: '/admin/mantenimiento-tablas/cliente' },
+        { title: 'Contabilidad Caja', path: '/admin/mantenimiento-tablas/contabilidad_caja' },
+        { title: 'Contabilidad Gasto', path: '/admin/mantenimiento-tablas/contabilidad_gasto' },
+        { title: 'Contabilidad Ingreso', path: '/admin/mantenimiento-tablas/contabilidad_ingreso' },
+        { title: 'Contabilidad Movimiento', path: '/admin/mantenimiento-tablas/contabilidad_movimiento' },
+        { title: 'Cotizaciones', path: '/admin/mantenimiento-tablas/cotizacion' },
+        { title: 'Detalle Consulta', path: '/admin/mantenimiento-tablas/detalle_consulta' },
+        { title: 'Detalle Cotizaciones', path: '/admin/mantenimiento-tablas/detalle_cotizacion' },
+        { title: 'Detalle Pedidos', path: '/admin/mantenimiento-tablas/detalle_pedido' },
+        { title: 'Historial Precios', path: '/admin/mantenimiento-tablas/historial_precios' },
+        { title: 'Insumos', path: '/admin/mantenimiento-tablas/insumos' },
+        { title: 'Lotes', path: '/admin/mantenimiento-tablas/lotes' },
+        { title: 'Maquinarias', path: '/admin/mantenimiento-tablas/maquinarias' },
+        { title: 'Parametrica', path: '/admin/mantenimiento-tablas/parametrica' },
+        { title: 'Pedidos', path: '/admin/mantenimiento-tablas/pedido' },
+        { title: 'Producción', path: '/admin/mantenimiento-tablas/produccion' },
+        { title: 'Producción Insumos', path: '/admin/mantenimiento-tablas/produccion_insumos' },
+        { title: 'Producción Lotes', path: '/admin/mantenimiento-tablas/produccion_lotes' },
+        { title: 'Producción Operarios', path: '/admin/mantenimiento-tablas/produccion_operarios' },
+        { title: 'Producto Insumos', path: '/admin/mantenimiento-tablas/producto_insumos' },
+        { title: 'Productos', path: '/admin/mantenimiento-tablas/productos_db' },
+        { title: 'Proveedores', path: '/admin/mantenimiento-tablas/proveedor' },
+        { title: 'Vendedores', path: '/admin/mantenimiento-tablas/vendedor' }
+      ]
+    },
+    {
       title: 'Configuración',
       icon: Settings,
       path: '/admin/configuracion'
@@ -352,7 +386,7 @@ const AdminLayout = ({ children }) => {
                   </button>
 
                   {/* Submenu Items */}
-                  <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-96' : 'max-h-0'}`}>
+                  <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-[2000px]' : 'max-h-0'}`}>
                     {(sidebarOpen || isMobile) && item.subItems.map(subItem => {
                       const hasDeepSubItems = subItem.subItems && subItem.subItems.length > 0
                       const isDeepExpanded = expandedMenus[subItem.title]
