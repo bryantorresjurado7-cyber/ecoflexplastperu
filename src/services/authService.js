@@ -24,18 +24,24 @@ export const authService = {
         return { success: false, error: 'No se pudo iniciar sesión' }
       }
       
-      // Obtener perfil de admin desde esquema admin
+      // Obtener perfil de admin desde esquema admin (sin filtrar por activo para dar mejor feedback)
       const { data: profile, error: profileError } = await supabase
         .from('admin_profiles')
         .select('*')
         .eq('id', authData.user.id)
-        .eq('activo', true)
         .single()
       
       if (profileError || !profile) {
         // Si no existe perfil, cerrar sesión
         await supabase.auth.signOut()
-        return { success: false, error: 'Usuario no autorizado como administrador' }
+        console.error('Usuario sin perfil admin:', authData.user.id)
+        return { success: false, error: 'Usuario no autorizado como administrador. Contacte al administrador del sistema.' }
+      }
+      
+      // Verificar si el usuario está activo
+      if (!profile.activo) {
+        await supabase.auth.signOut()
+        return { success: false, error: 'Su cuenta ha sido desactivada. Contacte al administrador del sistema.' }
       }
       
       // Actualizar último acceso

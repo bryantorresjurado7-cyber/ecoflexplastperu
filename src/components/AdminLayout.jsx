@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import {
@@ -18,7 +18,9 @@ import {
   Cog,
   ArrowLeftRight,
   Wallet,
-  Bell
+  Bell,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react'
 
 const AdminLayout = ({ children }) => {
@@ -29,6 +31,39 @@ const AdminLayout = ({ children }) => {
   // State for sidebar
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+
+  // State for expanded menus (accordion)
+  const [expandedMenus, setExpandedMenus] = useState({})
+
+  const toggleSubmenu = (title) => {
+    if (!sidebarOpen) setSidebarOpen(true);
+    setExpandedMenus(prev => ({
+      ...prev,
+      [title]: !prev[title]
+    }))
+  }
+
+  // Sidebar scroll persistence
+  const sidebarRef = useRef(null)
+
+  useEffect(() => {
+    const sidebar = sidebarRef.current
+    if (sidebar) {
+      const savedPosition = sessionStorage.getItem('adminSidebarScroll')
+      if (savedPosition) {
+        requestAnimationFrame(() => {
+          sidebar.scrollTop = Number(savedPosition)
+        })
+      }
+
+      const handleScroll = () => {
+        sessionStorage.setItem('adminSidebarScroll', sidebar.scrollTop)
+      }
+
+      sidebar.addEventListener('scroll', handleScroll)
+      return () => sidebar.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
 
   // State for notifications
   const [showNotifications, setShowNotifications] = useState(false)
@@ -111,6 +146,23 @@ const AdminLayout = ({ children }) => {
       path: '/admin/dashboard'
     },
     {
+      title: 'Contabilidad',
+      icon: DollarSign,
+      path: '/admin/contabilidad',
+      subItems: [
+        { title: 'Caja', path: '/admin/contabilidad' },
+        {
+          title: 'Gastos',
+          path: '/admin/contabilidad/gastos',
+          subItems: [
+            { title: 'Gasto Fijo', path: '/admin/contabilidad/gastos/fijo' },
+            { title: 'Gasto Variable', path: '/admin/contabilidad/gastos/variable' }
+          ]
+        },
+        { title: 'Ingresos', path: '/admin/contabilidad/ingresos' }
+      ]
+    },
+    {
       title: 'Productos',
       icon: Package,
       path: '/admin/productos'
@@ -128,7 +180,11 @@ const AdminLayout = ({ children }) => {
     {
       title: 'Ventas',
       icon: History,
-      path: '/admin/ventas'
+      path: '/admin/ventas', // Base path needed for active check, but item works as toggle
+      subItems: [
+        { title: 'Gestión de Ventas', path: '/admin/ventas' },
+        { title: 'Proyección de ventas', path: '/admin/ventas/proyeccion' }
+      ]
     },
     {
       title: 'Cotizaciones',
@@ -148,7 +204,11 @@ const AdminLayout = ({ children }) => {
     {
       title: 'Maquinarias',
       icon: Cog,
-      path: '/admin/maquinarias'
+      path: '/admin/maquinarias',
+      subItems: [
+        { title: 'Gestión de Maquinaria', path: '/admin/maquinarias' },
+        { title: 'Generar orden de mantenimiento', path: '/admin/maquinarias/orden-mantenimiento' }
+      ]
     },
     {
       title: 'Producción',
@@ -172,6 +232,41 @@ const AdminLayout = ({ children }) => {
       path: '/admin/configuracion'
     }
   ]
+
+  // Auto-expand menu based on current path
+  useEffect(() => {
+    // Buscar si la ruta actual pertenece a algún item con submenú
+    // Buscar si la ruta actual pertenece a algún item con submenú
+    const activeItem = menuItems.find(item =>
+      item.subItems && item.subItems.some(sub => {
+        if (sub.subItems) {
+          // Check deeper level
+          if (sub.subItems.some(subSub => location.pathname.startsWith(subSub.path))) {
+            // Also expand the parent of the subSub item immediately? 
+            // This effect only sets the top level expansion. We might need a separate check for 2nd level.
+            return true
+          }
+        }
+        return location.pathname.startsWith(sub.path)
+      })
+    )
+
+    if (activeItem) {
+      setExpandedMenus(prev => ({
+        ...prev,
+        [activeItem.title]: true
+      }))
+
+      // Check 2nd level expansion
+      if (activeItem.subItems) {
+        activeItem.subItems.forEach(sub => {
+          if (sub.subItems && sub.subItems.some(deep => location.pathname.startsWith(deep.path))) {
+            setExpandedMenus(prev => ({ ...prev, [sub.title]: true }))
+          }
+        })
+      }
+    }
+  }, [location.pathname])
 
   // Sidebar classes calculation
   const getSidebarClasses = () => {
@@ -228,11 +323,97 @@ const AdminLayout = ({ children }) => {
         </div>
 
         {/* Menu Items */}
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto no-scrollbar">
+        <nav ref={sidebarRef} className="flex-1 p-4 space-y-2 overflow-y-auto no-scrollbar">
           {menuItems.map((item) => {
             const Icon = item.icon
+            // Check if active (modified for parent items)
             const isActive = location.pathname === item.path ||
               (item.path !== '/admin/dashboard' && location.pathname.startsWith(item.path))
+
+            const hasSubItems = item.subItems && item.subItems.length > 0
+            const isExpanded = expandedMenus[item.title]
+
+            if (hasSubItems) {
+              return (
+                <div key={item.title}>
+                  <button
+                    onClick={() => toggleSubmenu(item.title)}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all whitespace-nowrap ${isActive ? 'text-white' : 'text-gris-claro hover:bg-gris-oscuro hover:text-white'
+                      }`}
+                    title={!sidebarOpen && !isMobile ? item.title : ''}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon size={20} className="min-w-[20px]" />
+                      {(sidebarOpen || isMobile) && <span className="font-medium">{item.title}</span>}
+                    </div>
+                    {(sidebarOpen || isMobile) && (
+                      isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />
+                    )}
+                  </button>
+
+                  {/* Submenu Items */}
+                  <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-96' : 'max-h-0'}`}>
+                    {(sidebarOpen || isMobile) && item.subItems.map(subItem => {
+                      const hasDeepSubItems = subItem.subItems && subItem.subItems.length > 0
+                      const isDeepExpanded = expandedMenus[subItem.title]
+
+                      if (hasDeepSubItems) {
+                        return (
+                          <div key={subItem.title}>
+                            <button
+                              onClick={() => toggleSubmenu(subItem.title)}
+                              className={`w-full flex items-center justify-between px-4 py-2 pl-12 text-sm rounded-lg transition-all whitespace-nowrap text-gris-medio hover:text-white hover:bg-gris-oscuro/50`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-1.5 h-1.5 rounded-full bg-gris-medio`}></div>
+                                <span className="font-normal">{subItem.title}</span>
+                              </div>
+                              {isDeepExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                            </button>
+
+                            <div className={`overflow-hidden transition-all duration-300 ${isDeepExpanded ? 'max-h-40' : 'max-h-0'}`}>
+                              {subItem.subItems.map(deepItem => {
+                                const isDeepActive = location.pathname === deepItem.path
+                                return (
+                                  <Link
+                                    key={deepItem.path}
+                                    to={deepItem.path}
+                                    onClick={() => isMobile && setSidebarOpen(false)}
+                                    className={`flex items-center gap-3 px-4 py-2 pl-16 text-xs rounded-lg transition-all whitespace-nowrap ${isDeepActive
+                                      ? 'text-verde-principal font-medium'
+                                      : 'text-gris-medio hover:text-white'
+                                      }`}
+                                  >
+                                    <div className={`w-1 h-1 rounded-full ${isDeepActive ? 'bg-verde-principal' : 'bg-gray-500'}`}></div>
+                                    {deepItem.title}
+                                  </Link>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )
+                      }
+
+                      const isSubActive = location.pathname === subItem.path
+                      return (
+                        <Link
+                          key={subItem.path}
+                          to={subItem.path}
+                          onClick={() => isMobile && setSidebarOpen(false)}
+                          className={`flex items-center gap-3 px-4 py-2 pl-12 text-sm rounded-lg transition-all whitespace-nowrap ${isSubActive
+                            ? 'text-verde-principal font-medium'
+                            : 'text-gris-medio hover:text-white'
+                            }`}
+                        >
+                          <div className={`w-1.5 h-1.5 rounded-full ${isSubActive ? 'bg-verde-principal' : 'bg-gris-medio'}`}></div>
+                          {subItem.title}
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            }
 
             return (
               <Link
