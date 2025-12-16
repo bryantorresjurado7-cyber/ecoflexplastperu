@@ -304,30 +304,25 @@ const AdminLayout = ({ children }) => {
 
   // Sidebar classes calculation
   const getSidebarClasses = () => {
-    const baseClasses = "bg-negro-principal text-white transition-all duration-300 flex flex-col fixed h-full z-50"
+    const baseClasses = "bg-negro-principal text-white transition-all duration-300 flex flex-col z-50 h-full border-r border-gray-800"
 
     if (isMobile) {
-      // Mobile: Fixed width, slide in/out
-      return `${baseClasses} w-64 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
+      // Mobile: Absolute/Fixed positioning
+      return `${baseClasses} fixed top-0 left-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} w-64`
     } else {
-      // Desktop: Collapsible width
-      return `${baseClasses} ${sidebarOpen ? 'w-64' : 'w-20'}`
+      // Desktop: Flex item
+      return `${baseClasses} relative ${sidebarOpen ? 'w-64' : 'w-20'} flex-shrink-0`
     }
   }
 
-  // Main content margin calculation
+  // Main content margin calculation - No longer needed for padding, just flex
   const getMainClasses = () => {
-    const baseClasses = "flex-1 transition-all duration-300 min-h-screen"
-
-    if (isMobile) {
-      return `${baseClasses} ml-0`
-    } else {
-      return `${baseClasses} ${sidebarOpen ? 'ml-64' : 'ml-20'}`
-    }
+    // Flex-1 takes remaining width. h-full ensures full height. relative for positioning context.
+    return "flex-1 flex flex-col min-w-0 h-full bg-fondo-claro relative overflow-hidden"
   }
 
   return (
-    <div className="min-h-screen bg-fondo-claro flex relative">
+    <div className="h-screen w-full bg-fondo-claro flex overflow-hidden relative">
       {/* Mobile Backdrop */}
       {isMobile && sidebarOpen && (
         <div
@@ -493,7 +488,7 @@ const AdminLayout = ({ children }) => {
       <main className={getMainClasses()}>
         {/* Mobile Header Toggle */}
         {isMobile && !sidebarOpen && (
-          <div className="bg-white p-4 shadow-sm flex items-center justify-between sticky top-0 z-30">
+          <div className="bg-white p-4 shadow-sm flex items-center justify-between sticky top-0 z-30 flex-shrink-0">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(true)}
@@ -509,9 +504,9 @@ const AdminLayout = ({ children }) => {
           </div>
         )}
 
-
-
-        {children}
+        <div className="flex-1 w-full h-full overflow-y-auto relative">
+          {children}
+        </div>
       </main>
 
       {/* Notification Panel Global Overlay */}
