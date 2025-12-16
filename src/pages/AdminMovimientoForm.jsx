@@ -9,8 +9,10 @@ import {
     Package,
     Calendar,
     Search,
-    ChevronDown
+    ChevronDown,
+    Printer
 } from 'lucide-react'
+import PrintPreviewModal from '../components/PrintPreviewModal'
 
 const AdminMovimientoForm = () => {
     const navigate = useNavigate()
@@ -22,6 +24,10 @@ const AdminMovimientoForm = () => {
     const [products, setProducts] = useState([])
     const [clientes, setClientes] = useState([])
     const [tiposMovimiento, setTiposMovimiento] = useState([])
+
+    // Print Modal State
+    const [showPrintModal, setShowPrintModal] = useState(false)
+    const [printData, setPrintData] = useState(null)
 
     const [formData, setFormData] = useState({
         id_producto: null,
@@ -167,6 +173,58 @@ const AdminMovimientoForm = () => {
         }
     }
 
+    const handlePrint = () => {
+        // Validar datos mínimos
+        if (!formData.id_producto || !formData.cantidad) {
+            alert('Por favor seleccione un producto y cantidad para generar la vista previa')
+            return
+        }
+
+        const selectedProduct = products.find(p => p.id === formData.id_producto)
+        const tipoMovimiento = tiposMovimiento.find(t => t.id_tipo_movimiento === formData.id_tipo_movimiento)
+
+        // Calcular valores (asumiendo precio del producto para valorización)
+        const precio = selectedProduct?.precio_unitario || 0
+        const subtotal = precio * (parseInt(formData.cantidad) || 0)
+        const impuesto = subtotal * 0.18
+        const total = subtotal + impuesto
+
+        setPrintData({
+            type: 'MOVIMIENTO', // Usado para lógica interna si es necesario
+            titulo: `MOVIMIENTO - ${tipoMovimiento?.nombre?.toUpperCase() || 'GENERAL'}`,
+            numero: 'BORRADOR',
+            fecha: new Date(formData.fecha_movimiento).toLocaleDateString('es-PE'),
+            valido_hasta: formData.fecha_vencimiento ? new Date(formData.fecha_vencimiento).toLocaleDateString('es-PE') : null,
+            cliente: {
+                nombre: formData.solicitante || 'Sin Solicitante',
+                documento: '-', // No tenemos documento del solicitante en este form simple
+                email: '-',
+                telefono: '-',
+                direccion: '-',
+                empresa: formData.solicitante ? 'Solicitante Externo/Interno' : '-'
+            },
+            detalles: [{
+                codigo: selectedProduct?.codigo || '-',
+                nombre: selectedProduct?.nombre || formData.producto || 'Producto',
+                descripcion: formData.observacion || selectedProduct?.descripcion || '',
+                cantidad: parseInt(formData.cantidad),
+                precio_unitario: precio,
+                subtotal: subtotal
+            }],
+            resumen: {
+                subtotal: subtotal,
+                impuestos: impuesto,
+                total: total,
+                impuesto_porcentaje: 18
+            },
+            observaciones: formData.observacion,
+            extra: {
+                estado: 'BORRADOR'
+            }
+        })
+        setShowPrintModal(true)
+    }
+
     const filteredProducts = products.filter(p => {
         const searchLower = productSearchTerm.toLowerCase()
         return (
@@ -195,13 +253,22 @@ const AdminMovimientoForm = () => {
             <div className="min-h-screen bg-fondo-claro p-4 md:p-8">
                 {/* Header */}
                 <div className="mb-8">
-                    <button
-                        onClick={() => navigate('/admin/movimientos')}
-                        className="flex items-center gap-2 text-gris-medio hover:text-negro-principal mb-4"
-                    >
-                        <ArrowLeft size={20} />
-                        Volver a Movimientos
-                    </button>
+                    <div className="flex items-center justify-between mb-4">
+                        <button
+                            onClick={() => navigate('/admin/movimientos')}
+                            className="flex items-center gap-2 text-gris-medio hover:text-negro-principal"
+                        >
+                            <ArrowLeft size={20} />
+                            Volver a Movimientos
+                        </button>
+                        <button
+                            onClick={handlePrint}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                        >
+                            <Printer size={20} />
+                            Imprimir
+                        </button>
+                    </div>
                     <h1 className="text-3xl font-bold text-negro-principal">
                         Nuevo Movimiento
                     </h1>
@@ -425,6 +492,12 @@ const AdminMovimientoForm = () => {
                     </div>
                 </div>
             </div>
+
+            <PrintPreviewModal
+                isOpen={showPrintModal}
+                onClose={() => setShowPrintModal(false)}
+                data={printData}
+            />
         </AdminLayout>
     )
 }
