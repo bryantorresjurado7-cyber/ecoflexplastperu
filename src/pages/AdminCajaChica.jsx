@@ -43,6 +43,7 @@ const AdminCajaChica = () => {
 
     useEffect(() => {
         // Actualizar datos del gráfico cuando cambia el filtro
+        // Actualizar datos del gráfico cuando cambia el filtro
         const data = getChartData(timeFilter)
         setChartData(data)
     }, [timeFilter])
