@@ -166,24 +166,44 @@ const AdminContabilidad = () => {
     const handleSaveCaja = async (cajaId) => {
         const caja = cajas.find(c => c.id_caja === cajaId)
         if (!caja) return
-        
+
         setSaving(true)
         try {
+            // 1) Guardar la información de la caja (nombre, monto inicial)
             const { error: updateError } = await contabilidadService.updateCaja(cajaId, {
                 nombre: caja.nombre,
                 monto_inicial: parseFloat(caja.monto_inicial) || 0
             })
-            
+
             if (updateError) throw updateError
-            
-            // Recalcular saldo
+
+            // 2) Guardar todos los movimientos locales de la caja (sin llamadas automáticas al cambiar campos)
+            const items = caja.items || []
+            const updatePromises = items.map(item => {
+                return contabilidadService.updateMovimiento(item.id_movimiento, {
+                    tipo: item.tipo,
+                    descripcion: item.descripcion,
+                    monto: item.monto,
+                    fecha: item.fecha,
+                    tipo_documento: item.tipo_documento,
+                    numero_documento: item.numero_documento
+                })
+            })
+
+            // Ejecutar todas las actualizaciones en paralelo
+            const results = await Promise.all(updatePromises)
+            // Comprobar si alguno devolvió error
+            const firstError = results.find(r => r && r.error)
+            if (firstError && firstError.error) throw firstError.error
+
+            // 3) Recalcular saldo y recargar cajas para obtener estados actualizados
             await contabilidadService.recalcularSaldoCaja(cajaId)
             await loadCajas()
-            
-            showSuccess('Caja guardada exitosamente')
+
+            showSuccess('Caja y movimientos guardados exitosamente')
         } catch (err) {
             console.error('Error saving caja:', err)
-            setError('Error al guardar la caja')
+            setError('Error al guardar la caja y/o movimientos')
         } finally {
             setSaving(false)
         }
@@ -234,10 +254,15 @@ const AdminContabilidad = () => {
         }))
     }
 
-    const handleSaveItem = async (cajaId, itemId) => {
+    const handleSaveItem = async (cajaId, itemId, fieldOverride = null, valueOverride = null) => {
         const caja = cajas.find(c => c.id_caja === cajaId)
-        const item = caja?.items.find(i => i.id_movimiento === itemId)
+        let item = caja?.items.find(i => i.id_movimiento === itemId)
         if (!item) return
+        
+        // Si se pasaron valores override, usarlos (para selects que actualizan y guardan inmediatamente)
+        if (fieldOverride && valueOverride !== null) {
+            item = { ...item, [fieldOverride]: valueOverride }
+        }
         
         setSaving(true)
         try {
@@ -713,7 +738,6 @@ const AdminContabilidad = () => {
                                                                 type="text"
                                                                 value={item.descripcion || ''}
                                                                 onChange={(e) => handleUpdateItem(caja.id_caja, item.id_movimiento, 'descripcion', e.target.value)}
-                                                                onBlur={() => handleSaveItem(caja.id_caja, item.id_movimiento)}
                                                                 placeholder="Descripción del movimiento..."
                                                                 disabled={caja.estado === 'cerrada'}
                                                                 className="w-full h-full p-2 text-sm border-none focus:ring-0 focus:bg-blue-50 transition-colors disabled:bg-gray-100"
@@ -723,8 +747,8 @@ const AdminContabilidad = () => {
                                                             <select
                                                                 value={item.tipo}
                                                                 onChange={(e) => {
-                                                                    handleUpdateItem(caja.id_caja, item.id_movimiento, 'tipo', e.target.value)
-                                                                    setTimeout(() => handleSaveItem(caja.id_caja, item.id_movimiento), 100)
+                                                                    const newValue = e.target.value
+                                                                    handleUpdateItem(caja.id_caja, item.id_movimiento, 'tipo', newValue)
                                                                 }}
                                                                 disabled={caja.estado === 'cerrada'}
                                                                 className={`w-full h-full p-2 text-sm border-none focus:ring-0 cursor-pointer font-medium
@@ -739,8 +763,10 @@ const AdminContabilidad = () => {
                                                             <input
                                                                 type="date"
                                                                 value={item.fecha?.split('T')[0] || ''}
-                                                                onChange={(e) => handleUpdateItem(caja.id_caja, item.id_movimiento, 'fecha', e.target.value)}
-                                                                onBlur={() => handleSaveItem(caja.id_caja, item.id_movimiento)}
+                                                                onChange={(e) => {
+                                                                    const newValue = e.target.value
+                                                                    handleUpdateItem(caja.id_caja, item.id_movimiento, 'fecha', newValue)
+                                                                }}
                                                                 disabled={caja.estado === 'cerrada'}
                                                                 className="w-full h-full p-2 text-sm border-none focus:ring-0 focus:bg-blue-50 text-center disabled:bg-gray-100"
                                                             />
@@ -749,8 +775,8 @@ const AdminContabilidad = () => {
                                                             <select
                                                                 value={item.tipo_documento || 'BOLETA'}
                                                                 onChange={(e) => {
-                                                                    handleUpdateItem(caja.id_caja, item.id_movimiento, 'tipo_documento', e.target.value)
-                                                                    setTimeout(() => handleSaveItem(caja.id_caja, item.id_movimiento), 100)
+                                                                    const newValue = e.target.value
+                                                                    handleUpdateItem(caja.id_caja, item.id_movimiento, 'tipo_documento', newValue)
                                                                 }}
                                                                 disabled={caja.estado === 'cerrada'}
                                                                 className="w-full h-full p-2 text-sm border-none focus:ring-0 cursor-pointer bg-white disabled:bg-gray-100"
@@ -767,7 +793,6 @@ const AdminContabilidad = () => {
                                                                 type="text"
                                                                 value={item.numero_documento || ''}
                                                                 onChange={(e) => handleUpdateItem(caja.id_caja, item.id_movimiento, 'numero_documento', e.target.value)}
-                                                                onBlur={() => handleSaveItem(caja.id_caja, item.id_movimiento)}
                                                                 placeholder="000-000000"
                                                                 disabled={caja.estado === 'cerrada'}
                                                                 className="w-full h-full p-2 text-sm border-none focus:ring-0 focus:bg-blue-50 font-mono disabled:bg-gray-100"
@@ -779,7 +804,6 @@ const AdminContabilidad = () => {
                                                                 step="0.01"
                                                                 value={item.monto || 0}
                                                                 onChange={(e) => handleUpdateItem(caja.id_caja, item.id_movimiento, 'monto', e.target.value)}
-                                                                onBlur={() => handleSaveItem(caja.id_caja, item.id_movimiento)}
                                                                 placeholder="0.00"
                                                                 disabled={caja.estado === 'cerrada'}
                                                                 className={`w-full h-full p-2 text-sm border-none focus:ring-0 focus:bg-blue-50 text-right font-bold disabled:bg-gray-100

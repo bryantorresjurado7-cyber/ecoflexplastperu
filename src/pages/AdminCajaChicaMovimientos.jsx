@@ -117,7 +117,7 @@ const AdminCajaChicaMovimientos = () => {
                         </div>
                         <div className="flex gap-3 w-full md:w-auto">
                             <Link
-                                to="/admin/transacciones/movimientos/nuevo"
+                                to="/admin/transacciones"
                                 className="bg-verde-principal text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-verde-hover transition-colors shadow-lg whitespace-nowrap"
                             >
                                 <Plus size={20} />

@@ -36,7 +36,7 @@ const AdminCajaChicaMovimientoForm = () => {
             console.log('Saving:', { ...formData, tipo })
             alert(tipo === 'ingreso' ? 'Ingreso registrado correctamente' : 'Gasto registrado correctamente')
             setSubmitting(false)
-            navigate('/admin/transacciones/movimientos')
+            navigate('/admin/transacciones')
         }, 1000)
     }
 
@@ -46,7 +46,7 @@ const AdminCajaChicaMovimientoForm = () => {
                 {/* Header */}
                 <div className="mb-8">
                     <button
-                        onClick={() => navigate('/admin/transacciones/movimientos')}
+                        onClick={() => navigate('/admin/transacciones')}
                         className="flex items-center gap-2 text-gris-medio hover:text-negro-principal mb-4 transition-colors"
                     >
                         <ArrowLeft size={20} />
@@ -195,7 +195,7 @@ const AdminCajaChicaMovimientoForm = () => {
                             <div className="flex items-center justify-end gap-4 pt-6 border-t border-gray-100">
                                 <button
                                     type="button"
-                                    onClick={() => navigate('/admin/transacciones/movimientos')}
+                                    onClick={() => navigate('/admin/transacciones')}
                                     className="px-6 py-3 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                                     disabled={submitting}
                                 >

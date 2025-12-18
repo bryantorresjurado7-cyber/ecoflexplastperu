@@ -182,8 +182,6 @@ export const contabilidadService = {
         .from('contabilidad_movimiento')
         .select('*')
         .eq('id_caja', idCaja)
-        .order('fecha', { ascending: true })
-        .order('created_at', { ascending: true })
       
       if (filters.tipo) {
         query = query.eq('tipo', filters.tipo)

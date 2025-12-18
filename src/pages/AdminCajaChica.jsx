@@ -116,13 +116,7 @@ const AdminCajaChica = () => {
     }
 
     const menuItems = [
-        {
-            title: 'Movimientos',
-            description: 'Registrar ingresos y egresos',
-            icon: <History size={24} />,
-            link: '/admin/transacciones/movimientos',
-            color: 'bg-blue-100 text-blue-600'
-        },
+        
         {
             title: 'Aprobaciones',
             description: 'Validar gastos pendientes',
@@ -179,7 +173,7 @@ const AdminCajaChica = () => {
                         <div className="flex gap-3 items-center">
                             <NotificationButton />
                             <Link
-                                to="/admin/transacciones/movimientos"
+                                to="/admin/transacciones"
                                 className="bg-verde-principal hover:bg-verde-hover text-white px-6 py-2.5 rounded-lg font-semibold transition-colors flex items-center gap-2 shadow-sm"
                             >
                                 <Plus size={20} />

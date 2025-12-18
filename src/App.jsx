@@ -68,6 +68,9 @@ import AdminCajaChicaReportes from './pages/AdminCajaChicaReportes'
 
 import AdminClientesNuevosDashboard from './pages/AdminClientesNuevosDashboard';
 import PrintView from './pages/PrintView';
+import AdminMantenimientoTablas from './pages/AdminMantenimientoTablas';
+import AdminMantenimientoParametrica from './pages/AdminMantenimientoParametrica';
+import AdminMantenimientoCategorias from './pages/AdminMantenimientoCategorias';
 
 function App() {
   return (
@@ -474,11 +477,6 @@ function App() {
                 <AdminCajaChica />
               </ProtectedRoute>
             } />
-            <Route path="/admin/transacciones/movimientos" element={
-              <ProtectedRoute>
-                <AdminCajaChicaMovimientos />
-              </ProtectedRoute>
-            } />
             <Route path="/admin/transacciones/aprobaciones" element={
               <ProtectedRoute>
                 <AdminCajaChicaAprobaciones />
@@ -500,12 +498,26 @@ function App() {
               </ProtectedRoute>
             } />
 
-            <Route path="/admin/transacciones/movimientos/nuevo" element={
+            {/* /admin/transacciones/movimientos removed */}
+
+            {/* Mantenimiento de Tablas */}
+            <Route path="/admin/mantenimiento-tablas" element={
               <ProtectedRoute>
-                <AdminCajaChicaMovimientoForm />
+                <AdminMantenimientoTablas />
               </ProtectedRoute>
             } />
 
+            <Route path="/admin/mantenimiento-tablas/parametrica" element={
+              <ProtectedRoute>
+                <AdminMantenimientoParametrica />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/mantenimiento-tablas/categorias_productos" element={
+              <ProtectedRoute>
+                <AdminMantenimientoCategorias />
+              </ProtectedRoute>
+            } />
 
             <Route path="/admin/configuracion" element={
               <ProtectedRoute>
