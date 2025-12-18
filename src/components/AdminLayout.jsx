@@ -17,10 +17,10 @@ import {
   Truck,
   Cog,
   ArrowLeftRight,
-  Wallet,
   Bell,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Database
 } from 'lucide-react'
 
 const AdminLayout = ({ children }) => {
@@ -220,12 +220,16 @@ const AdminLayout = ({ children }) => {
       icon: User,
       path: '/admin/usuarios'
     },
+    
     {
-      title: 'Caja Chica',
-      icon: Wallet,
-      path: '/admin/transacciones/movimientos'
+      title: 'Mantenimiento',
+      icon: Database,
+      path: '/admin/mantenimiento-tablas',
+      subItems: [
+        { title: 'Tabla Paramétrica', path: '/admin/mantenimiento-tablas/parametrica' },
+        { title: 'Categorías Productos', path: '/admin/mantenimiento-tablas/categorias_productos' }
+      ]
     },
-
     {
       title: 'Configuración',
       icon: Settings,
@@ -365,7 +369,7 @@ const AdminLayout = ({ children }) => {
                               className={`w-full flex items-center justify-between px-4 py-2 pl-12 text-sm rounded-lg transition-all whitespace-nowrap text-gris-medio hover:text-white hover:bg-gris-oscuro/50`}
                             >
                               <div className="flex items-center gap-3">
-                                <div className={`w-1.5 h-1.5 rounded-full bg-gris-medio`}></div>
+                                <span className={`inline-block w-1 h-6 rounded ${isDeepExpanded ? 'bg-verde-principal' : 'bg-gris-medio'}`} />
                                 <span className="font-normal">{subItem.title}</span>
                               </div>
                               {isDeepExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -384,7 +388,7 @@ const AdminLayout = ({ children }) => {
                                       : 'text-gris-medio hover:text-white'
                                       }`}
                                   >
-                                    <div className={`w-1 h-1 rounded-full ${isDeepActive ? 'bg-verde-principal' : 'bg-gray-500'}`}></div>
+                                    <span className={`inline-block w-1 h-5 rounded ${isDeepActive ? 'bg-verde-principal' : 'bg-gray-500'}`} />
                                     {deepItem.title}
                                   </Link>
                                 )
@@ -405,7 +409,7 @@ const AdminLayout = ({ children }) => {
                             : 'text-gris-medio hover:text-white'
                             }`}
                         >
-                          <div className={`w-1.5 h-1.5 rounded-full ${isSubActive ? 'bg-verde-principal' : 'bg-gris-medio'}`}></div>
+                          <span className={`inline-block w-1 h-6 rounded ${isSubActive ? 'bg-verde-principal' : 'bg-gris-medio'}`} />
                           {subItem.title}
                         </Link>
                       )

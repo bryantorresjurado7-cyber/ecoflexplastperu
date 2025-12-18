@@ -1,42 +1,51 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@theme {
-  /* Colors */
-  --color-verde-principal: #059669;
-  --color-verde-hover: #047857;
-  --color-verde-light: #ecfdf5;
-  --color-verde-border: #d1fae5;
-  --color-azul: #0369a1;
+@layer base {
+  :root {
+    /* Colors */
+    --color-verde-principal: #059669;
+    --color-verde-hover: #047857;
+    --color-verde-light: #ecfdf5;
+    --color-verde-border: #d1fae5;
+    --color-azul: #0369a1;
 
-  --color-brand-green: #059669;
-  --color-brand-blue: #0369a1;
-  --color-brand-grayDark: #4b5563;
+    --color-brand-green: #059669;
+    --color-brand-blue: #0369a1;
+    --color-brand-grayDark: #4b5563;
 
-  --color-negro-principal: #1a1a1a;
-  --color-negro-secundario: #111827;
-  --color-gris-oscuro: #374151;
-  --color-gris-medio: #6b7280;
-  --color-gris-claro: #9ca3af;
-  --color-gris-muy-claro: #d1d5db;
+    --color-negro-principal: #1a1a1a;
+    --color-negro-secundario: #111827;
+    --color-gris-oscuro: #374151;
+    --color-gris-medio: #6b7280;
+    --color-gris-claro: #9ca3af;
+    --color-gris-muy-claro: #d1d5db;
 
-  --color-fondo-claro: #f8fafc;
-  --color-fondo-gris: #e2e8f0;
-  --color-footer-dark: #0f172a;
+    --color-fondo-claro: #f8fafc;
+    --color-fondo-gris: #e2e8f0;
+    --color-footer-dark: #0f172a;
 
-  /* Background Images */
-  --background-image-gradiente-principal: linear-gradient(135deg, #059669 0%, #0369a1 100%);
-  --background-image-gradiente-boton: linear-gradient(135deg, #059669 0%, #047857 100%);
-  --background-image-grad-primary: linear-gradient(135deg, #059669 0%, #0369a1 100%);
-  --background-image-grad-button: linear-gradient(135deg, #059669 0%, #047857 100%);
-  --background-image-grad-dark: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+    /* Background Images */
+    --background-image-gradiente-principal: linear-gradient(135deg, #059669 0%, #0369a1 100%);
+    --background-image-gradiente-boton: linear-gradient(135deg, #059669 0%, #047857 100%);
+    --background-image-grad-primary: linear-gradient(135deg, #059669 0%, #0369a1 100%);
+    --background-image-grad-button: linear-gradient(135deg, #059669 0%, #047857 100%);
+    --background-image-grad-dark: linear-gradient(135deg, #111827 0%, #1f2937 100%);
 
-  /* Font Family */
-  --font-sans: "Inter", "system-ui", "sans-serif";
+    /* Font Family */
+    --font-sans: "Inter", "system-ui", "sans-serif";
 
-  /* Animations */
-  --animate-fade-in: fadeIn 0.5s ease-in-out;
-  --animate-slide-up: slideUp 0.6s ease-out;
-  --animate-bounce-gentle: bounceGentle 2s infinite;
+    /* Animations */
+    --animate-fade-in: fadeIn 0.5s ease-in-out;
+    --animate-slide-up: slideUp 0.6s ease-out;
+    --animate-bounce-gentle: bounceGentle 2s infinite;
+
+    /* Box Shadow */
+    --shadow-card: 0 8px 24px rgba(2, 6, 23, 0.06);
+    --shadow-card-hover: 0 12px 28px rgba(2, 6, 23, 0.10);
+    --shadow-industrial: 0 8px 32px rgba(5, 150, 105, 0.15);
+  }
 
   /* Keyframes */
   @keyframes fadeIn {
@@ -73,13 +82,6 @@
     }
   }
 
-  /* Box Shadow */
-  --shadow-card: 0 8px 24px rgba(2, 6, 23, 0.06);
-  --shadow-card-hover: 0 12px 28px rgba(2, 6, 23, 0.10);
-  --shadow-industrial: 0 8px 32px rgba(5, 150, 105, 0.15);
-}
-
-@layer base {
   * {
     @apply box-border;
   }
@@ -195,4 +197,15 @@
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+}
+
+/* Remove number input spinners (up/down arrows) globally */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield; /* Firefox */
 }
