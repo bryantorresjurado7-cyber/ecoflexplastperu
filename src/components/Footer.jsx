@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Mail, Phone, MapPin, Clock, Facebook, Linkedin, Music, MessageCircle } from 'lucide-react';
+import { Mail, Phone, MapPin, Clock, Facebook, Linkedin, Download } from 'lucide-react';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -70,9 +70,33 @@ const Footer = () => {
                   Accesorios
                 </Link>
               </li>
+              <li className="pt-2 border-t border-gris-oscuro mt-2">
+                <a
+                  href="/documentos/Catalogo.pdf"
+                  download="Catalogo_EcoFlexPlast.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gris-claro hover:text-verde-principal transition-colors flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Descargar Catálogo PDF
+                </a>
+              </li>
               <li>
-                <Link to="/productos" className="text-verde-principal font-medium">
-                  Ver Catálogo Completo →
+                <a
+                  href="/documentos/brochure%20ecoflexplast.pdf"
+                  download="Brochure_EcoFlexPlast.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gris-claro hover:text-verde-principal transition-colors flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Brochure Corporativo
+                </a>
+              </li>
+              <li className="pt-2">
+                <Link to="/productos" className="text-verde-principal font-medium hover:underline">
+                  Ver Catálogo Online →
                 </Link>
               </li>
             </ul>
@@ -156,7 +180,20 @@ const Footer = () => {
                   aria-label="WhatsApp"
                   onClick={() => window.open('https://wa.me/message/FP3PXXHAVSTLM1', '_blank')}
                 >
-                  <MessageCircle className="w-5 h-5" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="w-5 h-5"
+                  >
+                    <path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21" />
+                  </svg>
                 </button>
                 <a
                   href="https://www.facebook.com/profile.php?id=61579988324529"
@@ -174,10 +211,25 @@ const Footer = () => {
                   className="w-10 h-10 bg-gris-oscuro hover:bg-verde-principal rounded-lg flex items-center justify-center transition-colors"
                   aria-label="TikTok"
                 >
-                  <Music className="w-5 h-5" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="w-5 h-5"
+                  >
+                    <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+                  </svg>
                 </a>
                 <a
-                  href="#"
+                  href="https://www.linkedin.com/company/ecoflelxplast/"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-10 h-10 bg-gris-oscuro hover:bg-verde-principal rounded-lg flex items-center justify-center transition-colors"
                   aria-label="LinkedIn"
                 >

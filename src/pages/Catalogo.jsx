@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Filter, SortAsc, Grid, List, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Filter, SortAsc, Grid, List, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { categorias, catalogoV2, filtrosV2 } from '../data/catalogo.v2';
 import { colores as coloresV1 } from '../data/productos';
 import { filtrarProductosV2, ordenarProductos, paginar } from '../utils/catalogoV2';
@@ -44,7 +44,7 @@ const Catalogo = () => {
     const catParam = searchParams.get('cat');
     const anchoMParam = searchParams.get('anchoM');
     if (colorParam) {
-      const catForColor = ['zuncho','esquinero','burbupack','manga','accesorio'].includes(catParam) ? catParam : categoria;
+      const catForColor = ['zuncho', 'esquinero', 'burbupack', 'manga', 'accesorio'].includes(catParam) ? catParam : categoria;
       const coloresSet = new Set(
         catalogoV2
           .filter(p => p.categoria === catForColor)
@@ -54,7 +54,7 @@ const Catalogo = () => {
       if (coloresSet.has(colorParam)) setColoresSel([colorParam]);
       else setColoresSel([]);
     }
-    if (catParam && ['zuncho','esquinero','burbupack','manga','accesorio'].includes(catParam)) setCategoria(catParam);
+    if (catParam && ['zuncho', 'esquinero', 'burbupack', 'manga', 'accesorio'].includes(catParam)) setCategoria(catParam);
     if (anchoMParam) setAnchoM(anchoMParam);
   }, [searchParams]);
 
@@ -86,7 +86,7 @@ const Catalogo = () => {
 
   // Colores disponibles según categoría (oculta colores sin productos, p.ej., 'verde' en zunchos)
   const coloresDisponibles = useMemo(() => {
-    if (!['zuncho','esquinero','manga'].includes(categoria)) return [];
+    if (!['zuncho', 'esquinero', 'manga'].includes(categoria)) return [];
     const setColores = new Set(
       catalogoV2
         .filter(p => p.categoria === categoria)
@@ -110,12 +110,39 @@ const Catalogo = () => {
     <div className="pt-20 min-h-screen">
       <div className="bg-fondo-claro">
         <div className="container-max section-padding py-8">
-          <div className="flex items-center space-x-2 text-sm text-gris-medio">
-            <Link to="/" className="hover:underline">Inicio</Link>
-            <span>/</span>
-            <span>Catálogo</span>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center space-x-2 text-sm text-gris-medio">
+                <Link to="/" className="hover:underline">Inicio</Link>
+                <span>/</span>
+                <span>Catálogo</span>
+              </div>
+              <h1 className="text-3xl font-bold mt-2">Catálogo de Productos</h1>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <a
+                href="/documentos/Catalogo.pdf"
+                download="Catalogo_EcoFlexPlast.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-4 py-2 bg-verde-principal text-white rounded-lg text-sm font-medium hover:bg-verde-hover transition-colors shadow-sm"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Catálogo PDF
+              </a>
+              <a
+                href="/documentos/brochure%20ecoflexplast.pdf"
+                download="Brochure_EcoFlexPlast.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-4 py-2 bg-white text-negro-principal border border-gris-claro rounded-lg text-sm font-medium hover:bg-gris-muy-claro transition-colors shadow-sm"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Brochure
+              </a>
+            </div>
           </div>
-          <h1 className="text-3xl font-bold mt-2">Catálogo de Productos</h1>
         </div>
       </div>
 
@@ -274,11 +301,10 @@ const Catalogo = () => {
                     const productoForCard =
                       producto.categoria === 'esquinero'
                         ? {
-                            ...producto,
-                            nombre: `Esquinero plástico ${
-                              (coloresV1.find(c => c.id === producto.color)?.nombre) || producto.color
+                          ...producto,
+                          nombre: `Esquinero plástico ${(coloresV1.find(c => c.id === producto.color)?.nombre) || producto.color
                             }`
-                          }
+                        }
                         : producto;
                     return (
                       <div key={`producto-v2-${producto.id}`} className="h-full">
@@ -317,5 +343,3 @@ const Catalogo = () => {
 };
 
 export default Catalogo;
-
-

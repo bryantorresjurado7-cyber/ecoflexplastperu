@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Filter, SortAsc, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import ColorChip from '../components/ColorChip';
@@ -12,287 +11,191 @@ import { loadProductos, loadProductosByCategoria } from '../services/productosSe
 const Productos = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { addToQuote, isInQuote } = useQuote();
-  
-  // Leer parámetros iniciales de la URL
-  // Si no hay parámetro 'cat', usar 'zuncho' por defecto
-  const initialCatParam = searchParams.get('cat') || 'zuncho';
-  const initialColorParam = searchParams.get('color') || '';
-  const initialAnchoParam = searchParams.get('ancho') || '';
-  const initialLargoMinParam = searchParams.get('largoMin');
-  const initialLargoMaxParam = searchParams.get('largoMax');
-  const initialOrdenParam = searchParams.get('orden') || 'popularidad';
-  const initialPaginaParam = searchParams.get('pagina');
-  
-  // Estado para productos de Supabase
+
+  // Cache para almacenar productos por categoría y evitar recargas
+  const productCache = useRef({});
+
+  // 1. Derivar estado de filtros directamente de la URL (Single Source of Truth)
+  const categoryParam = searchParams.get('cat') || 'zuncho';
+  const colorParam = searchParams.get('color');
+  const anchoParam = searchParams.get('ancho');
+  const largoMinParam = searchParams.get('largoMin');
+  const largoMaxParam = searchParams.get('largoMax');
+  const ordenParam = searchParams.get('orden') || 'popularidad';
+  const paginaParam = searchParams.get('pagina');
+  const largoBurbupackParam = searchParams.get('largo');
+
+  // Estado local solo para los datos y carga
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // Estados del filtro - inicializados desde URL
-  const [categoriaFiltro, setCategoriaFiltro] = useState(initialCatParam);
-  const [coloresFiltro, setColoresFiltro] = useState(initialColorParam ? [initialColorParam] : []);
-  const [anchoFiltro, setAnchoFiltro] = useState(initialAnchoParam);
-  const [largoRango, setLargoRango] = useState([
-    initialLargoMinParam ? parseInt(initialLargoMinParam, 10) : filtros.largos.min,
-    initialLargoMaxParam ? parseInt(initialLargoMaxParam, 10) : filtros.largos.max
-  ]);
-  const [largoBurbupack, setLargoBurbupack] = useState(''); // Estado específico para largo de burbupack
-  const [ordenarPor, setOrdenarPor] = useState(initialOrdenParam);
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
 
-  // Estados de paginación
-  const [paginaActual, setPaginaActual] = useState(
-    initialPaginaParam ? parseInt(initialPaginaParam, 10) : 1
-  );
+  // Derivar valores complejos
+  const coloresFiltro = useMemo(() => colorParam ? [colorParam] : [], [colorParam]);
+  const largoRango = useMemo(() => [
+    largoMinParam ? parseInt(largoMinParam, 10) : filtros.largos.min,
+    largoMaxParam ? parseInt(largoMaxParam, 10) : filtros.largos.max
+  ], [largoMinParam, largoMaxParam]);
+
+  const paginaActual = useMemo(() => {
+    const p = parseInt(paginaParam, 10);
+    return !isNaN(p) && p > 0 ? p : 1;
+  }, [paginaParam]);
+
+  // Constantes
   const productosPorPagina = 12;
 
-  // Flag para evitar loops en la sincronización inicial
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [categoriaActual, setCategoriaActual] = useState(initialCatParam || null);
-  const fetchingRef = useRef(false); // Prevenir múltiples llamadas simultáneas
-
-  // Efecto para redirigir a ?cat=zuncho si no hay parámetro cat
+  // 2. Efecto para cargar productos cuando cambia la categoría
   useEffect(() => {
-    const catParam = searchParams.get('cat');
-    if (!catParam) {
-      // Si no hay parámetro cat, redirigir a zuncho por defecto
-      setSearchParams({ cat: 'zuncho' }, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
+    let isMounted = true;
+    const loadData = async () => {
+      // Verificar caché primero
+      if (productCache.current[categoryParam]) {
+        if (isMounted) {
+          setProductos(productCache.current[categoryParam]);
+          setLoading(false);
+        }
+        return;
+      }
 
-  // Cargar productos de Supabase SOLO cuando cambie la categoría (no otros filtros)
-  const catParamRef = useRef(null); // Para trackear si ya cargamos esta categoría
-  const isInitialLoadRef = useRef(false); // Para detectar carga inicial
-  
-  useEffect(() => {
-    const catParam = searchParams.get('cat') || 'zuncho'; // Usar 'zuncho' por defecto si no hay cat
-    
-    // Si la categoría no cambió y ya la cargamos antes, no hacer nada
-    if (catParam === categoriaActual && catParamRef.current === catParam && isInitialLoadRef.current) {
-      return;
-    }
-    
-    // Prevenir múltiples llamadas simultáneas
-    if (fetchingRef.current) {
-      return;
-    }
-    
-    // Actualizar referencias
-    setCategoriaActual(catParam);
-    catParamRef.current = catParam;
-    
-    const fetchProductos = async () => {
-      if (fetchingRef.current) return;
-      fetchingRef.current = true;
-      
+      if (isMounted) setLoading(true);
+
       try {
-        setLoading(true);
-        
         let result;
-        
-        if (catParam) {
-          result = await loadProductosByCategoria(catParam);
+        if (categoryParam) {
+          result = await loadProductosByCategoria(categoryParam);
         } else {
           result = await loadProductos();
         }
-        
-        const { data, error } = result;
-        
-        if (!error && data && Array.isArray(data)) {
-          setProductos(data);
-        } else {
-          setProductos([]);
+
+        if (isMounted) {
+          const { data, error } = result;
+          if (!error && data && Array.isArray(data)) {
+            // Guardar en caché
+            productCache.current[categoryParam] = data;
+            setProductos(data);
+          } else {
+            console.error("Error cargando productos:", error);
+            setProductos([]);
+          }
+          setLoading(false);
         }
-        
-        setLoading(false);
-        isInitialLoadRef.current = true; // Marcar que ya cargamos inicialmente
-      } catch (error) {
-        setProductos([]);
-        setLoading(false);
-        isInitialLoadRef.current = true;
-      } finally {
-        fetchingRef.current = false;
+      } catch (err) {
+        console.error("Excepción al cargar productos:", err);
+        if (isMounted) {
+          setProductos([]);
+          setLoading(false);
+        }
       }
     };
-    
-    fetchProductos();
-  }, [searchParams.get('cat'), categoriaActual]); // Solo depende del parámetro cat
 
-  // Sincronizar estados con URL SOLO cuando cambian parámetros específicos (no en cada cambio)
-  const prevUrlParamsRef = useRef('');
-  
-  useEffect(() => {
-    const currentParamsString = searchParams.toString();
-    
-    // Solo sincronizar si realmente cambió la URL (no en cada render)
-    if (currentParamsString === prevUrlParamsRef.current && prevUrlParamsRef.current !== '') {
-      return; // No cambió, omitir sincronización
-    }
-    
-    prevUrlParamsRef.current = currentParamsString;
-    
-    const catParam = searchParams.get('cat');
-    const colorParam = searchParams.get('color');
-    const anchoParam = searchParams.get('ancho');
-    const largoMinParam = searchParams.get('largoMin');
-    const largoMaxParam = searchParams.get('largoMax');
-    const ordenParam = searchParams.get('orden');
-    const paginaParam = searchParams.get('pagina');
+    loadData();
 
-    setCategoriaFiltro(catParam || '');
-    setColoresFiltro(colorParam ? [colorParam] : []);
-    setAnchoFiltro(anchoParam || '');
-    
-    // Validar y procesar parámetros de largo
-    const minValue = largoMinParam ? parseInt(largoMinParam, 10) : filtros.largos.min;
-    const maxValue = largoMaxParam ? parseInt(largoMaxParam, 10) : filtros.largos.max;
-    
-    setLargoRango([
-      !isNaN(minValue) ? minValue : filtros.largos.min,
-      !isNaN(maxValue) ? maxValue : filtros.largos.max
-    ]);
-    setOrdenarPor(ordenParam || 'popularidad');
-    
-    // Configurar página actual
-    const pagina = paginaParam ? parseInt(paginaParam, 10) : 1;
-    setPaginaActual(!isNaN(pagina) && pagina > 0 ? pagina : 1);
-    
-    // Marcar como inicializado después de la primera carga
-    if (!isInitialized) {
-      setIsInitialized(true);
-    }
-  }, [searchParams, isInitialized]);
-
-  // Actualizar URL cuando cambien los filtros (solo después de la inicialización)
-  // PERO no cuando se sincroniza desde la URL
-  const prevFiltersRef = useRef({
-    categoriaFiltro: '',
-    coloresFiltro: [],
-    anchoFiltro: '',
-    largoRango: [filtros.largos.min, filtros.largos.max],
-    ordenarPor: 'popularidad',
-    paginaActual: 1
-  });
-  
-  // Flag para saber si estamos actualizando desde un botón de categoría
-  const isUpdatingFromCategoryButton = useRef(false);
-  
-  useEffect(() => {
-    if (!isInitialized) {
-      // Guardar valores iniciales
-      prevFiltersRef.current = {
-        categoriaFiltro,
-        coloresFiltro: [...coloresFiltro],
-        anchoFiltro,
-        largoRango: [...largoRango],
-        ordenarPor,
-        paginaActual
-      };
-      return;
-    }
-    
-    // Si acabamos de cambiar de categoría desde un botón, ya actualizamos la URL ahí
-    // No necesitamos actualizar aquí también
-    if (isUpdatingFromCategoryButton.current) {
-      isUpdatingFromCategoryButton.current = false;
-      // Actualizar valores previos para reflejar el cambio
-      prevFiltersRef.current = {
-        categoriaFiltro,
-        coloresFiltro: [...coloresFiltro],
-        anchoFiltro,
-        largoRango: [...largoRango],
-        ordenarPor,
-        paginaActual
-      };
-      return;
-    }
-    
-    // Verificar si realmente cambió algo (comparar con valores previos)
-    const filtersChanged = 
-      prevFiltersRef.current.categoriaFiltro !== categoriaFiltro ||
-      JSON.stringify(prevFiltersRef.current.coloresFiltro) !== JSON.stringify(coloresFiltro) ||
-      prevFiltersRef.current.anchoFiltro !== anchoFiltro ||
-      prevFiltersRef.current.largoRango[0] !== largoRango[0] ||
-      prevFiltersRef.current.largoRango[1] !== largoRango[1] ||
-      prevFiltersRef.current.ordenarPor !== ordenarPor ||
-      prevFiltersRef.current.paginaActual !== paginaActual;
-    
-    if (!filtersChanged) {
-      return; // No cambió nada, no actualizar URL
-    }
-    
-    // Actualizar valores previos
-    prevFiltersRef.current = {
-      categoriaFiltro,
-      coloresFiltro: [...coloresFiltro],
-      anchoFiltro,
-      largoRango: [...largoRango],
-      ordenarPor,
-      paginaActual
+    return () => {
+      isMounted = false;
     };
-    
-    const newParams = new URLSearchParams();
-    
-    if (categoriaFiltro) newParams.set('cat', categoriaFiltro);
-    if (coloresFiltro.length > 0) newParams.set('color', coloresFiltro[0]);
-    if (anchoFiltro) newParams.set('ancho', anchoFiltro);
-    if (largoRango[0] !== filtros.largos.min) newParams.set('largoMin', largoRango[0].toString());
-    if (largoRango[1] !== filtros.largos.max) newParams.set('largoMax', largoRango[1].toString());
-    if (ordenarPor !== 'popularidad') newParams.set('orden', ordenarPor);
-    if (paginaActual > 1) newParams.set('pagina', paginaActual.toString());
-    
-    const newParamsString = newParams.toString();
-    const currentParamsString = searchParams.toString();
-    
-    // Solo actualizar si realmente cambió
-    if (currentParamsString !== newParamsString) {
-      setSearchParams(newParams, { replace: true });
+  }, [categoryParam]);
+
+  // 3. Manejadores de actualización de URL (Filtros)
+  const updateParams = (newParams) => {
+    setSearchParams(prev => {
+      const updated = new URLSearchParams(prev);
+      Object.entries(newParams).forEach(([key, value]) => {
+        if (value === null || value === undefined || value === '') {
+          updated.delete(key);
+        } else {
+          updated.set(key, value);
+        }
+      });
+      // Resetear página al filtrar
+      if (!newParams.pagina) {
+        updated.delete('pagina');
+      }
+      return updated;
+    });
+  };
+
+  const setCategoria = (catId) => {
+    // Al cambiar categoría, limpiamos otros filtros pero mantenemos la navegación limpia
+    setSearchParams({ cat: catId });
+  };
+
+  const toggleColorFiltro = (color) => {
+    const isSelected = coloresFiltro.includes(color.id);
+    updateParams({
+      color: isSelected ? null : color.id // Toggle: si está, lo quita (null), si no, lo pone
+    });
+  };
+
+  const handleAnchoChange = (val) => updateParams({ ancho: val });
+
+  const handleLargoRangoChange = (val) => {
+    if (val === '') {
+      updateParams({ largoMin: null, largoMax: null });
+    } else {
+      const [min, max] = val.split('-').map(Number);
+      updateParams({ largoMin: min, largoMax: max });
     }
-  }, [categoriaFiltro, coloresFiltro, anchoFiltro, largoRango, ordenarPor, paginaActual, isInitialized, setSearchParams, searchParams]);
+  };
 
-  // Nota: ya no reseteamos la página vía efecto para evitar
-  // que se vuelva a 1 al cambiar solo el parámetro "pagina" en la URL.
+  const handleLargoBurbupackChange = (val) => {
+    updateParams({ largo: val });
+  };
 
-  // Filtrar y ordenar productos
+  const handleOrdenChange = (val) => updateParams({ orden: val });
+
+  const irAPagina = (pagina) => {
+    // Scroll top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    updateParams({ pagina: pagina.toString() });
+  };
+
+  const limpiarFiltros = () => {
+    // Mantiene solo la categoría
+    setSearchParams({ cat: categoryParam });
+  };
+
+  // 4. Lógica de Filtrado (Memoizada)
   const productosFiltrados = useMemo(() => {
+    if (!productos) return [];
 
-    // Los productos ya vienen filtrados por categoría desde el servidor (edge function)
-    // Solo aplicamos filtros adicionales (color, ancho, largo)
     let resultado = productos.filter(producto => {
-      // No necesitamos filtrar por categoría aquí porque ya viene filtrado del servidor
-
-      // Filtro de color
+      // Filtro Color
       if (coloresFiltro.length > 0 && !coloresFiltro.includes(producto.color)) {
         return false;
       }
 
-      // Filtro de ancho (solo para zunchos y burbupack, pero con diferentes formatos)
-      if (categoriaFiltro === 'zuncho' && anchoFiltro && producto.ancho && producto.ancho !== anchoFiltro) {
+      // Filtro Ancho (Zuncho)
+      if (categoryParam === 'zuncho' && anchoParam && producto.ancho && producto.ancho !== anchoParam) {
         return false;
       }
-      if (categoriaFiltro === 'burbupack' && anchoFiltro) {
-        // Para burbupack, ancho está en especificaciones.ancho_m
+
+      // Filtro Ancho (Burbupack)
+      if (categoryParam === 'burbupack' && anchoParam) {
         const anchoProducto = producto.especificaciones?.ancho_m;
-        const anchoBuscado = parseFloat(anchoFiltro);
-        if (anchoProducto != null && anchoProducto !== anchoBuscado) {
+        const anchoBuscado = parseFloat(anchoParam);
+        // Comparación laxa para float o string
+        if (anchoProducto != null && anchoProducto != anchoBuscado) {
           return false;
         }
       }
 
-      // Filtro de largo según categoría
-      if (categoriaFiltro === 'zuncho') {
-        // Para zunchos: filtro por rango
-        const minLargo = largoRango[0] || filtros.largos.min;
-        const maxLargo = largoRango[1] || filtros.largos.max;
+      // Filtro Largo (Zuncho - Rango)
+      if (categoryParam === 'zuncho') {
+        const minLargo = largoRango[0];
+        const maxLargo = largoRango[1];
         const esRangoPorDefecto = minLargo === filtros.largos.min && maxLargo === filtros.largos.max;
-        
+
         if (!esRangoPorDefecto && producto.largo != null) {
           if (producto.largo < minLargo || producto.largo > maxLargo) {
             return false;
           }
         }
-      } else if (categoriaFiltro === 'burbupack' && largoBurbupack) {
-        // Para burbupack: filtro por valor específico
-        const largoBuscado = parseInt(largoBurbupack, 10);
+      }
+      // Filtro Largo (Burbupack - Valor exacto)
+      else if (categoryParam === 'burbupack' && largoBurbupackParam) {
+        const largoBuscado = parseInt(largoBurbupackParam, 10);
+        // Algunos productos tienen largo en especificaciones.largo_m o en root largo
         const largoProducto = producto.especificaciones?.largo_m || producto.largo;
         if (largoProducto != null && largoProducto !== largoBuscado) {
           return false;
@@ -302,19 +205,19 @@ const Productos = () => {
       return true;
     });
 
-    // Ordenar
-    const orden = filtros.ordenarPor.find(o => o.id === ordenarPor);
+    // Ordenamiento
+    const orden = filtros.ordenarPor.find(o => o.id === ordenParam);
     if (orden) {
       resultado.sort((a, b) => {
         switch (orden.campo) {
           case 'destacado':
-            return b.destacado - a.destacado;
+            return (b.destacado ? 1 : 0) - (a.destacado ? 1 : 0);
           case 'largo':
-            return b.largo - a.largo;
+            return (b.largo || 0) - (a.largo || 0);
           case 'nombre':
-            return a.nombre.localeCompare(b.nombre);
+            return (a.nombre || '').localeCompare(b.nombre || '');
           case 'codigo':
-            return a.codigo.localeCompare(b.codigo);
+            return (a.codigo || '').localeCompare(b.codigo || '');
           default:
             return 0;
         }
@@ -322,65 +225,30 @@ const Productos = () => {
     }
 
     return resultado;
-  }, [productos, categoriaFiltro, coloresFiltro, anchoFiltro, largoRango, largoBurbupack, ordenarPor]);
+  }, [productos, categoryParam, coloresFiltro, anchoParam, largoRango, largoBurbupackParam, ordenParam]);
 
-  // Calcular productos paginados
+  // 5. Paginación
   const { productosEnPagina, totalPaginas, indiceInicio, indiceFin } = useMemo(() => {
     const total = productosFiltrados.length;
     const totalPags = Math.ceil(total / productosPorPagina);
-    const inicio = (paginaActual - 1) * productosPorPagina;
+    const pag = Math.min(Math.max(1, paginaActual), Math.max(1, totalPags === 0 ? 1 : totalPags)); // Asegurar página válida
+
+    const inicio = (pag - 1) * productosPorPagina;
     const fin = Math.min(inicio + productosPorPagina, total);
-    const productos = productosFiltrados.slice(inicio, fin);
-    
+    const prods = productosFiltrados.slice(inicio, fin);
+
     return {
-      productosEnPagina: productos,
+      productosEnPagina: prods,
       totalPaginas: totalPags,
       indiceInicio: total > 0 ? inicio + 1 : 0,
       indiceFin: fin
     };
   }, [productosFiltrados, paginaActual, productosPorPagina]);
 
-  const toggleColorFiltro = (color) => {
-    setColoresFiltro(prev => 
-      prev.includes(color.id) 
-        ? prev.filter(c => c !== color.id)
-        : [color.id] // Solo permitir un color a la vez
-    );
-  };
+  const tienesFiltrosActivos = colorParam || anchoParam ||
+    (largoRango[0] !== filtros.largos.min || largoRango[1] !== filtros.largos.max) ||
+    largoBurbupackParam;
 
-  const limpiarFiltros = () => {
-    // Mantener la categoría actual si existe, solo limpiar otros filtros
-    const categoriaActual = categoriaFiltro || searchParams.get('cat') || '';
-    
-    // Limpiar estados de filtros (excepto categoría)
-    setColoresFiltro([]);
-    setAnchoFiltro('');
-    setLargoRango([filtros.largos.min, filtros.largos.max]);
-    setLargoBurbupack('');
-    setOrdenarPor('popularidad');
-    setPaginaActual(1);
-    
-    // Actualizar URL: mantener categoría si existe, de lo contrario establecer zuncho por defecto
-    if (categoriaActual) {
-      setSearchParams({ cat: categoriaActual }, { replace: true });
-    } else {
-      setSearchParams({ cat: 'zuncho' }, { replace: true });
-    }
-  };
-
-  // Navegación de páginas
-  const irAPagina = (pagina) => {
-    if (pagina >= 1 && pagina <= totalPaginas) {
-      setPaginaActual(pagina);
-      // Scroll al top de la sección de productos
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  const tienesFiltrosActivos = categoriaFiltro || coloresFiltro.length > 0 || anchoFiltro || 
-    largoRango[0] !== filtros.largos.min || largoRango[1] !== filtros.largos.max;
-
-  // Loading state
   if (loading) {
     return (
       <div className="pt-16 lg:pt-20 min-h-screen bg-fondo-claro flex items-center justify-center">
@@ -405,7 +273,7 @@ const Productos = () => {
               <p className="text-gris-oscuro mb-4">
                 {productos.length > 0 ? `${productos.length} productos disponibles` : 'Encuentra el producto perfecto para tu industria'}
               </p>
-              
+
               {/* Botones de categorías */}
               <div className="flex flex-wrap gap-2 mt-4">
                 {[
@@ -417,40 +285,24 @@ const Productos = () => {
                 ].map((cat) => (
                   <button
                     key={cat.id}
-                    onClick={() => {
-                      // Marcar que estamos actualizando desde un botón de categoría
-                      isUpdatingFromCategoryButton.current = true;
-                      
-                      // Limpiar TODOS los filtros excepto la categoría
-                      setCategoriaFiltro(cat.id);
-                      setColoresFiltro([]);
-                      setAnchoFiltro('');
-                      setLargoRango([filtros.largos.min, filtros.largos.max]);
-                      setLargoBurbupack('');
-                      setOrdenarPor('popularidad');
-                      setPaginaActual(1);
-                      
-                      // Actualizar URL SOLO con la categoría (sin otros filtros)
-                      setSearchParams({ cat: cat.id }, { replace: true });
-                    }}
-                    className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${
-                      categoriaFiltro === cat.id
+                    onClick={() => setCategoria(cat.id)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${categoryParam === cat.id
                         ? 'bg-verde-principal text-white border-verde-principal shadow-md'
                         : 'bg-white text-negro-principal border-gris-muy-claro hover:bg-gris-muy-claro'
-                    }`}
+                      }`}
                   >
                     {cat.nombre}
                   </button>
                 ))}
               </div>
-              
-              {categoriaFiltro && (
+
+              {categoryParam && (
                 <p className="text-sm text-verde-principal mt-3">
-                  Filtrando por: {categoriaFiltro.toUpperCase()} ({productosFiltrados.length} productos)
+                  Filtrando por: {categoryParam.toUpperCase()} ({productosFiltrados.length} productos)
                 </p>
               )}
             </div>
-            
+
             {/* Breadcrumb */}
             <nav className="text-sm">
               <Link to="/" className="text-gris-medio hover:text-verde-principal">
@@ -465,7 +317,7 @@ const Productos = () => {
 
       <div className="container-max section-padding py-8">
         <div className="flex flex-col lg:flex-row gap-8">
-          
+
           {/* Sidebar de filtros */}
           <div className={`lg:w-80 ${mostrarFiltros ? 'block' : 'hidden lg:block'}`}>
             <div className="bg-white rounded-xl shadow-card p-6 sticky top-28">
@@ -485,7 +337,7 @@ const Productos = () => {
 
               <div className="space-y-6">
                 {/* Color - Solo para Zuncho, Esquinero y Manga */}
-                {['zuncho', 'esquinero', 'manga'].includes(categoriaFiltro) && (
+                {['zuncho', 'esquinero', 'manga'].includes(categoryParam) && (
                   <div>
                     <label className="block text-sm font-medium text-negro-principal mb-3">
                       Color ({coloresFiltro.length})
@@ -497,7 +349,7 @@ const Productos = () => {
                             color={color}
                             size="lg"
                             isSelected={coloresFiltro.includes(color.id)}
-                            onClick={toggleColorFiltro}
+                            onClick={() => toggleColorFiltro(color)}
                           />
                           <span className="text-xs text-gris-medio mt-1">
                             {color.nombre}
@@ -509,14 +361,14 @@ const Productos = () => {
                 )}
 
                 {/* Ancho - Solo para Zuncho (en pulgadas) */}
-                {categoriaFiltro === 'zuncho' && (
+                {categoryParam === 'zuncho' && (
                   <div>
                     <label className="block text-sm font-medium text-negro-principal mb-2">
                       Ancho
                     </label>
                     <FancySelect
-                      value={anchoFiltro}
-                      onChange={(v) => setAnchoFiltro(v)}
+                      value={anchoParam || ''}
+                      onChange={handleAnchoChange}
                       options={[{ value: '', label: 'Todos los anchos' }, ...filtros.anchos.map(ancho => ({ value: ancho, label: `${ancho}\" (pulgadas)` }))]}
                       placeholder="Todos los anchos"
                     />
@@ -524,14 +376,14 @@ const Productos = () => {
                 )}
 
                 {/* Ancho en metros - Solo para Burbupack */}
-                {categoriaFiltro === 'burbupack' && (
+                {categoryParam === 'burbupack' && (
                   <div>
                     <label className="block text-sm font-medium text-negro-principal mb-2">
                       Ancho (metros)
                     </label>
                     <FancySelect
-                      value={anchoFiltro}
-                      onChange={(v) => setAnchoFiltro(v)}
+                      value={anchoParam || ''}
+                      onChange={handleAnchoChange}
                       options={[
                         { value: '', label: 'Todos los anchos' },
                         { value: '0.40', label: '0.40m' },
@@ -548,21 +400,14 @@ const Productos = () => {
                 )}
 
                 {/* Largo en metros - Solo para Zuncho (rango) */}
-                {categoriaFiltro === 'zuncho' && (
+                {categoryParam === 'zuncho' && (
                   <div>
                     <label className="block text-sm font-medium text-negro-principal mb-2">
                       Longitud (metros)
                     </label>
                     <FancySelect
                       value={largoRango[0] === filtros.largos.min && largoRango[1] === filtros.largos.max ? '' : `${largoRango[0]}-${largoRango[1]}`}
-                      onChange={(v) => {
-                        if (v === '') {
-                          setLargoRango([filtros.largos.min, filtros.largos.max]);
-                        } else {
-                          const [min, max] = v.split('-').map(Number);
-                          setLargoRango([min, max]);
-                        }
-                      }}
+                      onChange={handleLargoRangoChange}
                       options={[
                         { value: '', label: 'Todas las longitudes' },
                         { value: '360-480', label: '360m - 480m (Cortos)' },
@@ -572,7 +417,7 @@ const Productos = () => {
                       ]}
                       placeholder="Todas las longitudes"
                     />
-                    
+
                     {/* Mostrar el rango seleccionado */}
                     {(largoRango[0] !== filtros.largos.min || largoRango[1] !== filtros.largos.max) && (
                       <div className="mt-2 text-sm text-verde-principal font-medium">
@@ -583,14 +428,14 @@ const Productos = () => {
                 )}
 
                 {/* Largo en metros - Solo para Burbupack (valores específicos) */}
-                {categoriaFiltro === 'burbupack' && (
+                {categoryParam === 'burbupack' && (
                   <div>
                     <label className="block text-sm font-medium text-negro-principal mb-2">
                       Longitud (metros)
                     </label>
                     <FancySelect
-                      value={largoBurbupack}
-                      onChange={(v) => setLargoBurbupack(v)}
+                      value={largoBurbupackParam || ''}
+                      onChange={handleLargoBurbupackChange}
                       options={[
                         { value: '', label: 'Todas las longitudes' },
                         { value: '50', label: '50m' },
@@ -622,9 +467,9 @@ const Productos = () => {
                     <Filter className="w-4 h-4 mr-2" />
                     Filtros
                   </button>
-                  
+
                   <span className="text-sm text-gris-oscuro">
-                    {productosFiltrados.length > 0 && totalPaginas > 1 
+                    {productosFiltrados.length > 0 && totalPaginas > 1
                       ? `Mostrando ${indiceInicio}-${indiceFin} de ${productosFiltrados.length} productos`
                       : `${productosFiltrados.length} producto${productosFiltrados.length !== 1 ? 's' : ''} encontrado${productosFiltrados.length !== 1 ? 's' : ''}`
                     }
@@ -636,8 +481,8 @@ const Productos = () => {
                   <div className="flex items-center space-x-2">
                     <SortAsc className="w-4 h-4 text-gris-medio" />
                     <select
-                      value={ordenarPor}
-                      onChange={(e) => setOrdenarPor(e.target.value)}
+                      value={ordenParam}
+                      onChange={(e) => handleOrdenChange(e.target.value)}
                       className="text-sm border border-gris-muy-claro rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-verde-principal"
                     >
                       {filtros.ordenarPor.map(opcion => (
@@ -677,13 +522,13 @@ const Productos = () => {
               )}
             </div>
 
-            {/* Grid de productos (sin AnimatePresence para estabilidad) */}
+            {/* Grid de productos */}
             {productosFiltrados.length > 0 ? (
               <>
                 <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
                   {productosEnPagina.map((producto) => (
                     <div key={`producto-${producto.id}`} className="h-full">
-                      <ProductCard 
+                      <ProductCard
                         producto={producto}
                         onAddToQuote={addToQuote}
                         isInQuote={isInQuote(producto.id)}
@@ -699,18 +544,17 @@ const Productos = () => {
                     <p className="text-sm text-gris-medio">
                       Página {paginaActual} de {totalPaginas}
                     </p>
-                    
+
                     {/* Navegación */}
                     <div className="flex items-center space-x-2">
                       {/* Botón Anterior */}
                       <button
                         onClick={() => irAPagina(paginaActual - 1)}
                         disabled={paginaActual === 1}
-                        className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                          paginaActual === 1
+                        className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${paginaActual === 1
                             ? 'text-gris-medio bg-gris-muy-claro cursor-not-allowed'
                             : 'text-gris-oscuro bg-white border border-gris-claro hover:bg-gris-muy-claro hover:text-negro-principal'
-                        }`}
+                          }`}
                       >
                         <ChevronLeft className="w-4 h-4 mr-1" />
                         Anterior
@@ -720,7 +564,7 @@ const Productos = () => {
                       <div className="flex space-x-1">
                         {(() => {
                           let numerosPagina;
-                          
+
                           if (totalPaginas <= 7) {
                             // Mostrar todas las páginas si son 7 o menos
                             numerosPagina = Array.from({ length: totalPaginas }, (_, j) => j + 1);
@@ -740,13 +584,12 @@ const Productos = () => {
                               key={`pagina-${index}`}
                               onClick={() => typeof numero === 'number' ? irAPagina(numero) : null}
                               disabled={typeof numero !== 'number'}
-                              className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                                numero === paginaActual
+                              className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${numero === paginaActual
                                   ? 'bg-verde-principal text-white'
                                   : typeof numero === 'number'
-                                  ? 'text-gris-oscuro bg-white border border-gris-claro hover:bg-gris-muy-claro hover:text-negro-principal'
-                                  : 'text-gris-medio cursor-default'
-                              }`}
+                                    ? 'text-gris-oscuro bg-white border border-gris-claro hover:bg-gris-muy-claro hover:text-negro-principal'
+                                    : 'text-gris-medio cursor-default'
+                                }`}
                             >
                               {numero}
                             </button>
@@ -758,11 +601,10 @@ const Productos = () => {
                       <button
                         onClick={() => irAPagina(paginaActual + 1)}
                         disabled={paginaActual === totalPaginas}
-                        className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                          paginaActual === totalPaginas
+                        className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${paginaActual === totalPaginas
                             ? 'text-gris-medio bg-gris-muy-claro cursor-not-allowed'
                             : 'text-gris-oscuro bg-white border border-gris-claro hover:bg-gris-muy-claro hover:text-negro-principal'
-                        }`}
+                          }`}
                       >
                         Siguiente
                         <ChevronRight className="w-4 h-4 ml-1" />

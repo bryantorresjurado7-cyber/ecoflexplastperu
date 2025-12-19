@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Trash2, 
-  Plus, 
-  Minus, 
-  Send, 
-  ShoppingCart, 
+import {
+  Trash2,
+  Plus,
+  Minus,
+  Send,
+  ShoppingCart,
   Package,
   CheckCircle,
   User,
@@ -49,7 +49,7 @@ const Cotizacion = () => {
       target.value = target.value.slice(0, start) + sanitized + target.value.slice(end);
     }
   };
-  
+
   const {
     register,
     handleSubmit,
@@ -91,7 +91,7 @@ const Cotizacion = () => {
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);
-    
+
     try {
       // Formatear productos según lo que espera el edge function
       const productos = items.map(item => ({
@@ -114,18 +114,18 @@ const Cotizacion = () => {
         observaciones: data.mensaje || null,
         descuento: 0
       };
-      
+
       console.log('Enviando cotización:', cotizacionData);
-      
+
       // Llamar al edge function para crear la cotización
       const result = await createCotizacion(cotizacionData);
-      
+
       if (!result.success) {
         throw new Error(result.error || 'Error al crear la cotización');
       }
-      
+
       console.log('Cotización creada exitosamente:', result.data);
-      
+
       setIsSubmitted(true);
       reset();
       clearQuote();
@@ -152,7 +152,7 @@ const Cotizacion = () => {
             ¡Cotización Enviada!
           </h2>
           <p className="text-sm sm:text-base text-gris-medio mb-5 sm:mb-6">
-            Hemos recibido tu solicitud de cotización. Nuestro equipo comercial 
+            Hemos recibido tu solicitud de cotización. Nuestro equipo comercial
             se pondrá en contacto contigo en las próximas 2 horas.
           </p>
           <a href="/" className="btn-primary w-full">
@@ -177,8 +177,8 @@ const Cotizacion = () => {
             <p className="text-sm sm:text-base text-gris-oscuro mb-6 sm:mb-8 max-w-md mx-auto">
               Agrega productos a tu cotización desde nuestro catálogo para continuar.
             </p>
-            <Link 
-              to="/productos" 
+            <Link
+              to="/productos"
               className="btn-primary inline-flex items-center justify-center gap-2 w-full sm:w-auto"
             >
               <Package className="w-5 h-5" />
@@ -207,7 +207,7 @@ const Cotizacion = () => {
         </motion.div>
 
         <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-          
+
           {/* Lista de productos */}
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             <div className="bg-white rounded-xl shadow-card p-3 sm:p-4 md:p-6">
@@ -235,7 +235,7 @@ const Cotizacion = () => {
                       const Lval = Number(item?.medidas?.longitudM);
                       if (Number.isFinite(Lval) && Lval > 0) {
                         const gRaw = Math.round(Number(item.gramajeGxm || 0.20) * 100);
-                        const g = [18,19,20].includes(gRaw) ? gRaw : 20;
+                        const g = [18, 19, 20].includes(gRaw) ? gRaw : 20;
                         const params = new URLSearchParams({ L: String(Lval), g: String(g) });
                         detalleHref = `${detalleHref}?${params.toString()}`;
                       }
@@ -269,10 +269,12 @@ const Cotizacion = () => {
                           {/* Imagen del producto */}
                           <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-gris-muy-claro bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
                             {(() => {
-                              // Render según categoría
-                              if (item?.categoria === 'esquinero') {
-                                const nombreColor = colorInfo?.nombre || item.color || 'Negro';
-                                const src = item.imagen || `/images/productos/Esquineros/${nombreColor}/paquete.png`;
+                              // Render según categoría - Normalizada
+                              const cat = (item?.categoria || '').toLowerCase();
+
+                              if (cat === 'esquinero' || cat === 'esquineros') {
+                                const nombreColor = colorInfo?.nombre || (item.color ? item.color.charAt(0).toUpperCase() + item.color.slice(1) : 'Negro');
+                                const src = `/images/productos/Esquineros/${nombreColor}/esquinero.png`;
                                 return (
                                   <>
                                     <img
@@ -289,24 +291,25 @@ const Cotizacion = () => {
                                   </>
                                 );
                               }
-                              if (item?.categoria === 'burbupack' || item?.categoria?.toLowerCase() === 'burbupack') {
+
+                              if (cat === 'burbupack') {
                                 // Intentar obtener ancho y largo de diferentes fuentes
                                 let ancho = item?.medidas?.anchoM;
                                 let largo = item?.medidas?.largoM;
-                                
+
                                 // Si no existen en medidas, buscar en especificaciones
                                 if (!ancho && item?.especificaciones?.ancho_m) {
                                   ancho = item.especificaciones.ancho_m;
                                 } else if (!ancho && item?.especificaciones?.ancho) {
                                   ancho = item.especificaciones.ancho;
                                 }
-                                
+
                                 if (!largo && item?.especificaciones?.largo_m) {
                                   largo = item.especificaciones.largo_m;
                                 } else if (!largo && item?.especificaciones?.largo) {
                                   largo = item.especificaciones.largo;
                                 }
-                                
+
                                 // Si aún no hay valores, intentar extraer de medidas_disponibles
                                 if (!ancho || !largo) {
                                   if (item?.medidas_disponibles && item.medidas_disponibles.length > 0) {
@@ -319,14 +322,14 @@ const Cotizacion = () => {
                                     }
                                   }
                                 }
-                                
+
                                 // Formatear ancho y largo
                                 const anchoStr = ancho ? Number(ancho).toFixed(2) : '0.00';
                                 const largoStr = largo ? String(largo) : '';
-                                
+
                                 const src = item.imagen || `/images/productos/Burbupack/${anchoStr}/burbupack_${anchoStr}Mx${largoStr}.png`;
                                 const srcAlt = src.replace('.png', ' .png');
-                                
+
                                 return (
                                   <>
                                     <img
@@ -348,8 +351,15 @@ const Cotizacion = () => {
                                   </>
                                 );
                               }
-                              if (item?.categoria === 'accesorio') {
-                                const src = item.imagen || `/images/productos/Accesorios/${item.nombre}/principal.png`;
+
+                              if (cat === 'accesorio' || cat === 'accesorios') {
+                                const lowerName = (item.nombre || '').toLowerCase();
+                                let folderName = item.nombre;
+                                if (lowerName.includes('tenaza')) folderName = 'Tenaza';
+                                else if (lowerName.includes('tensador')) folderName = 'Tensador Manual';
+                                else if (lowerName.includes('grapa')) folderName = 'Grapas Metálicas';
+
+                                const src = `/images/productos/Accesorios/${folderName}/principal.png`;
                                 return (
                                   <>
                                     <img
@@ -366,7 +376,8 @@ const Cotizacion = () => {
                                   </>
                                 );
                               }
-                              if (item?.categoria === 'manga') {
+
+                              if (cat === 'manga' || cat === 'mangas') {
                                 const baseColor = (colorInfo?.nombre || item.color || 'Negro');
                                 const folderColor = String(baseColor).charAt(0).toUpperCase() + String(baseColor).slice(1);
                                 const altoFmt = Number(item?.medidas?.altoM || 0).toFixed(2);
@@ -388,15 +399,16 @@ const Cotizacion = () => {
                                 );
                               }
 
-                              // Zuncho (V1 o V2)
-                              const carpetaColor = colorInfo?.nombre || item.color;
-                              const rutaNueva = `/images/productos/Zunchos/${carpetaColor}/zuncho_${item.color}.png`;
-                              const rutaAntigua = `/images/productos/zuncho_${item.color}.png`;
+                              // Zuncho (V1 o V2) - Fallback default
+                              const carpetaColor = colorInfo?.nombre || (item.color ? (item.color.charAt(0).toUpperCase() + item.color.slice(1).toLowerCase()) : 'Negro');
+                              // Asegurar que nombreColor sea valido para carpeta (Capitalizado)
+                              const rutaNueva = `/images/productos/Zunchos/${carpetaColor}/zuncho_${(item.color || 'negro').toLowerCase()}.png`;
+                              const rutaAntigua = `/images/productos/zuncho_${(item.color || 'negro').toLowerCase()}.png`;
                               return (
                                 <>
                                   <img
                                     src={rutaNueva}
-                                    alt={`Zuncho ${colorInfo?.nombre}`}
+                                    alt={`Zuncho ${colorInfo?.nombre || item.color || 'Negro'}`}
                                     className="w-12 h-12 object-contain"
                                     onError={(e) => {
                                       if (!e.currentTarget.dataset.fallbackApplied) {
@@ -431,20 +443,20 @@ const Cotizacion = () => {
                                     // Intentar obtener ancho y largo de diferentes fuentes
                                     let ancho = item?.medidas?.anchoM;
                                     let largo = item?.medidas?.largoM;
-                                    
+
                                     // Si no existen en medidas, buscar en especificaciones
                                     if (!ancho && item?.especificaciones?.ancho_m) {
                                       ancho = item.especificaciones.ancho_m;
                                     } else if (!ancho && item?.especificaciones?.ancho) {
                                       ancho = item.especificaciones.ancho;
                                     }
-                                    
+
                                     if (!largo && item?.especificaciones?.largo_m) {
                                       largo = item.especificaciones.largo_m;
                                     } else if (!largo && item?.especificaciones?.largo) {
                                       largo = item.especificaciones.largo;
                                     }
-                                    
+
                                     // Si aún no hay valores, intentar extraer de medidas_disponibles
                                     if (!ancho || !largo) {
                                       if (item?.medidas_disponibles && item.medidas_disponibles.length > 0) {
@@ -456,7 +468,7 @@ const Cotizacion = () => {
                                         }
                                       }
                                     }
-                                    
+
                                     if (ancho && largo) {
                                       return `${Number(ancho).toFixed(2)} m × ${largo} m`;
                                     }
@@ -563,7 +575,7 @@ const Cotizacion = () => {
                   </label>
                   <input
                     type="text"
-                    {...register('numeroDocumento', { 
+                    {...register('numeroDocumento', {
                       required: 'El número de documento es requerido',
                       pattern: {
                         value: /^[0-9]+$/,
@@ -595,7 +607,7 @@ const Cotizacion = () => {
                   </label>
                   <input
                     type="text"
-                    {...register('nombre', { 
+                    {...register('nombre', {
                       required: 'El nombre es requerido',
                       setValueAs: sanitizeInput
                     })}
@@ -640,7 +652,7 @@ const Cotizacion = () => {
                   </label>
                   <input
                     type="tel"
-                    {...register('telefono', { 
+                    {...register('telefono', {
                       required: 'El teléfono es requerido',
                       setValueAs: sanitizeInput
                     })}
@@ -660,7 +672,7 @@ const Cotizacion = () => {
                     Mensaje adicional
                   </label>
                   <textarea
-                    {...register('mensaje', { 
+                    {...register('mensaje', {
                       setValueAs: sanitizeInput
                     })}
                     onKeyDown={handleKeyDownXSS}
