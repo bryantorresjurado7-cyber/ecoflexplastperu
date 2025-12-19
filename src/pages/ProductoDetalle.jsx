@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  ShoppingCart, 
-  Check, 
-  Package, 
-  Ruler, 
-  Shield, 
+import {
+  ArrowLeft,
+  ShoppingCart,
+  Check,
+  Package,
+  Ruler,
+  Shield,
   Truck,
   Star,
   ChevronRight
@@ -93,7 +93,7 @@ function extractLargo(producto) {
     }
     return null // No asumir un default para esquineros
   }
-  
+
   // Para zunchos: usar especificaciones.largo o buscar en medidas
   if (producto.categoria === 'zunchos') {
     if (producto.especificaciones?.largo) {
@@ -106,12 +106,12 @@ function extractLargo(producto) {
     }
     return 1000
   }
-  
+
   // Para burbupack: usar especificaciones.largo_m
   if (producto.categoria === 'burbupack' && producto.especificaciones?.largo_m) {
     return producto.especificaciones.largo_m
   }
-  
+
   // Para otras categorías, intentar extraer de medidas_disponibles
   if (producto.medidas_disponibles && producto.medidas_disponibles.length > 0) {
     const medida = producto.medidas_disponibles[0]
@@ -120,7 +120,7 @@ function extractLargo(producto) {
       return parseInt(match[1])
     }
   }
-  
+
   // Si tiene especificaciones con largo
   if (producto.especificaciones?.largo) {
     return producto.especificaciones.largo
@@ -128,7 +128,7 @@ function extractLargo(producto) {
   if (producto.especificaciones?.largo_m) {
     return producto.especificaciones.largo_m
   }
-  
+
   return 1000
 }
 
@@ -189,15 +189,15 @@ const ProductoDetalle = () => {
       try {
         setLoading(true);
         const { data, error } = await loadProducto(id);
-        
+
         if (error || !data) {
           setProducto(null);
           return;
         }
-        
+
         const productoFormateado = formatearProducto(data);
         setProducto(productoFormateado);
-        
+
         // Cargar productos relacionados (misma categoría)
         const { data: todosProductos } = await loadProductos();
         if (todosProductos && todosProductos.length > 0) {
@@ -212,10 +212,10 @@ const ProductoDetalle = () => {
         setLoading(false);
       }
     };
-    
+
     cargarProducto();
   }, [id]);
-  
+
   if (loading) {
     return (
       <div className="pt-20 min-h-screen flex items-center justify-center">
@@ -226,7 +226,7 @@ const ProductoDetalle = () => {
       </div>
     );
   }
-  
+
   if (!producto) {
     return (
       <div className="pt-20 min-h-screen flex items-center justify-center">
@@ -244,13 +244,30 @@ const ProductoDetalle = () => {
 
   const colorInfo = colores.find(c => c.id === producto.color);
   const carpetaColor = colorInfo?.nombre || producto.color;
-  
-  // Generar rutas de imágenes para zunchos
-  const esZuncho = producto.categoria?.toLowerCase() === 'zunchos' || producto.categoria?.toLowerCase() === 'zuncho';
-  const rutaNueva = esZuncho 
-    ? `/images/productos/Zunchos/${carpetaColor}/zuncho_${producto.color}.png`
-    : producto.imagen || producto.imagen_principal || '/images/placeholder.png';
-  const rutaAntigua = esZuncho ? `/images/productos/zuncho_${producto.color}.png` : rutaNueva;
+
+  // Generar lista de imágenes para carrusel
+  const imagenes = [];
+  const catLower = (producto.categoria || '').toLowerCase();
+
+  // Helper para capitalizar color si viene en minúscula y no tenemos match en `colores`
+  const colorParaRuta = carpetaColor.charAt(0).toUpperCase() + carpetaColor.slice(1).toLowerCase();
+
+  if (catLower === 'zunchos' || catLower === 'zuncho') {
+    imagenes.push(`/images/productos/Zunchos/${carpetaColor}/zuncho_${producto.color}.png`);
+    imagenes.push(`/images/productos/Zunchos/${carpetaColor}/fondo.png`);
+    imagenes.push(`/images/productos/Zunchos/${carpetaColor}/rollos.png`);
+    imagenes.push(`/images/productos/Zunchos/${carpetaColor}/tira.png`);
+  } else if (catLower === 'esquineros' || catLower === 'esquinero') {
+    // Usar la imagen principal calculada o defaults
+    // Nota: producto.imagen ya trae el path a esquinero.png si se usó generateImagenPath, pero queremos el set completo
+    // Construimos las rutas manualmente para asegurar el set completo
+    imagenes.push(`/images/productos/Esquineros/${colorParaRuta}/esquinero.png`); // Principal
+    imagenes.push(`/images/productos/Esquineros/${colorParaRuta}/empaquetado.png`);
+    imagenes.push(`/images/productos/Esquineros/${colorParaRuta}/real.png`);
+  } else {
+    // Default single image
+    imagenes.push(producto.imagen || producto.imagen_principal || '/images/placeholder.png');
+  }
 
   const handleAddToQuote = () => {
     addToQuote(producto, cantidad);
@@ -258,7 +275,7 @@ const ProductoDetalle = () => {
 
   // Determinar si el producto tiene color (Burbupack no tiene)
   const tieneColor = producto.categoria?.toLowerCase() !== 'burbupack' && colorInfo;
-  
+
   const especificaciones = [
     { label: 'Material', valor: producto.material || 'Polipropileno' },
     ...(tieneColor ? [{ label: 'Color', valor: colorInfo?.nombre || producto.color }] : []),
@@ -299,7 +316,7 @@ const ProductoDetalle = () => {
         </button>
 
         <div className="grid lg:grid-cols-2 gap-12">
-          
+
           {/* Galería de imágenes */}
           <div>
             <div className="bg-white rounded-2xl shadow-card p-8">
@@ -309,56 +326,35 @@ const ProductoDetalle = () => {
                   {/* Imagen del producto */}
                   <div className="relative">
                     {(() => {
-                      // Para zunchos: array de imágenes múltiples
-                      // Para otras categorías: solo imagen principal
-                      let imagenActual = rutaNueva;
-                      
-                      if (esZuncho) {
-                        const imagenesZuncho = [
-                          rutaNueva,
-                          `/images/productos/Zunchos/${carpetaColor}/fondo.png`,
-                          `/images/productos/Zunchos/${carpetaColor}/rollos.png`,
-                          `/images/productos/Zunchos/${carpetaColor}/tira.png`
-                        ];
-                        imagenActual = imagenesZuncho[imagenActiva] || rutaNueva;
-                      }
-                      
-                      const altText = esZuncho 
-                        ? `${producto.nombre} ${producto.ancho ? producto.ancho + '"' : ''} ${producto.largo ? 'x ' + producto.largo + 'm' : ''}`
-                        : producto.nombre;
-                      
+                      const imagenActual = imagenes[imagenActiva] || imagenes[0];
+                      const altText = producto.nombre;
+
                       return (
-                        <img 
+                        <img
                           src={imagenActual}
                           alt={altText}
                           className="w-64 h-64 sm:w-80 sm:h-80 lg:w-[420px] lg:h-[420px] object-contain transition-transform duration-300"
                           onError={(e) => {
-                            if (!e.currentTarget.dataset.fallbackApplied) {
-                              e.currentTarget.dataset.fallbackApplied = 'true';
-                              if (esZuncho && imagenActiva === 0) {
-                                e.currentTarget.src = rutaAntigua;
-                                return;
-                              }
-                            }
+                            // Si falla la imagen actual
                             e.currentTarget.style.display = 'none';
-                            e.currentTarget.nextSibling.style.display = 'block';
+                            // Mostrar fallback (circulo de color) si existe
+                            const fallback = e.currentTarget.parentNode.querySelector('.fallback-circle');
+                            if (fallback) fallback.classList.remove('hidden');
                           }}
                         />
                       );
                     })()}
-                    
+
                     {/* Fallback si no hay imagen */}
-                    <div 
-                      className="w-64 h-64 sm:w-80 sm:h-80 lg:w-[420px] lg:h-[420px] rounded-full border-8 border-opacity-30 flex items-center justify-center shadow-lg hidden"
+                    <div
+                      className="fallback-circle w-64 h-64 sm:w-80 sm:h-80 lg:w-[420px] lg:h-[420px] rounded-full border-8 border-opacity-30 flex items-center justify-center shadow-lg hidden"
                       style={{ borderColor: colorInfo?.hex }}
                     >
-                      <div 
+                      <div
                         className="w-40 h-40 sm:w-52 sm:h-52 lg:w-[300px] lg:h-[300px] rounded-full"
                         style={{ backgroundColor: colorInfo?.hex }}
                       />
                     </div>
-                    
-                    {/* Efecto animado removido por estabilidad */}
                   </div>
 
                   {/* Badge de color - Solo si tiene color (no para Burbupack) */}
@@ -377,50 +373,28 @@ const ProductoDetalle = () => {
                 </div>
               </div>
 
-              {/* Thumbnails - Solo para zunchos */}
-              {esZuncho && (
+              {/* Thumbnails - Si hay más de 1 imagen */}
+              {imagenes.length > 1 && (
                 <div className="grid grid-cols-4 gap-4 sm:gap-5">
-                  {(() => {
-                    const imagenesZuncho = [
-                      rutaNueva,
-                      `/images/productos/Zunchos/${carpetaColor}/fondo.png`,
-                      `/images/productos/Zunchos/${carpetaColor}/rollos.png`,
-                      `/images/productos/Zunchos/${carpetaColor}/tira.png`
-                    ];
-                    
-                    return imagenesZuncho.map((imagenSrc, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setImagenActiva(index)}
-                        className={`bg-fondo-claro rounded-lg p-3 sm:p-4 flex items-center justify-center h-24 sm:h-28 transition-all ${
-                          imagenActiva === index 
-                            ? 'ring-2 ring-verde-principal bg-verde-light' 
-                            : 'hover:bg-gris-muy-claro/50'
+                  {imagenes.map((imagenSrc, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setImagenActiva(index)}
+                      className={`bg-fondo-claro rounded-lg p-3 sm:p-4 flex items-center justify-center h-24 sm:h-28 transition-all ${imagenActiva === index
+                          ? 'ring-2 ring-verde-principal bg-verde-light'
+                          : 'hover:bg-gris-muy-claro/50'
                         }`}
-                      >
-                        <img 
-                          src={imagenSrc}
-                          alt={`Vista ${index + 1}`}
-                          className="w-16 h-16 sm:w-20 sm:h-20 object-contain"
-                          onError={(e) => {
-                            if (!e.currentTarget.dataset.fallbackApplied) {
-                              e.currentTarget.dataset.fallbackApplied = 'true';
-                              if (index === 0) {
-                                e.currentTarget.src = rutaAntigua;
-                                return;
-                              }
-                            }
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.nextSibling.style.display = 'block';
-                          }}
-                        />
-                        <div 
-                          className="w-16 h-16 sm:w-20 sm:h-20 rounded-full hidden"
-                          style={{ backgroundColor: colorInfo?.hex }}
-                        />
-                      </button>
-                    ));
-                  })()}
+                    >
+                      <img
+                        src={imagenSrc}
+                        alt={`Vista ${index + 1}`}
+                        className="w-16 h-16 sm:w-20 sm:h-20 object-contain"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -447,11 +421,11 @@ const ProductoDetalle = () => {
                   </span>
                 )}
               </div>
-              
+
               <h1 className="text-3xl lg:text-4xl font-bold text-negro-principal mb-4">
                 {producto.nombre}
               </h1>
-              
+
               <p className="text-gris-oscuro text-lg mb-6">
                 {producto.descripcion}
               </p>
@@ -549,11 +523,10 @@ const ProductoDetalle = () => {
                   <button
                     type="button"
                     onClick={handleAddToQuote}
-                    className={`w-full inline-flex items-center justify-center px-6 py-4 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl ${
-                      isInQuote(producto.id)
+                    className={`w-full inline-flex items-center justify-center px-6 py-4 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl ${isInQuote(producto.id)
                         ? 'bg-white border-2 border-verde-principal text-verde-principal hover:bg-verde-principal hover:text-white'
                         : 'bg-gradient-to-r from-verde-principal to-verde-hover text-white'
-                    }`}
+                      }`}
                   >
                     {isInQuote(producto.id) ? (
                       <>

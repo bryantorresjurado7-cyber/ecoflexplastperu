@@ -1,13 +1,13 @@
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
-import { calcularPrecioEsquinero } from '../utils/preciosEsquineros';
 import { catalogoV2 } from '../data/catalogo.v2';
 import { getPrecioPorProducto } from '../data/precios';
 import { colores as coloresV1 } from '../data/productos';
 import { useQuote } from '../contexts/QuoteContext';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { ArrowLeft, ShoppingCart, Check, Package, Ruler, Shield, Truck, ChevronRight, Star } from 'lucide-react';
 import ColorChip from '../components/ColorChip';
 import ProductCardV2 from '../components/ProductCardV2';
+import { loadProducto } from '../services/productosService';
 
 const ProductoDetalleV2 = () => {
   const { id } = useParams();
@@ -17,28 +17,115 @@ const ProductoDetalleV2 = () => {
   const [cantidad, setCantidad] = useState(1);
   const [imagenActiva, setImagenActiva] = useState(0);
 
-  const producto = catalogoV2.find(p => p.id === id);
+  // Estado para producto dinámico (BD)
+  const [productoDb, setProductoDb] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Buscar primero en catálogo estático
+  const productoStatic = useMemo(() => catalogoV2.find(p => p.id === id), [id]);
+
+  useEffect(() => {
+    // Si ya existe en estático, no necesitamos cargar
+    if (productoStatic) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchProduct = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await loadProducto(id);
+        if (data && !error) {
+          // Normalizar datos de BD a estructura V2
+          const mapCategoria = (c) => {
+            const m = {
+              'zunchos': 'zuncho',
+              'esquineros': 'esquinero',
+              'burbupack': 'burbupack',
+              'mangas': 'manga',
+              'accesorios': 'accesorio'
+            };
+            return m[c?.toLowerCase()] || c?.toLowerCase() || 'zuncho';
+          };
+
+          const cat = mapCategoria(data.categoria);
+          let colorId = 'negro';
+
+          // Intentar extraer color
+          if (data.colores_disponibles?.[0]) {
+            colorId = data.colores_disponibles[0].toLowerCase();
+          } else if (data.nombre) {
+            const coloresPosibles = ['negro', 'blanco', 'azul', 'amarillo', 'rojo', 'verde', 'transparente'];
+            colorId = coloresPosibles.find(c => data.nombre.toLowerCase().includes(c)) || 'negro';
+          }
+
+          const normalized = {
+            id: data.id,
+            categoria: cat,
+            nombre: data.nombre,
+            codigo: data.codigo,
+            precio: data.precio_unitario,
+            disponible: data.stock_disponible > 0,
+            destacado: data.destacado,
+            descripcion: data.descripcion,
+            color: colorId,
+            imagen: cat === 'zuncho' ? null : data.imagen_principal,
+            // Reconstruir medidas
+            medidas: {
+              // Zuncho
+              ancho: data.especificaciones?.ancho,
+              largo: data.especificaciones?.largo,
+              // Esquinero
+              ladoMM: data.especificaciones?.lado_mm,
+              espesorMM: data.especificaciones?.espesor_mm,
+              longitudM: data.especificaciones?.largo_m,
+              // Burbupack
+              anchoM: data.especificaciones?.ancho_m,
+              largoM: data.especificaciones?.largo_m,
+              // Manga
+              altoM: data.especificaciones?.alto_m || data.especificaciones?.ancho_m
+            },
+            gramajeGxm: data.especificaciones?.gramaje,
+            tags: data.tags,
+            aplicaciones: data.especificaciones?.aplicaciones,
+            _original: data
+          };
+          setProductoDb(normalized);
+        }
+      } catch (err) {
+        console.error("Error fetching product details:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id, productoStatic]);
+
+  const producto = productoStatic || productoDb;
+
   const qs = new URLSearchParams(location.search || '');
   const Lqs = Number(qs.get('L'));
-  const gqs = Number(qs.get('g'));
   const colorInfo = producto?.color ? coloresV1.find(c => c.id === producto.color) : null;
-  
+
   const defaultImage = useMemo(() => {
     if (!producto) return undefined;
     if (producto.imagen) return producto.imagen;
     if (producto.categoria === 'burbupack') {
-      const ancho = Number(producto.medidas.anchoM).toFixed(2);
-      const largo = producto.medidas.largoM;
-      return `/images/productos/Burbupack/${ancho}/burbupack_${ancho}Mx${largo}.png`;
+      const ancho = Number(producto.medidas?.anchoM || 0).toFixed(2);
+      const largo = producto.medidas?.largoM;
+      if (ancho && largo) return `/images/productos/Burbupack/${ancho}/burbupack_${ancho}Mx${largo}.png`;
     }
     if (producto.categoria === 'esquinero') {
       const nombreColor = (coloresV1.find(c => c.id === producto.color)?.nombre) || 'Negro';
-      // Usar siempre paquete.png
       return `/images/productos/Esquineros/${nombreColor}/paquete.png`;
     }
     if (producto.categoria === 'accesorio') {
-      // Usar principal.png para accesorios
       return `/images/productos/Accesorios/${producto.nombre}/principal.png`;
+    }
+    if (producto.categoria === 'zuncho') {
+      const nombreColor = (coloresV1.find(c => c.id === producto.color)?.nombre) || 'Negro';
+      return `/images/productos/Zunchos/${nombreColor}/zuncho_${producto.color}.png`;
     }
     return undefined;
   }, [producto]);
@@ -51,49 +138,30 @@ const ProductoDetalleV2 = () => {
     const nombreColor = colorInfo?.nombre || (producto.color ? (String(producto.color).charAt(0).toUpperCase() + String(producto.color).slice(1)) : 'Negro');
 
     if (producto.categoria === 'zuncho') {
-      // Para zunchos: imagen principal + 3 imágenes adicionales
-      if (defaultImage) {
-        base.push(defaultImage);
-      }
-      // Agregar las imágenes adicionales para zunchos
+      if (defaultImage) base.push(defaultImage);
       base.push(`/images/productos/Zunchos/${nombreColor}/fondo.png`);
       base.push(`/images/productos/Zunchos/${nombreColor}/rollos.png`);
       base.push(`/images/productos/Zunchos/${nombreColor}/tira.png`);
     } else if (producto.categoria === 'esquinero') {
-      // Para esquineros: imagen principal + 3 imágenes adicionales (sin duplicar paquete.png)
-      if (defaultImage) {
-        base.push(defaultImage);
-      }
-      // Agregar las imágenes adicionales para esquineros (excluyendo paquete.png que ya está en defaultImage)
+      if (defaultImage) base.push(defaultImage);
       base.push(`/images/productos/Esquineros/${nombreColor}/empaquetado.png`);
       base.push(`/images/productos/Esquineros/${nombreColor}/esquinero.png`);
       base.push(`/images/productos/Esquineros/${nombreColor}/real.png`);
     } else if (producto.categoria === 'manga') {
-      // Para mangas: principal + primero/segundo/tercero desde la misma carpeta
-      if (defaultImage) {
-        base.push(defaultImage);
-      }
+      if (defaultImage) base.push(defaultImage);
       const altoFmt = Number(producto.medidas?.altoM).toFixed(2);
       base.push(`/images/productos/Mangas/${nombreColor}/${altoFmt}/primero.png`);
       base.push(`/images/productos/Mangas/${nombreColor}/${altoFmt}/segundo.png`);
       base.push(`/images/productos/Mangas/${nombreColor}/${altoFmt}/tercero.png`);
     } else if (producto.categoria === 'accesorio') {
-      // Para accesorios: imagen principal + 3 imágenes adicionales
-      if (defaultImage) {
-        base.push(defaultImage);
-      }
-      // Agregar las imágenes adicionales para accesorios
+      if (defaultImage) base.push(defaultImage);
       base.push(`/images/productos/Accesorios/${producto.nombre}/segunda.png`);
       base.push(`/images/productos/Accesorios/${producto.nombre}/tercera.png`);
       base.push(`/images/productos/Accesorios/${producto.nombre}/cuarta.png`);
     } else {
-      // Para otras categorías: solo imagen principal
-      if (defaultImage) {
-        base.push(defaultImage);
-      }
+      if (defaultImage) base.push(defaultImage);
     }
 
-    // Solo duplicar si tenemos menos de 4 imágenes Y no es zuncho, esquinero ni accesorio
     if (producto.categoria !== 'zuncho' && producto.categoria !== 'esquinero' && producto.categoria !== 'accesorio' && base.length > 0 && base.length < 4) {
       while (base.length < 4) {
         base.push(base[0]);
@@ -102,7 +170,7 @@ const ProductoDetalleV2 = () => {
 
     return base;
   }, [producto, defaultImage]);
-  
+
   const hasImage = imagenes.length > 0;
 
   const especificaciones = useMemo(() => {
@@ -110,10 +178,10 @@ const ProductoDetalleV2 = () => {
     if (producto.categoria === 'esquinero') {
       return [
         { label: 'Color', valor: colorInfo?.nombre || producto.color },
-        { label: 'Ala (mm)', valor: `39.5` },
-        { label: 'Espesor (mm)', valor: `3.3` },
+        { label: 'Ala (mm)', valor: String(producto.medidas?.ladoMM || '39.5') },
+        { label: 'Espesor (mm)', valor: String(producto.medidas?.espesorMM || '3.3') },
         { label: 'Gramaje (g/m)', valor: gramajeDetalle(producto) },
-        { label: 'Longitud', valor: producto.medidas.longitudM ? `${producto.medidas.longitudM} m` : 'A medida' },
+        { label: 'Longitud', valor: producto.medidas?.longitudM ? `${producto.medidas.longitudM} m` : 'A medida' },
         { label: 'Código', valor: producto.codigoCorto || producto.codigo },
         { label: 'Disponibilidad', valor: producto.disponible ? 'En Stock' : 'Bajo Pedido' }
       ];
@@ -121,8 +189,8 @@ const ProductoDetalleV2 = () => {
     if (producto.categoria === 'burbupack') {
       return [
         { label: 'Formato', valor: 'Rollo de burbuja' },
-        { label: 'Ancho', valor: `${producto.medidas.anchoM.toFixed(2)} m` },
-        { label: 'Largo', valor: `${producto.medidas.largoM} metros` },
+        { label: 'Ancho', valor: `${Number(producto.medidas?.anchoM || 0).toFixed(2)} m` },
+        { label: 'Largo', valor: `${producto.medidas?.largoM || 100} metros` },
         { label: 'Código', valor: producto.codigoCorto || producto.codigo },
         { label: 'Disponibilidad', valor: producto.disponible ? 'En Stock' : 'Bajo Pedido' }
       ];
@@ -131,15 +199,27 @@ const ProductoDetalleV2 = () => {
       const nombreColor = colorInfo?.nombre || (producto.color ? (String(producto.color).charAt(0).toUpperCase() + String(producto.color).slice(1)) : '');
       return [
         { label: 'Color', valor: nombreColor },
-        { label: 'Altura (m)', valor: producto.medidas.altoM.toFixed(2) },
-        { label: 'Espesor (mm)', valor: `${producto.medidas.espesorMM}` },
+        { label: 'Altura (m)', valor: Number(producto.medidas?.altoM || 0).toFixed(2) },
+        { label: 'Espesor (mm)', valor: `${producto.medidas?.espesorMM || 2.0}` },
         { label: 'Material', valor: 'Plástico 100% virgen' },
         { label: 'Presentación', valor: 'Rollo continuo' },
         { label: 'Código', valor: producto.codigoCorto || producto.codigo },
         { label: 'Disponibilidad', valor: producto.disponible ? 'En Stock' : 'Bajo Pedido' }
       ];
     }
-    // Accesorio o fallback
+
+    // Zuncho spec override from DB if missing props
+    if (producto.categoria === 'zuncho') {
+      const specs = [
+        { label: 'Color', valor: colorInfo?.nombre || producto.color },
+        { label: 'Ancho', valor: producto.ancho ? `${producto.ancho}"` : 'Estandar' },
+        { label: 'Largo', valor: producto.largo ? `${producto.largo} m` : 'Estandar' },
+        { label: 'Código', valor: producto.codigo },
+        { label: 'Disponibilidad', valor: producto.disponible ? 'En Stock' : 'Bajo Pedido' }
+      ];
+      return specs;
+    }
+
     const tags = Array.isArray(producto.tags) ? producto.tags.join(', ') : undefined;
     const base = [
       { label: 'Código', valor: producto.codigoCorto || producto.codigo },
@@ -169,13 +249,12 @@ const ProductoDetalleV2 = () => {
     if (typeof precio !== 'number') precio = placeholder;
     try {
       return new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN', minimumFractionDigits: 2 }).format(precio);
-    } catch (err) {
+    } catch {
       return `S/ ${Number(precio).toFixed(2)}`;
     }
   };
 
   const handleAddToQuote = () => {
-    // Si hay L y es esquinero, persistimos el metraje, un título y el href con params
     let prodToAdd = producto;
     if (producto?.categoria === 'esquinero' && Number.isFinite(Lqs) && Lqs > 0) {
       const nombreColor = colorInfo?.nombre || (producto.color ? (String(producto.color).charAt(0).toUpperCase() + String(producto.color).slice(1)) : '');
@@ -190,6 +269,18 @@ const ProductoDetalleV2 = () => {
     }
     addToQuote(prodToAdd, cantidad);
   };
+
+  // Spinner de carga solo si estáticos fallaron y estamos cargando dinámicos
+  if (loading && !producto) {
+    return (
+      <div className="pt-20 min-h-screen flex items-center justify-center bg-fondo-claro">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-verde-principal mb-4"></div>
+          <p className="text-gris-oscuro">Cargando detalles...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!producto) {
     return (
@@ -276,7 +367,6 @@ const ProductoDetalleV2 = () => {
                           e.currentTarget.src = (src || '').replace('.png', ' .png');
                           return;
                         }
-                        // Para zunchos, mostrar círculo de color como fallback
                         if (producto.categoria === 'zuncho') {
                           e.currentTarget.style.display = 'none';
                           const fallbackDiv = e.currentTarget.nextSibling;
@@ -288,7 +378,6 @@ const ProductoDetalleV2 = () => {
                     ) : (
                       <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full" style={{ backgroundColor: colorInfo?.hex }} />
                     )}
-                    {/* Fallback para zunchos cuando la imagen no carga */}
                     {producto.categoria === 'zuncho' && (
                       <div className="hidden w-16 h-16 sm:w-20 sm:h-20 rounded-full" style={{ backgroundColor: colorInfo?.hex }} />
                     )}
@@ -335,15 +424,7 @@ const ProductoDetalleV2 = () => {
                 <div className="text-right">
                   <div className="text-2xl font-bold text-verde-principal">{(() => {
                     if (producto.categoria === 'esquinero' && Number.isFinite(Lqs) && Lqs > 0) {
-                      const colorKey = (producto.color || '').toLowerCase() === 'verde' ? 'verde' : 'colores';
-                      const gRaw = Number.isFinite(gqs) && [18,19,20].includes(gqs) ? gqs : Math.round(Number(producto.gramajeGxm || 0.20) * 100);
-                      const g = [18,19,20].includes(gRaw) ? gRaw : 20;
-                      try {
-                        const px = calcularPrecioEsquinero(colorKey, Lqs, g, { modoRedondeo: 'normal' });
-                        return formatPrice(px);
-                      } catch (e) {
-                        return formatPrice(getPrecioPorProducto(producto));
-                      }
+                      return formatPrice(getPrecioPorProducto(producto));
                     }
                     const base = getPrecioPorProducto(producto);
                     if (producto.categoria === 'manga' && Number(base) === 0) {
@@ -397,11 +478,10 @@ const ProductoDetalleV2 = () => {
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <button type="button" onClick={handleAddToQuote} className={`w-full inline-flex items-center justify-center px-6 py-4 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl ${
-                    isInQuote(producto.id)
-                      ? 'bg-white border-2 border-verde-principal text-verde-principal hover:bg-verde-principal hover:text-white'
-                      : 'bg-gradient-to-r from-verde-principal to-verde-hover text-white'
-                  }`}>
+                  <button type="button" onClick={handleAddToQuote} className={`w-full inline-flex items-center justify-center px-6 py-4 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl ${isInQuote(producto.id)
+                    ? 'bg-white border-2 border-verde-principal text-verde-principal hover:bg-verde-principal hover:text-white'
+                    : 'bg-gradient-to-r from-verde-principal to-verde-hover text-white'
+                    }`}>
                     {isInQuote(producto.id) ? (
                       <>
                         <Check className="w-5 h-5 mr-2" /> En Cotización
@@ -438,7 +518,6 @@ const ProductoDetalleV2 = () => {
               {productosRelacionados.map((p) => (
                 <div key={p.id} className="h-full">
                   {/* Lazy import para evitar ciclo */}
-                  {/* eslint-disable-next-line react/jsx-no-undef */}
                   <ProductCardV2 producto={p} onAddToQuote={addToQuote} isInQuote={isInQuote(p.id)} />
                 </div>
               ))}
@@ -460,13 +539,7 @@ const Spec = ({ label, value }) => (
 export default ProductoDetalleV2;
 
 // Helpers locales
-function productodescPersonalizada(desc, L) {
-  try {
-    return String(desc).replace(/\(0\.14 m a 2\.4 m\)/, `${Number(L).toFixed(2)} m`);
-  } catch {
-    return desc;
-  }
-}
+
 
 function descripcionEsquineroSinGramaje(L) {
   const base = 'Esquinero plástico con alas de 39.5 mm y espesor 3.3 mm.';
@@ -482,7 +555,9 @@ function gramajeDetalle(producto) {
     const params = new URLSearchParams(window.location.search || '');
     const gQuery = Number(params.get('g'));
     if ([18, 19, 20].includes(gQuery)) return `${(gQuery / 100).toFixed(2)} g/m`;
-  } catch {}
+  } catch {
+    // ignore
+  }
 
   // 2) Inferir desde el código corto/largo: ...-G18 | ...-G19 | ...-G20
   const code = String(producto?.codigo || producto?.codigoCorto || '');
@@ -492,8 +567,9 @@ function gramajeDetalle(producto) {
     if ([18, 19, 20].includes(gCode)) return `${(gCode / 100).toFixed(2)} g/m`;
   }
 
-  // 3) Fallback: mostrar rango
+  // 3) Fallback si tenemos gramaje en DB
+  if (producto.gramajeGxm) return `${Number(producto.gramajeGxm).toFixed(2)} g/m`;
+
+  // 4) Fallback default
   return '0.20 (ajustable 0.18–0.20)';
 }
-
-
