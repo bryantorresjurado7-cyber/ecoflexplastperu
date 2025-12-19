@@ -71,6 +71,7 @@ import PrintView from './pages/PrintView';
 import AdminMantenimientoTablas from './pages/AdminMantenimientoTablas';
 import AdminMantenimientoParametrica from './pages/AdminMantenimientoParametrica';
 import AdminMantenimientoCategorias from './pages/AdminMantenimientoCategorias';
+import AdminMantenimientoModulos from './pages/AdminMantenimientoModulos';
 
 function App() {
   return (
@@ -516,6 +517,12 @@ function App() {
             <Route path="/admin/mantenimiento-tablas/categorias_productos" element={
               <ProtectedRoute>
                 <AdminMantenimientoCategorias />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/mantenimiento-tablas/modulos" element={
+              <ProtectedRoute>
+                <AdminMantenimientoModulos />
               </ProtectedRoute>
             } />
 

@@ -1,26 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { menuItems as defaultMenuItems } from '../data/menuItems'
+import { supabase } from '../lib/supabase'
 import {
-  LayoutDashboard,
   Package,
-  ShoppingCart,
-  Settings,
   LogOut,
   Menu,
   X,
-  DollarSign,
-  History,
-  User,
-  Factory,
-  FlaskConical,
-  Truck,
-  Cog,
-  ArrowLeftRight,
-  Bell,
   ChevronDown,
-  ChevronRight,
-  Database
+  ChevronRight
 } from 'lucide-react'
 
 const AdminLayout = ({ children }) => {
@@ -134,108 +123,107 @@ const AdminLayout = ({ children }) => {
 
   const handleLogout = async () => {
     const result = await logout()
+    sessionStorage.removeItem('admin_allowed_modules')
     if (result.success) {
       navigate('/admin/login')
     }
   }
 
-  const menuItems = [
-    {
-      title: 'Dashboard',
-      icon: LayoutDashboard,
-      path: '/admin/dashboard'
-    },
-    {
-      title: 'Contabilidad',
-      icon: DollarSign,
-      path: '/admin/contabilidad',
-      subItems: [
-        { title: 'Caja', path: '/admin/contabilidad' },
-        {
-          title: 'Gastos',
-          path: '/admin/contabilidad/gastos',
-          subItems: [
-            { title: 'Gasto Fijo', path: '/admin/contabilidad/gastos/fijo' },
-            { title: 'Gasto Variable', path: '/admin/contabilidad/gastos/variable' }
-          ]
-        },
-        { title: 'Ingresos', path: '/admin/contabilidad/ingresos' }
-      ]
-    },
-    {
-      title: 'Productos',
-      icon: Package,
-      path: '/admin/productos'
-    },
-    {
-      title: 'Movimientos',
-      icon: ArrowLeftRight,
-      path: '/admin/movimientos'
-    },
-    {
-      title: 'Insumos',
-      icon: FlaskConical,
-      path: '/admin/insumos'
-    },
-    {
-      title: 'Ventas',
-      icon: History,
-      path: '/admin/ventas', // Base path needed for active check, but item works as toggle
-      subItems: [
-        { title: 'Gestión de Ventas', path: '/admin/ventas' },
-        { title: 'Proyección de ventas', path: '/admin/ventas/proyeccion' }
-      ]
-    },
-    {
-      title: 'Cotizaciones',
-      icon: ShoppingCart,
-      path: '/admin/cotizaciones'
-    },
-    {
-      title: 'Clientes',
-      icon: User,
-      path: '/admin/clientes'
-    },
-    {
-      title: 'Proveedores',
-      icon: Truck,
-      path: '/admin/proveedores'
-    },
-    {
-      title: 'Maquinarias',
-      icon: Cog,
-      path: '/admin/maquinarias',
-      subItems: [
-        { title: 'Gestión de Maquinaria', path: '/admin/maquinarias' },
-        { title: 'Generar orden de mantenimiento', path: '/admin/maquinarias/orden-mantenimiento' }
-      ]
-    },
-    {
-      title: 'Producción',
-      icon: Factory,
-      path: '/admin/produccion'
-    },
-    {
-      title: 'Usuarios',
-      icon: User,
-      path: '/admin/usuarios'
-    },
-    
-    {
-      title: 'Mantenimiento',
-      icon: Database,
-      path: '/admin/mantenimiento-tablas',
-      subItems: [
-        { title: 'Tabla Paramétrica', path: '/admin/mantenimiento-tablas/parametrica' },
-        { title: 'Categorías Productos', path: '/admin/mantenimiento-tablas/categorias_productos' }
-      ]
-    },
-    {
-      title: 'Configuración',
-      icon: Settings,
-      path: '/admin/configuracion'
+  // State for menu items
+  const [menuItems, setMenuItems] = useState(() => {
+    // Initialize with empty array or cached value to prevent flashing unauthorized modules
+    const cached = sessionStorage.getItem('admin_allowed_modules')
+    if (cached) {
+      try {
+        if (cached === 'ALL') return defaultMenuItems
+        const allowedIds = JSON.parse(cached)
+        return defaultMenuItems.filter(item => {
+          if (!item.id) return true
+          return allowedIds.includes(item.id)
+        })
+      } catch (e) {
+        console.error('Error parsing cached menu permissions', e)
+        return []
+      }
     }
-  ]
+    return []
+  })
+
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      if (!user?.rol) return
+
+      // Super admin bypass - always sees everything
+      if (user.rol === 'super_admin') {
+        setMenuItems(defaultMenuItems)
+        sessionStorage.setItem('admin_allowed_modules', 'ALL')
+        return
+      }
+
+      try {
+        // 1. Resolve role code (in case user.rol is the value/description)
+        let roleCode = user.rol
+
+        // Try to find the role definition in parametrica
+        const { data: roleDef, error: roleError } = await supabase
+          .from('parametrica')
+          .select('codigo_parametro, valor')
+          .eq('tipo_parametro', 'rol_usuario')
+          .or(`codigo_parametro.eq.${user.rol},valor.eq.${user.rol}`)
+          .maybeSingle()
+
+        if (roleDef) {
+          roleCode = roleDef.codigo_parametro
+        }
+
+        // 2. Fetch permissions using the resolved role code
+        const { data, error } = await supabase
+          .from('parametrica')
+          .select('valor')
+          .eq('tipo_parametro', 'permisos_rol')
+          .eq('codigo_parametro', roleCode)
+          .maybeSingle()
+
+        if (error) {
+          console.error('Error fetching permissions:', error)
+          // Keep safe state on error - do not show full menu
+          return
+        }
+
+        if (data && data.valor) {
+          try {
+            const allowedIds = JSON.parse(data.valor)
+            sessionStorage.setItem('admin_allowed_modules', JSON.stringify(allowedIds))
+
+            // Filter items
+            const filtered = defaultMenuItems.filter(item => {
+              // Items without ID are always shown (safety)
+              if (!item.id) return true
+              return allowedIds.includes(item.id)
+            })
+            setMenuItems(filtered)
+          } catch (e) {
+            console.error('Error parsing permission JSON', e)
+            setMenuItems(defaultMenuItems)
+          }
+        } else {
+          // Fallback: If no permissions found, default to showing limited menu (Dashboard only)
+          // This prevents showing all modules to a restricted user
+          console.log(`No specific permissions found for role: ${roleCode}`)
+          const defaultSafe = defaultMenuItems.filter(i => i.id === 'dashboard')
+          setMenuItems(defaultSafe)
+          sessionStorage.setItem('admin_allowed_modules', JSON.stringify(['dashboard']))
+        }
+      } catch (e) {
+        console.error('Permission check failed', e)
+        setMenuItems(defaultMenuItems)
+      }
+    }
+
+    if (user) {
+      fetchPermissions()
+    }
+  }, [user])
 
   // Auto-expand menu based on current path
   useEffect(() => {
