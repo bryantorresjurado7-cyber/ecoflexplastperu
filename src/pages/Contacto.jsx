@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
-import { 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Clock, 
-  Send, 
+import {
+  Mail,
+  Phone,
+  MapPin,
+  Clock,
+  Send,
   CheckCircle,
   MessageSquare,
   Building,
@@ -15,6 +15,7 @@ import {
 import { getTiposConsulta, getParametrica } from '../services/parametricaService';
 import { buscarClientePorDocumento, buscarProveedorPorDocumento } from '../services/clienteProveedorService';
 import { crearConsulta } from '../services/consultaService';
+import SEO from '../components/SEO';
 
 // Sanitizadores simples para prevenir scripts y caracteres peligrosos
 const sanitizeName = (value = '') => {
@@ -52,7 +53,7 @@ const Contacto = () => {
   const [loadingTipos, setLoadingTipos] = useState(true);
   const [tiposDocumento, setTiposDocumento] = useState([]);
   const [loadingTiposDoc, setLoadingTiposDoc] = useState(true);
-  
+
   const {
     register,
     handleSubmit,
@@ -64,7 +65,7 @@ const Contacto = () => {
 
   const termsAccepted = watch('terminos', false);
   const isSubmitDisabled = isSubmitting || !isValid || !termsAccepted;
-  
+
   // Observar cambios en campos relevantes para autocompletado
   const tipoRelacion = watch('tipoRelacion');
   const tipoDocumento = watch('tipoDocumento');
@@ -103,7 +104,7 @@ const Contacto = () => {
     };
 
     cargarTiposConsulta();
-    
+
     // Cargar tipos de documento desde la base de datos
     const cargarTiposDocumento = async () => {
       try {
@@ -146,9 +147,9 @@ const Contacto = () => {
 
       try {
         console.log('[Contacto] Autocompletando datos:', { tipoRelacion, tipoDocumento, numeroDocumento });
-        
+
         let resultado = null;
-        
+
         // Buscar según el tipo de relación
         if (tipoRelacion === 'cliente') {
           resultado = await buscarClientePorDocumento(tipoDocumento, numeroDocumento);
@@ -162,18 +163,18 @@ const Contacto = () => {
         if (resultado && resultado.data && !resultado.error) {
           const datos = resultado.data;
           console.log('[Contacto] Datos encontrados para autocompletar:', datos);
-          
+
           // Mapear campos según la estructura real de las tablas
           // cliente: nombre, email, telefono
           // proveedor: nombre, email, telefono
           if (datos.nombre) {
             setValue('nombre', datos.nombre);
           }
-          
+
           if (datos.email) {
             setValue('email', datos.email);
           }
-          
+
           if (datos.telefono) {
             setValue('telefono', datos.telefono);
           }
@@ -197,7 +198,7 @@ const Contacto = () => {
 
   const onSubmit = async (data) => {
     setIsSubmitting(true);
-    
+
     try {
       // Limpiar y sanitizar datos
       const nombreLimpio = sanitizeName(data?.nombre || '').trim();
@@ -211,10 +212,10 @@ const Contacto = () => {
       const tipoConsultaSeleccionado = tiposConsulta.find(
         tipo => tipo.valor === data?.tipoConsulta || tipo.codigo === data?.tipoConsulta || tipo.id === data?.tipoConsulta
       );
-      const descripcionTipoConsulta = tipoConsultaSeleccionado?.descripcion || 
-                                      tipoConsultaSeleccionado?.nombre || 
-                                      tipoConsultaSeleccionado?.valor || 
-                                      data?.tipoConsulta || '';
+      const descripcionTipoConsulta = tipoConsultaSeleccionado?.descripcion ||
+        tipoConsultaSeleccionado?.nombre ||
+        tipoConsultaSeleccionado?.valor ||
+        data?.tipoConsulta || '';
 
       // Preparar datos para la edge function
       const datosConsulta = {
@@ -270,7 +271,7 @@ const Contacto = () => {
             ¡Mensaje Enviado!
           </h2>
           <p className="text-gris-medio mb-6">
-            Gracias por contactarnos. Nuestro equipo se pondrá en contacto contigo 
+            Gracias por contactarnos. Nuestro equipo se pondrá en contacto contigo
             en las próximas 24 horas.
           </p>
           <button
@@ -286,10 +287,15 @@ const Contacto = () => {
 
   return (
     <div className="pt-16 lg:pt-20 min-h-screen bg-fondo-claro">
+      <SEO
+        title="Contacto | EcoFlexPlast Perú - Atención al Cliente y Ventas"
+        description="Contáctanos para obtener cotizaciones personalizadas de zunchos, esquineros y embalaje industrial. Estamos en Villa El Salvador y Cercado de Lima."
+        url={window.location.href}
+      />
       {/* Header */}
       <div className="bg-white border-b border-gris-muy-claro">
         <div className="container-max section-padding py-12">
-          <motion.div 
+          <motion.div
             className="text-center"
             initial="initial"
             animate="animate"
@@ -299,7 +305,7 @@ const Contacto = () => {
               Contacta con Nosotros
             </h1>
             <p className="text-xl text-gris-oscuro max-w-2xl mx-auto">
-              ¿Tienes preguntas sobre nuestros productos? Nuestro equipo de especialistas 
+              ¿Tienes preguntas sobre nuestros productos? Nuestro equipo de especialistas
               está listo para ayudarte.
             </p>
           </motion.div>
@@ -308,7 +314,7 @@ const Contacto = () => {
 
       <div className="container-max section-padding py-16">
         <div className="grid lg:grid-cols-2 gap-16">
-          
+
           {/* Información de contacto */}
           <motion.div
             initial={{ opacity: 0, x: -50 }}
@@ -321,7 +327,7 @@ const Contacto = () => {
                 Información de Contacto
               </h2>
               <p className="text-gris-oscuro mb-8">
-                Estamos aquí para ayudarte con todas tus necesidades de enzunchado industrial. 
+                Estamos aquí para ayudarte con todas tus necesidades de enzunchado industrial.
                 Contáctanos por cualquiera de estos medios.
               </p>
             </div>
@@ -353,7 +359,7 @@ const Contacto = () => {
                     Teléfono
                   </h3>
                   <p className="text-gris-oscuro">
-                    <button 
+                    <button
                       onClick={() => window.open('https://wa.me/message/FP3PXXHAVSTLM1', '_blank')}
                       className="hover:text-verde-principal transition-colors cursor-pointer bg-transparent border-none p-0 text-left"
                     >
@@ -595,7 +601,7 @@ const Contacto = () => {
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
-                      {...register('numeroDocumento', { 
+                      {...register('numeroDocumento', {
                         required: 'El número de documento es requerido',
                         pattern: {
                           value: /^[0-9]+$/,
@@ -767,7 +773,7 @@ const Contacto = () => {
       {/* CTA Section */}
       <section className="bg-gradiente-principal py-16">
         <div className="container-max section-padding">
-          <motion.div 
+          <motion.div
             className="text-center text-white"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -779,7 +785,7 @@ const Contacto = () => {
             <p className="text-xl mb-8 opacity-90">
               Llámanos directamente y recibe atención inmediata de nuestros especialistas
             </p>
-            <button 
+            <button
               onClick={() => window.open('https://wa.me/message/FP3PXXHAVSTLM1', '_blank')}
               className="bg-white text-verde-principal px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors inline-flex items-center cursor-pointer"
             >

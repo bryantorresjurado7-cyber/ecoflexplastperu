@@ -8,6 +8,7 @@ import { ArrowLeft, ShoppingCart, Check, Package, Ruler, Shield, Truck, ChevronR
 import ColorChip from '../components/ColorChip';
 import ProductCardV2 from '../components/ProductCardV2';
 import { loadProducto } from '../services/productosService';
+import SEO from '../components/SEO';
 
 const ProductoDetalleV2 = () => {
   const { id } = useParams();
@@ -293,8 +294,36 @@ const ProductoDetalleV2 = () => {
     );
   }
 
+  // Schema de producto
+  const productSchema = {
+    '@context': 'https://schema.org/',
+    '@type': 'Product',
+    name: producto.nombre,
+    image: imagenes[0],
+    description: producto.descripcion,
+    sku: producto.codigo,
+    brand: {
+      '@type': 'Brand',
+      name: 'EcoFlexPlast'
+    },
+    offers: {
+      '@type': 'Offer',
+      url: window.location.href,
+      priceCurrency: 'PEN',
+      price: getPrecioPorProducto(producto) || 0,
+      availability: producto.disponible ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock'
+    }
+  };
+
   return (
     <div className="pt-16 lg:pt-20 min-h-screen bg-fondo-claro">
+      <SEO
+        title={`${producto.nombre} | EcoFlexPlast Perú`}
+        description={producto.descripcion?.substring(0, 160)}
+        url={window.location.href}
+        image={imagenes[0]}
+        jsonLd={[productSchema]}
+      />
       {/* Breadcrumb */}
       <div className="bg-white border-b border-gris-muy-claro">
         <div className="container-max section-padding py-4">
