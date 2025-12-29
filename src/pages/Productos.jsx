@@ -7,6 +7,7 @@ import FancySelect from '../components/FancySelect';
 import { colores, filtros } from '../data/productos';
 import { useQuote } from '../contexts/QuoteContext';
 import { loadProductos, loadProductosByCategoria } from '../services/productosService';
+import SEO from '../components/SEO';
 
 const Productos = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -262,6 +263,11 @@ const Productos = () => {
 
   return (
     <div className="pt-16 lg:pt-20 min-h-screen bg-fondo-claro">
+      <SEO
+        title={`Catálogo de ${categoryParam.toUpperCase()} | EcoFlexPlast Perú`}
+        description={`Descubre nuestro catálogo de ${categoryParam} industrial. Soluciones de embalaje de alta calidad con envío a todo el Perú.`}
+        url={window.location.href}
+      />
       {/* Header de la página */}
       <div className="bg-white border-b border-gris-muy-claro">
         <div className="container-max section-padding py-8">
@@ -287,8 +293,8 @@ const Productos = () => {
                     key={cat.id}
                     onClick={() => setCategoria(cat.id)}
                     className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${categoryParam === cat.id
-                        ? 'bg-verde-principal text-white border-verde-principal shadow-md'
-                        : 'bg-white text-negro-principal border-gris-muy-claro hover:bg-gris-muy-claro'
+                      ? 'bg-verde-principal text-white border-verde-principal shadow-md'
+                      : 'bg-white text-negro-principal border-gris-muy-claro hover:bg-gris-muy-claro'
                       }`}
                   >
                     {cat.nombre}
@@ -552,8 +558,8 @@ const Productos = () => {
                         onClick={() => irAPagina(paginaActual - 1)}
                         disabled={paginaActual === 1}
                         className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${paginaActual === 1
-                            ? 'text-gris-medio bg-gris-muy-claro cursor-not-allowed'
-                            : 'text-gris-oscuro bg-white border border-gris-claro hover:bg-gris-muy-claro hover:text-negro-principal'
+                          ? 'text-gris-medio bg-gris-muy-claro cursor-not-allowed'
+                          : 'text-gris-oscuro bg-white border border-gris-claro hover:bg-gris-muy-claro hover:text-negro-principal'
                           }`}
                       >
                         <ChevronLeft className="w-4 h-4 mr-1" />
@@ -585,10 +591,10 @@ const Productos = () => {
                               onClick={() => typeof numero === 'number' ? irAPagina(numero) : null}
                               disabled={typeof numero !== 'number'}
                               className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${numero === paginaActual
-                                  ? 'bg-verde-principal text-white'
-                                  : typeof numero === 'number'
-                                    ? 'text-gris-oscuro bg-white border border-gris-claro hover:bg-gris-muy-claro hover:text-negro-principal'
-                                    : 'text-gris-medio cursor-default'
+                                ? 'bg-verde-principal text-white'
+                                : typeof numero === 'number'
+                                  ? 'text-gris-oscuro bg-white border border-gris-claro hover:bg-gris-muy-claro hover:text-negro-principal'
+                                  : 'text-gris-medio cursor-default'
                                 }`}
                             >
                               {numero}
@@ -602,8 +608,8 @@ const Productos = () => {
                         onClick={() => irAPagina(paginaActual + 1)}
                         disabled={paginaActual === totalPaginas}
                         className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${paginaActual === totalPaginas
-                            ? 'text-gris-medio bg-gris-muy-claro cursor-not-allowed'
-                            : 'text-gris-oscuro bg-white border border-gris-claro hover:bg-gris-muy-claro hover:text-negro-principal'
+                          ? 'text-gris-medio bg-gris-muy-claro cursor-not-allowed'
+                          : 'text-gris-oscuro bg-white border border-gris-claro hover:bg-gris-muy-claro hover:text-negro-principal'
                           }`}
                       >
                         Siguiente

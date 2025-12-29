@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AdminLayout from '../components/AdminLayout'
 import { supabase } from '../lib/supabase'
-import { FileText, Search, Eye, Trash2, Filter, Mail, Phone, Package, User, X, Calendar, DollarSign, Edit, Download } from 'lucide-react'
+import { FileText, Search, Eye, Trash2, Filter, Mail, Phone, Package, User, X, Calendar, DollarSign, Edit, Download, Printer, Award, ClipboardList } from 'lucide-react'
 import { exportToXlsx } from '../lib/exportToXlsx'
+import { printQuotation, printCertificate, printDatasheet } from '../utils/printUtils'
 
 const SUPABASE_URL = 'https://uecolzuwhgfhicacodqj.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlY29senV3aGdmaGljYWNvZHFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4NjQwMTksImV4cCI6MjA3MjQ0MDAxOX0.EuCWuFr6W-pv8_QBgjbEWzDmnI-iA5L4rFr5CMWpNl4'
@@ -652,6 +653,7 @@ const AdminCotizaciones = () => {
                             <th className="text-center py-2 px-4 text-sm font-semibold">Cantidad</th>
                             <th className="text-right py-2 px-4 text-sm font-semibold">Precio Unit.</th>
                             <th className="text-right py-2 px-4 text-sm font-semibold">Subtotal</th>
+                            <th className="text-center py-2 px-4 text-sm font-semibold">DOCUMENTOS</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -669,6 +671,24 @@ const AdminCotizaciones = () => {
                                   <td className="py-3 px-4 text-center">{detalle.cantidad || 0}</td>
                                   <td className="py-3 px-4 text-right">{formatCurrency(detalle.precio_unitario || 0)}</td>
                                   <td className="py-3 px-4 text-right font-semibold">{formatCurrency(detalle.subtotal || 0)}</td>
+                                  <td className="py-3 px-4">
+                                    <div className="flex items-center justify-center gap-2">
+                                      <button
+                                        onClick={() => printCertificate(producto)}
+                                        className="p-1.5 hover:bg-yellow-50 rounded-lg transition-colors border border-yellow-200"
+                                        title="Imprimir Certificado de Calidad"
+                                      >
+                                        <Award className="text-yellow-600" size={16} />
+                                      </button>
+                                      <button
+                                        onClick={() => printDatasheet(producto)}
+                                        className="p-1.5 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200"
+                                        title="Imprimir Ficha Técnica"
+                                      >
+                                        <ClipboardList className="text-blue-600" size={16} />
+                                      </button>
+                                    </div>
+                                  </td>
                                 </tr>
                               )
                             })
@@ -741,13 +761,20 @@ const AdminCotizaciones = () => {
             </div>
 
             {/* Footer */}
-            <div className="border-t border-gris-claro p-4 flex justify-end">
+            <div className="border-t border-gris-claro p-4 flex justify-end gap-3">
+              <button
+                onClick={() => printQuotation(selectedCotizacion)}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2"
+              >
+                <Printer size={18} />
+                Imprimir Cotización
+              </button>
               <button
                 onClick={() => {
                   setShowDetailModal(false)
                   setSelectedCotizacion(null)
                 }}
-                className="px-6 py-2 bg-verde-principal hover:bg-green-700 text-white rounded-lg transition-colors"
+                className="px-6 py-2 bg-gris-claro hover:bg-gris-medio text-negro-principal rounded-lg transition-colors"
               >
                 Cerrar
               </button>
