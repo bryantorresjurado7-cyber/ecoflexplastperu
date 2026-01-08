@@ -17,7 +17,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
-  // Verificar sesión al montar
   useEffect(() => {
     checkAuth()
   }, [])
@@ -49,7 +48,7 @@ export const AuthProvider = ({ children }) => {
       if (result.success) {
         setUser(result.user)
         setIsAuthenticated(true)
-        return { success: true }
+        return { success: true, user: result.user }
       } else {
         return { success: false, error: result.error }
       }
@@ -87,7 +86,6 @@ export const AuthProvider = ({ children }) => {
   )
 }
 
-// HOC para proteger rutas de administración
 export const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth()
   const navigate = useNavigate()

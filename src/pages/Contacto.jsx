@@ -477,7 +477,7 @@ const Contacto = () => {
                   <label className="block text-sm font-medium text-negro-principal mb-3">
                     Soy *
                   </label>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <label className="group relative flex flex-col items-start p-5 border-2 border-gris-muy-claro rounded-xl cursor-pointer hover:border-verde-principal hover:bg-verde-light/30 transition-all duration-200 has-[:checked]:border-verde-principal has-[:checked]:bg-verde-light/20 has-[:checked]:shadow-md">
                       <div className="flex items-start space-x-3 w-full">
                         <input

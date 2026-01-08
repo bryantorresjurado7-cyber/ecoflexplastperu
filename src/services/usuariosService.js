@@ -1,5 +1,16 @@
 import { createClient } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+import { decryptData, getSessionKey } from '../utils/encryption'
+
+/**
+ * Helper para desencriptar respuestas de Edge Functions invocadas con supabase.functions.invoke
+ */
+async function decryptIfNeeded(data) {
+  if (data && data.encrypted && data.data) {
+    return await decryptData(data.data)
+  }
+  return data
+}
 
 /**
  * Servicio para gestionar usuarios del sistema
@@ -87,7 +98,11 @@ const usuariosService = {
           nombre: usuarioData.nombre,
           apellido: usuarioData.apellido || '',
           rol: roleToCreate,
-          activo: !!usuarioData.activo // Aseguramos booleano
+          activo: usuarioData.activo !== undefined ? usuarioData.activo : true,
+          token_invitacion: usuarioData.token_invitacion
+        },
+        headers: {
+          'x-session-key': getSessionKey()
         }
       })
 
@@ -140,14 +155,27 @@ const usuariosService = {
       const TEMP_URL = 'https://uecolzuwhgfhicacodqj.supabase.co'
       const TEMP_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlY29senV3aGdmaGljYWNvZHFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4NjQwMTksImV4cCI6MjA3MjQ0MDAxOX0.EuCWuFr6W-pv8_QBgjbEWzDmnI-iA5L4rFr5CMWpNl4'
 
+      // Obtener URL de redirección
+      const getRedirectUrl = () => {
+        if (import.meta.env.PROD) {
+          return `${import.meta.env.VITE_APP_URL || 'https://ecoflexplastperu.com'}/admin/login`
+        }
+        return 'http://localhost:5173/admin/login'
+      }
+
       const tempClient = createClient(TEMP_URL, TEMP_KEY, {
-        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false
+        }
       })
 
       const { data: authData, error: authError } = await tempClient.auth.signUp({
         email: cleanEmail,
         password: usuarioData.password,
         options: {
+          emailRedirectTo: getRedirectUrl(),
           data: {
             nombre: usuarioData.nombre,
             apellido: usuarioData.apellido || '',
@@ -214,7 +242,7 @@ const usuariosService = {
       // 2. Actualizar Password via Edge Function (si aplica)
       if (usuarioData.password && usuarioData.password.trim() !== '') {
         console.log('Actualizando password via Edge Function...')
-        const { error: fnError } = await supabase.functions.invoke('update-user-password', {
+        const { data: fnData, error: fnError } = await supabase.functions.invoke('update-user-password', {
           body: {
             userId: id,
             newPassword: usuarioData.password
@@ -223,6 +251,9 @@ const usuariosService = {
 
         if (fnError) {
           console.error('Error actualizando password:', fnError)
+        } else {
+          // Desencriptar respuesta
+          await decryptIfNeeded(fnData)
         }
       }
 
@@ -247,10 +278,15 @@ const usuariosService = {
 
       const { data: session } = await supabase.auth.getSession()
       if (session?.session) {
-        const { error: authError } = await supabase.functions.invoke('delete-user', {
+        const { data: fnData, error: authError } = await supabase.functions.invoke('delete-user', {
           body: { userId: id }
         })
-        if (authError) console.error('Error eliminando auth:', authError)
+        if (authError) {
+          console.error('Error eliminando auth:', authError)
+        } else {
+          // Desencriptar respuesta
+          await decryptIfNeeded(fnData)
+        }
       }
 
       return { error: null }
