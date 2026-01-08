@@ -7,7 +7,6 @@ import Footer from './components/Footer';
 import FloatingCart from './components/FloatingCart';
 import ScrollToTop from './components/ScrollToTop';
 
-// Pages
 import Home from './pages/Home';
 import Productos from './pages/Productos';
 import Catalogo from './pages/Catalogo';
@@ -23,7 +22,6 @@ import Terminos from './pages/Terminos';
 import Privacidad from './pages/Privacidad';
 import LibroReclamaciones from './pages/LibroReclamaciones';
 
-// Admin Pages
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminContabilidad from './pages/AdminContabilidad';
@@ -72,6 +70,7 @@ import AdminMantenimientoTablas from './pages/AdminMantenimientoTablas';
 import AdminMantenimientoParametrica from './pages/AdminMantenimientoParametrica';
 import AdminMantenimientoCategorias from './pages/AdminMantenimientoCategorias';
 import AdminMantenimientoModulos from './pages/AdminMantenimientoModulos';
+import EstadoPedido from './pages/EstadoPedido';
 
 function App() {
   return (
@@ -529,6 +528,12 @@ function App() {
             <Route path="/admin/configuracion" element={
               <ProtectedRoute>
                 <AdminConfiguracion />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/estado-pedido" element={
+              <ProtectedRoute>
+                <EstadoPedido />
               </ProtectedRoute>
             } />
 

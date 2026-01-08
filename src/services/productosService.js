@@ -23,28 +23,28 @@ function extractColor(producto) {
   if (producto.colores_disponibles && producto.colores_disponibles.length > 0) {
     return producto.colores_disponibles[0].toLowerCase()
   }
-  
+
   // Buscar color en el nombre
   const colores = ['negro', 'blanco', 'azul', 'amarillo', 'rojo', 'verde', 'transparente']
   const nombreLower = producto.nombre.toLowerCase()
-  
+
   for (const color of colores) {
     if (nombreLower.includes(color)) {
       return color
     }
   }
-  
+
   return 'negro' // Default
 }
 
 // Extraer ancho de un zuncho
 function extractAncho(producto) {
   if (producto.categoria !== 'zunchos') return null
-  
+
   if (producto.especificaciones?.ancho) {
     return producto.especificaciones.ancho
   }
-  
+
   // Buscar en el nombre: "5/8", "1/2", etc.
   const match = producto.nombre.match(/(\d+\/\d+)/)
   return match ? match[1] : '5/8'
@@ -55,22 +55,22 @@ function generateImagenPath(producto) {
   // Si es zuncho, SIEMPRE generar ruta basada en color (ignorar imagen_principal de BD si existe)
   // Verificar tanto 'zunchos' (minúsculas de BD) como 'Zunchos' (mapeado)
   const categoriaLower = (producto.categoria || '').toLowerCase();
-  
+
   if (categoriaLower === 'zunchos' || categoriaLower === 'zuncho') {
     const colorNombre = extractColor(producto);
     const colorInfo = colores.find(c => c.id === colorNombre);
     const carpetaColor = colorInfo?.nombre || colorNombre.charAt(0).toUpperCase() + colorNombre.slice(1);
-    
+
     // ESTRUCTURA CORRECTA: /images/productos/Zunchos/{Color}/zuncho_{color}.png
     // Ejemplo: /images/productos/Zunchos/Azul/zuncho_azul.png
     return `/images/productos/Zunchos/${carpetaColor}/zuncho_${colorNombre}.png`;
   }
-  
+
   // Para otras categorías, usar imagen_principal si existe, sino placeholder
   if (producto.imagen_principal) {
     return producto.imagen_principal;
   }
-  
+
   return '/images/placeholder.png';
 }
 
@@ -119,7 +119,7 @@ function extractLargo(producto) {
     }
     return null // No asumir un default para esquineros
   }
-  
+
   // Para zunchos: usar especificaciones.largo o buscar en medidas
   if (producto.categoria === 'zunchos') {
     if (producto.especificaciones?.largo) {
@@ -133,12 +133,12 @@ function extractLargo(producto) {
     }
     return 1000 // Default para zunchos
   }
-  
+
   // Para burbupack: usar especificaciones.largo_m
   if (producto.categoria === 'burbupack' && producto.especificaciones?.largo_m) {
     return producto.especificaciones.largo_m
   }
-  
+
   // Para otras categorías, intentar extraer de medidas_disponibles
   if (producto.medidas_disponibles && producto.medidas_disponibles.length > 0) {
     const medida = producto.medidas_disponibles[0]
@@ -148,7 +148,7 @@ function extractLargo(producto) {
       return parseInt(match[1])
     }
   }
-  
+
   // Si tiene especificaciones con largo
   if (producto.especificaciones?.largo) {
     return producto.especificaciones.largo
@@ -156,7 +156,7 @@ function extractLargo(producto) {
   if (producto.especificaciones?.largo_m) {
     return producto.especificaciones.largo_m
   }
-  
+
   return 1000 // Default
 }
 
@@ -164,30 +164,66 @@ function extractLargo(producto) {
  * Llamar a la edge function get-productos
  */
 async function callEdgeFunction(params = {}) {
+  const { decryptData, getSessionKey } = await import('../utils/encryption.js');
+
   const queryParams = new URLSearchParams();
-  
+
   if (params.categoria) queryParams.set('categoria', params.categoria);
   if (params.activo !== undefined) queryParams.set('activo', params.activo.toString());
   if (params.destacado !== undefined) queryParams.set('destacado', params.destacado.toString());
   if (params.limit) queryParams.set('limit', params.limit.toString());
-  
+  if (params.id) queryParams.set('id', params.id);
+  if (params.slug) queryParams.set('slug', params.slug);
+  if (params.codigo) queryParams.set('codigo', params.codigo);
+
   const url = `${SUPABASE_URL}/functions/v1/get-productos?${queryParams.toString()}`;
-  
+
   const response = await fetch(url, {
     method: 'GET',
     headers: {
       'apikey': SUPABASE_ANON_KEY,
       'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'x-session-key': getSessionKey() // Handshake dinámico
     }
   });
-  
+
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Edge Function error: ${response.status} - ${errorText}`);
+    // Intentar obtener el error detallado (posiblemente encriptado)
+    const textBody = await response.text();
+
+    try {
+      const jsonResponse = JSON.parse(textBody);
+
+      // Si la respuesta de error está encriptada, desencriptarla
+      if (jsonResponse.encrypted && jsonResponse.data) {
+        const decrypted = await decryptData(jsonResponse.data);
+        throw new Error(decrypted.error || `Error ${response.status} en Edge Function`);
+      }
+
+      // Si es un error JSON normal
+      if (jsonResponse.error) {
+        throw new Error(jsonResponse.error);
+      }
+    } catch (e) {
+      // Si ya es un error procesado, relanzarlo
+      if (!e.message.includes('JSON')) {
+        throw e;
+      }
+      // Si falló el parseo JSON, ignorar y usar el texto plano abajo
+    }
+
+    throw new Error(`Edge Function error: ${response.status} - ${textBody}`);
   }
-  
-  return await response.json();
+
+  const jsonResponse = await response.json();
+
+  // Si la respuesta está encriptada, desencriptarla
+  if (jsonResponse.encrypted && jsonResponse.data) {
+    return await decryptData(jsonResponse.data);
+  }
+
+  return jsonResponse;
 }
 
 /**
@@ -196,74 +232,74 @@ async function callEdgeFunction(params = {}) {
 export async function loadProductos() {
   try {
     const result = await callEdgeFunction({ activo: true });
-    
+
     if (!result.success) {
       throw new Error(result.error || 'Error desconocido');
     }
-    
+
     const data = result.datos || [];
-    
+
     // Mapear datos de Supabase al formato esperado por el componente
     const productosFormateados = data.map(p => ({
       // IDs y códigos
       id: p.id,
       codigo: p.codigo,
       slug: p.slug || p.codigo.toLowerCase(),
-      
+
       // Información básica
       nombre: p.nombre,
       descripcion: p.descripcion,
       categoria: categoriasMap[p.categoria] || p.categoria, // Categoría mapeada para mostrar
-      
+
       // Atributos específicos de zunchos (para compatibilidad)
       color: extractColor(p),
       ancho: extractAncho(p),
       largo: extractLargo(p),
-      
+
       // Guardar categoría original de BD para usar en generateImagenPath
       _categoriaOriginal: p.categoria,
-      
+
       // Precios
       precio: p.precio_unitario,
       precio_unitario: p.precio_unitario,
       precio_mayorista: p.precio_mayorista,
-      
+
       // Stock
       disponible: p.stock_disponible > 0,
       stock: p.stock_disponible,
       stock_disponible: p.stock_disponible,
-      
+
       // Estado
       destacado: p.destacado || false,
       nuevo: p.nuevo || false,
       enOferta: p.en_oferta || false,
-      
+
       // Material y características
       material: p.especificaciones?.material || 'Polipropileno',
       resistencia: p.especificaciones?.resistencia || 'Alta',
-      
+
       // Especificaciones completas
       especificaciones: p.especificaciones,
       colores_disponibles: p.colores_disponibles,
       medidas_disponibles: p.medidas_disponibles,
-      
+
       // Imágenes - generar ruta correcta según categoría
       // IMPORTANTE: Para zunchos, SIEMPRE generar ruta nueva, ignorar imagen_principal de BD
       // La función generateImagenPath ya maneja esto internamente
       imagen: generateImagenPath(p),
       imagen_principal: generateImagenPath(p), // SIEMPRE usar la función para asegurar ruta correcta
       imagenes_secundarias: p.imagenes_secundarias || [],
-      
+
       // Aplicaciones (si existen)
       aplicaciones: p.especificaciones?.aplicaciones || [],
-      
+
       // Tags para búsqueda
       tags: p.tags || [],
-      
+
       // Datos originales para referencia
       _original: p
     }))
-    
+
     return { data: productosFormateados, error: null }
   } catch (error) {
     return { data: [], error: error.message }
@@ -276,78 +312,78 @@ export async function loadProductos() {
  */
 export async function loadProductosByCategoria(categoria) {
   try {
-    const result = await callEdgeFunction({ 
-      categoria: categoria, 
-      activo: true 
+    const result = await callEdgeFunction({
+      categoria: categoria,
+      activo: true
     });
-    
+
     if (!result.success) {
       throw new Error(result.error || 'Error desconocido');
     }
-    
+
     const data = result.datos || [];
-    
+
     // Formatear productos igual que loadProductos
     const productosFormateados = data.map(p => ({
       // IDs y códigos
       id: p.id,
       codigo: p.codigo,
       slug: p.slug || p.codigo.toLowerCase(),
-      
+
       // Información básica
       nombre: p.nombre,
       descripcion: p.descripcion,
       categoria: categoriasMap[p.categoria] || p.categoria, // Categoría mapeada para mostrar
-      
+
       // Atributos específicos de zunchos (para compatibilidad)
       color: extractColor(p),
       ancho: extractAncho(p),
       largo: extractLargo(p),
-      
+
       // Guardar categoría original de BD para usar en generateImagenPath
       _categoriaOriginal: p.categoria,
-      
+
       // Precios
       precio: p.precio_unitario,
       precio_unitario: p.precio_unitario,
       precio_mayorista: p.precio_mayorista,
-      
+
       // Stock
       disponible: p.stock_disponible > 0,
       stock: p.stock_disponible,
       stock_disponible: p.stock_disponible,
-      
+
       // Estado
       destacado: p.destacado || false,
       nuevo: p.nuevo || false,
       enOferta: p.en_oferta || false,
-      
+
       // Material y características
       material: p.especificaciones?.material || 'Polipropileno',
       resistencia: p.especificaciones?.resistencia || 'Alta',
-      
+
       // Especificaciones completas
       especificaciones: p.especificaciones,
       colores_disponibles: p.colores_disponibles,
       medidas_disponibles: p.medidas_disponibles,
-      
+
       // Imágenes - generar ruta correcta según categoría
       // IMPORTANTE: Para zunchos, SIEMPRE generar ruta nueva, ignorar imagen_principal de BD
       // La función generateImagenPath ya maneja esto internamente
       imagen: generateImagenPath(p),
       imagen_principal: generateImagenPath(p), // SIEMPRE usar la función para asegurar ruta correcta
       imagenes_secundarias: p.imagenes_secundarias || [],
-      
+
       // Aplicaciones (si existen)
       aplicaciones: p.especificaciones?.aplicaciones || [],
-      
+
       // Tags para búsqueda
       tags: p.tags || [],
-      
+
       // Datos originales para referencia
       _original: p
     }))
-    
+
     return { data: productosFormateados, error: null }
   } catch (error) {
     return { data: [], error: error.message }
@@ -359,27 +395,34 @@ export async function loadProductosByCategoria(categoria) {
  */
 export async function loadProducto(idOrSlug) {
   try {
-    // Intentar primero por ID (UUID)
-    let query = supabase
-      .from('productos_db')
-      .select('*')
-      .eq('activo', true)
-    
     // Verificar si es UUID o slug
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug)
-    
+
+    let params = {};
     if (isUUID) {
-      query = query.eq('id', idOrSlug)
+      params.id = idOrSlug;
     } else {
-      query = query.or(`slug.eq.${idOrSlug},codigo.eq.${idOrSlug}`)
+      // Si no es UUID, asumimos slug primero
+      params.slug = idOrSlug;
     }
-    
-    const { data, error } = await query.single()
-    
-    if (error) throw error
-    
-    return { data, error: null }
+
+    // 1. Intentar buscar usando Edge Function (Encriptado)
+    let result = await callEdgeFunction(params);
+
+    // 2. Si no es UUID y no encontró nada, intentar buscar por código (fallback)
+    if ((!result.success || !result.datos || result.datos.length === 0) && !isUUID) {
+      result = await callEdgeFunction({ codigo: idOrSlug });
+    }
+
+    if (!result.success || !result.datos || result.datos.length === 0) {
+      return { data: null, error: { message: 'Producto no encontrado' } };
+    }
+
+    // Devolver el primer elemento encontrado
+    return { data: result.datos[0], error: null };
+
   } catch (error) {
+    console.error('Error loading product:', error);
     return { data: null, error: error.message }
   }
 }
@@ -395,9 +438,9 @@ export async function loadProductosDestacados(limit = 6) {
       .eq('activo', true)
       .eq('destacado', true)
       .limit(limit)
-    
+
     if (error) throw error
-    
+
     return { data, error: null }
   } catch (error) {
     return { data: [], error: error.message }
@@ -416,9 +459,9 @@ export async function searchProductos(searchTerm) {
       .or(`nombre.ilike.%${searchTerm}%,codigo.ilike.%${searchTerm}%,descripcion.ilike.%${searchTerm}%`)
       .order('destacado', { ascending: false })
       .limit(20)
-    
+
     if (error) throw error
-    
+
     return { data, error: null }
   } catch (error) {
     return { data: [], error: error.message }
@@ -434,19 +477,19 @@ export async function getProductosStats() {
       .from('productos_db')
       .select('*', { count: 'exact', head: true })
       .eq('activo', true)
-    
+
     const { count: productosDestacados } = await supabase
       .from('productos_db')
       .select('*', { count: 'exact', head: true })
       .eq('activo', true)
       .eq('destacado', true)
-    
+
     const { count: productosStockBajo } = await supabase
       .from('productos_db')
       .select('*', { count: 'exact', head: true })
       .eq('activo', true)
       .eq('stock_alerta', true)
-    
+
     return {
       data: {
         total: totalProductos || 0,

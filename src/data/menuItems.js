@@ -11,7 +11,9 @@ import {
     Truck,
     Cog,
     ArrowLeftRight,
-    Database
+    Database,
+    ClipboardList,
+    Users
 } from 'lucide-react'
 
 export const menuItems = [
@@ -74,6 +76,12 @@ export const menuItems = [
         path: '/admin/cotizaciones'
     },
     {
+        id: 'estado-pedido',
+        title: 'Estado Pedido',
+        icon: ClipboardList,
+        path: '/admin/estado-pedido'
+    },
+    {
         id: 'clientes',
         title: 'Clientes',
         icon: User,
@@ -104,7 +112,7 @@ export const menuItems = [
     {
         id: 'usuarios',
         title: 'Usuarios',
-        icon: User,
+        icon: Users,
         path: '/admin/usuarios'
     },
 
