@@ -22,6 +22,9 @@ import {
 } from 'lucide-react'
 import { exportToXlsx } from '../lib/exportToXlsx'
 import AdminLayout from '../components/AdminLayout'
+import { supabase } from '../lib/supabase'
+import { unwrapResponse } from '../utils/serviceWrapper'
+import { getSessionKey } from '../utils/encryption'
 
 const SUPABASE_URL = 'https://uecolzuwhgfhicacodqj.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlY29senV3aGdmaGljYWNvZHFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4NjQwMTksImV4cCI6MjA3MjQ0MDAxOX0.EuCWuFr6W-pv8_QBgjbEWzDmnI-iA5L4rFr5CMWpNl4'
@@ -48,28 +51,63 @@ const AdminVentasLista = () => {
   const loadVentas = async () => {
     setLoading(true)
     try {
+      // Obtener token de sesión
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+      
+      console.log('🔍 AdminVentasLista - Cargando ventas...')
+      console.log('Session:', session ? '✓ Activa' : '✗ No existe')
+      
+      if (sessionError || !session) {
+        console.error('❌ Error de sesión:', sessionError)
+        alert('Sesión expirada. Por favor inicie sesión nuevamente.')
+        window.location.href = '/login'
+        return
+      }
+
       let url = `${SUPABASE_URL}/functions/v1/crud-pedidos/pedidos?page=${page}&limit=${limit}`
 
       if (selectedEstado) {
         url += `&estado=${selectedEstado}`
       }
 
+      console.log('📡 Request URL:', url)
+      console.log('🔑 Token presente:', !!session.access_token)
+
       const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': SUPABASE_ANON_KEY,
+          'x-session-key': getSessionKey()
         }
       })
 
-      const result = await response.json()
+      console.log('📥 Response status:', response.status)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('❌ Error response:', errorText)
+        throw new Error(`HTTP ${response.status}: ${errorText}`)
+      }
+
+      const encryptedResult = await response.json()
+      console.log('🔐 Respuesta encriptada:', encryptedResult)
+
+      // Desencriptar respuesta
+      const result = await unwrapResponse(encryptedResult)
+      console.log('✅ Resultado desencriptado:', result)
 
       if (result.success) {
         setVentas(result.data)
         setTotalPages(result.pagination.totalPages)
         setTotalVentas(result.pagination.total)
+        console.log('📊 Ventas cargadas:', result.data.length)
+      } else {
+        console.error('❌ Error en resultado:', result.error)
+        alert(result.error || 'Error al cargar ventas')
       }
     } catch (error) {
-      console.error('Error cargando ventas:', error)
-      alert('Error al cargar ventas')
+      console.error('❌ Error cargando ventas:', error)
+      alert('Error al cargar ventas: ' + error.message)
     } finally {
       setLoading(false)
     }
@@ -78,20 +116,35 @@ const AdminVentasLista = () => {
   const loadDetalleVenta = async (idPedido) => {
     setLoadingDetalle(true)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        alert('Sesión expirada')
+        return
+      }
+
+      console.log('🔍 Cargando detalle pedido:', idPedido)
+
       const response = await fetch(`${SUPABASE_URL}/functions/v1/crud-pedidos/pedidos/${idPedido}`, {
         headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': SUPABASE_ANON_KEY,
+          'x-session-key': getSessionKey()
         }
       })
 
-      const result = await response.json()
+      const encryptedResult = await response.json()
+      const result = await unwrapResponse(encryptedResult)
+      console.log('📄 Detalle:', result)
 
       if (result.success) {
         setVentaSeleccionada(result.data)
         setShowDetalleModal(true)
+      } else {
+        alert(result.error || 'Error al cargar detalle')
       }
     } catch (error) {
-      console.error('Error cargando detalle:', error)
+      console.error('❌ Error cargando detalle:', error)
       alert('Error al cargar detalle')
     } finally {
       setLoadingDetalle(false)
@@ -113,14 +166,26 @@ const AdminVentasLista = () => {
     if (!deleteConfirm) return
 
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        alert('Sesión expirada')
+        return
+      }
+
+      console.log('🗑️ Eliminando pedido:', deleteConfirm.id)
+
       const response = await fetch(`${SUPABASE_URL}/functions/v1/crud-pedidos/pedidos/${deleteConfirm.id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': SUPABASE_ANON_KEY,
+          'x-session-key': getSessionKey()
         }
       })
 
-      const result = await response.json()
+      const encryptedResult = await response.json()
+      const result = await unwrapResponse(encryptedResult)
 
       if (result.success) {
         setDeleteConfirm(null)
@@ -159,6 +224,7 @@ const AdminVentasLista = () => {
   const filteredVentas = ventas.filter(venta =>
     venta.cliente?.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     venta.id_pedido?.includes(searchTerm) ||
+    venta.cod_pedido?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     venta.direccion_entrega?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
@@ -184,6 +250,7 @@ const AdminVentasLista = () => {
         const estadoLabel = v.estado_pedido ? (v.estado_pedido.charAt(0).toUpperCase() + v.estado_pedido.slice(1)) : 'Pendiente'
 
         return [
+          v.cod_pedido || 'N/A', // Código
           v.cliente?.nombre || 'Cliente Eliminado', // Cliente
           fechaCelda, // Fecha
           v.direccion_entrega || '', // Dirección
@@ -195,6 +262,7 @@ const AdminVentasLista = () => {
       })
 
       const columns = [
+        'Código',
         'Cliente',
         'Fecha',
         'Dirección',
@@ -304,6 +372,7 @@ const AdminVentasLista = () => {
                   <table className="w-full divide-y divide-gray-200 table-auto">
                     <thead className="bg-fondo-claro">
                       <tr>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gris-medio uppercase tracking-wider">Código</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gris-medio uppercase tracking-wider">Cliente</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gris-medio uppercase tracking-wider">Fecha</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gris-medio uppercase tracking-wider">Dirección</th>
@@ -316,6 +385,14 @@ const AdminVentasLista = () => {
                     <tbody className="divide-y divide-gris-claro">
                       {filteredVentas.map((venta) => (
                         <tr key={venta.id_pedido} className="hover:bg-fondo-claro transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <Package size={16} className="text-verde-principal" />
+                              <span className="font-mono font-semibold text-negro-principal text-sm">
+                                {venta.cod_pedido || 'N/A'}
+                              </span>
+                            </div>
+                          </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <div className="bg-verde-light rounded-full p-2">

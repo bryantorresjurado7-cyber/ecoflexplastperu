@@ -21,6 +21,8 @@ import {
 } from 'lucide-react'
 
 import PrintPreviewModal from '../components/PrintPreviewModal'
+import { unwrapResponse } from '../utils/serviceWrapper'
+import { getSessionKey } from '../utils/encryption'
 
 const SUPABASE_URL = 'https://uecolzuwhgfhicacodqj.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlY29senV3aGdmaGljYWNvZHFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4NjQwMTksImV4cCI6MjA3MjQ0MDAxOX0.EuCWuFr6W-pv8_QBgjbEWzDmnI-iA5L4rFr5CMWpNl4'
@@ -119,13 +121,24 @@ const AdminVenta = () => {
   const loadVentaExistente = async (pedidoId) => {
     setLoadingVentaExistente(true)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        alert('Sesión expirada. Por favor inicie sesión nuevamente.')
+        window.location.href = '/login'
+        return
+      }
+
       const response = await fetch(`${SUPABASE_URL}/functions/v1/crud-pedidos/pedidos/${pedidoId}`, {
         headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': SUPABASE_ANON_KEY,
+          'x-session-key': getSessionKey()
         }
       })
 
-      const result = await response.json()
+      const encryptedResult = await response.json()
+      const result = await unwrapResponse(encryptedResult)
 
       if (result.success && result.data) {
         const venta = result.data
@@ -366,6 +379,14 @@ const AdminVenta = () => {
       }
 
       // Determinar si es creación o actualización
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        alert('Sesión expirada')
+        window.location.href = '/login'
+        return
+      }
+
       const url = idPedido
         ? `${SUPABASE_URL}/functions/v1/crud-pedidos/pedidos/${idPedido}`
         : `${SUPABASE_URL}/functions/v1/crud-pedidos/pedidos`
@@ -376,13 +397,16 @@ const AdminVenta = () => {
       const response = await fetch(url, {
         method: method,
         headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': SUPABASE_ANON_KEY,
+          'x-session-key': getSessionKey(),
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(pedidoData)
       })
 
-      const result = await response.json()
+      const encryptedResult = await response.json()
+      const result = await unwrapResponse(encryptedResult)
 
       if (!response.ok) {
         throw new Error(result.error || 'Error al procesar la venta')
