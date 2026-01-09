@@ -102,7 +102,7 @@ const AdminDashboardProductos = () => {
                 producto: 'Varios (Pedido)', // Idealmente detallaríamos los items del pedido
                 cantidad: 1, // Simplificación: 1 pedido = 1 movimiento de salida (a falta de detalle de items)
                 fecha: s.created_at,
-                referencia: `Pedido #${s.id_pedido.substring(0, 8)}`,
+                referencia: `Pedido ${s.id_pedido.substring(0, 8)}`,
                 responsable: s.cliente?.nombre || 'Cliente'
             }))
 

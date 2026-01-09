@@ -173,7 +173,8 @@ export const actualizarEstadoPedido = async (idPedido, nuevoEstado, observacione
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'x-session-key': getSessionKey()
         },
         body: JSON.stringify({
           id_pedido: idPedido,
